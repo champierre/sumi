@@ -35,6 +35,67 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 出典: [Political map of Europe](https://commons.wikimedia.org/wiki/File:Political_map_of_Europe.pdf)（CIA World Factbook、パブリックドメイン）
 
+## Ghostscript との比較
+
+同じ PDF をグレースケールに変換し、Ghostscript と実行時間、メモリ使用量、出力を比べました。
+
+### 結果
+
+| 入力 | ページ | sumi | Ghostscript | 速度比 | メモリ（sumi / GS） | 出力サイズ（sumi / GS） |
+|---|---:|---:|---:|---:|---:|---:|
+| 請求書（Chrome、0.34 MB） | 2 | 20 ms | 154 ms | 7.7 倍 | 10 MB / 31 MB | 0.31 MB / 0.18 MB |
+| 請求書 50 ページ（Chrome、1.0 MB） | 50 | 63 ms | 2,502 ms | 39.8 倍 | 21 MB / 86 MB | 0.98 MB / 1.13 MB |
+| インフォグラフィック（Adobe、0.30 MB） | 1 | 33 ms | 176 ms | 5.4 倍 | 6 MB / 28 MB | 0.30 MB / 0.26 MB |
+| NASA ファクトシート（Acrobat Distiller、0.30 MB） | 2 | 56 ms | 822 ms | 14.6 倍 | 9 MB / 43 MB | 0.84 MB / 0.51 MB |
+| ポスター（cairo、5.9 MB） | 1 | 527 ms | 1,223 ms | 2.3 倍 | 34 MB / 38 MB | 5.90 MB / 4.51 MB |
+| 地図（Aspose、6.7 MB） | 1 | 1,366 ms | 3,209 ms | 2.3 倍 | 87 MB / 34 MB | 7.11 MB / 7.20 MB |
+
+時間は 10 回実行した中央値、メモリは最大常駐メモリの中央値です。
+
+- **速度**: すべての PDF で sumi のほうが速く、差は 2.3〜39.8 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
+- **メモリ**: 6 件中 5 件で sumi のほうが少なく済みました。6.7 MB の地図だけは sumi のほうが多く使いました（87 MB と 34 MB）。sumi は文書全体をメモリに読み込むためです。
+- **出力サイズ**: 写真を含む NASA ファクトシートやポスターは、Ghostscript のほうが小さくなりました。sumi は JPEG 画像を可逆圧縮（Flate）で保存し直し、Ghostscript はフォントや画像を圧縮し直すためです。
+- **見た目**: 両方の出力をレンダリングして比べたところ、見た目はほぼ同じで、どちらにも色は残っていませんでした。
+- **テキスト**: sumi の出力から抽出したテキストは、6 件すべてで元の PDF と完全に一致しました。Ghostscript の出力では、NASA ファクトシートの合字「fi」「fl」が「Þ」「ß」として抽出され、「first」で検索できなくなりました。請求書では文字の抽出順が変わり、「発行日」が一続きの文字列として見つからなくなりました（文字自体の欠落はありません）。
+
+### 比較方法
+
+- **環境**: Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2。sumi 0.1.0（`cargo build --release`）、Ghostscript 10.05.1（Homebrew）。2026 年 9 月 11 日に計測しました。
+- **実行方法**: アプリケーションから呼び出すのと同じく、どちらもコマンドとして実行し、プロセスの起動時間も含めて計測しました。PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリは `/usr/bin/time -l` で取得しました。
+- **コマンド**:
+
+  ```bash
+  sumi input.pdf -o output.pdf --overwrite
+
+  gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
+     -sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray \
+     -o output.pdf input.pdf
+  ```
+
+- **出力の確認**: poppler の `pdftoppm` でレンダリングして色の付いたピクセルがないこと、`pdftotext` で抽出したテキストが元の PDF と一致するかを調べました。
+- **比べていないもの**: Ghostscript にはベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。
+- **入力**:
+
+  | 入力 | 出典 |
+  |---|---|
+  | 請求書 | `fixtures/chrome_invoice.pdf` |
+  | 請求書 50 ページ | `fixtures/src/invoice.html` を 25 回繰り返して Chrome で PDF にしたもの |
+  | インフォグラフィック | [Equal Pay Infographic](https://commons.wikimedia.org/wiki/File:Equal_Pay_Infographic.pdf)（パブリックドメイン） |
+  | NASA ファクトシート | [SLS Fact Sheet](https://commons.wikimedia.org/wiki/File:0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_(656622902519).pdf)（パブリックドメイン） |
+  | ポスター | [Best Case Scenarios for Copyright - poster](https://commons.wikimedia.org/wiki/File:Best_Case_Scenarios_for_Copyright_-_poster.pdf)（CC0） |
+  | 地図 | [Political map of Europe](https://commons.wikimedia.org/wiki/File:Political_map_of_Europe.pdf)（パブリックドメイン） |
+
+- **再現手順**:
+
+  ```bash
+  cargo build --release
+  python3 bench/fetch.py        # 入力 PDF を Wikimedia Commons からダウンロード
+  python3 bench/make_batch.py   # 50 ページの請求書を作る（Google Chrome が必要）
+  python3 bench/bench.py        # 計測。結果は bench/results.json
+  ```
+
+1 台のノート PC での計測なので、数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。Ghostscript の結果は、オプションによっても変わります。
+
 ## インストール
 
 [GitHub Releases](https://github.com/champierre/sumi/releases/latest) からビルド済みの CLI をダウンロードできます。

@@ -1,0 +1,150 @@
+{
+  "machine": {
+    "cpu": "Apple M1 Pro",
+    "memory_gb": 16,
+    "os": "macOS 26.5.2"
+  },
+  "sumi": "sumi 0.1.0",
+  "ghostscript": "Ghostscript 10.05.1",
+  "runs": 10,
+  "results": [
+    {
+      "input": "nasa-sls-fact-sheet.pdf",
+      "pages": 2,
+      "input_bytes": 300675,
+      "tools": {
+        "sumi": {
+          "median_s": 0.05635583349794615,
+          "min_s": 0.05544420800288208,
+          "peak_rss_mb": 9.0,
+          "output_bytes": 843510,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.8217800000056741,
+          "min_s": 0.7929458329890622,
+          "peak_rss_mb": 43.3359375,
+          "output_bytes": 511320,
+          "colored_pixels": 0,
+          "text_similarity": 0.9738358690640848
+        }
+      }
+    },
+    {
+      "input": "equal-pay-infographic.pdf",
+      "pages": 1,
+      "input_bytes": 301309,
+      "tools": {
+        "sumi": {
+          "median_s": 0.032685375001165085,
+          "min_s": 0.03193487499083858,
+          "peak_rss_mb": 6.234375,
+          "output_bytes": 303951,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.1755832919952809,
+          "min_s": 0.17428987499442883,
+          "peak_rss_mb": 27.953125,
+          "output_bytes": 263011,
+          "colored_pixels": 0,
+          "text_similarity": 0.996822033898305
+        }
+      }
+    },
+    {
+      "input": "invoice.pdf",
+      "pages": 2,
+      "input_bytes": 336740,
+      "tools": {
+        "sumi": {
+          "median_s": 0.020001582997792866,
+          "min_s": 0.01969391699822154,
+          "peak_rss_mb": 9.921875,
+          "output_bytes": 311465,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.1535903120020521,
+          "min_s": 0.15131287500844337,
+          "peak_rss_mb": 30.671875,
+          "output_bytes": 177070,
+          "colored_pixels": 0,
+          "text_similarity": 0.75
+        }
+      }
+    },
+    {
+      "input": "invoice-50pages.pdf",
+      "pages": 50,
+      "input_bytes": 1034435,
+      "tools": {
+        "sumi": {
+          "median_s": 0.06283149999944726,
+          "min_s": 0.061086875008186325,
+          "peak_rss_mb": 20.6328125,
+          "output_bytes": 981798,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 2.501559312993777,
+          "min_s": 2.448150333002559,
+          "peak_rss_mb": 86.0546875,
+          "output_bytes": 1126587,
+          "colored_pixels": 0,
+          "text_similarity": 0.75
+        }
+      }
+    },
+    {
+      "input": "communia-poster.pdf",
+      "pages": 1,
+      "input_bytes": 5902880,
+      "tools": {
+        "sumi": {
+          "median_s": 0.5274953955013189,
+          "min_s": 0.5246145840064855,
+          "peak_rss_mb": 34.1640625,
+          "output_bytes": 5900230,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 1.2226023334951606,
+          "min_s": 1.2135322079993784,
+          "peak_rss_mb": 37.7734375,
+          "output_bytes": 4510981,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        }
+      }
+    },
+    {
+      "input": "europe-map.pdf",
+      "pages": 1,
+      "input_bytes": 6700847,
+      "tools": {
+        "sumi": {
+          "median_s": 1.3662268754997058,
+          "min_s": 1.3601192909991369,
+          "peak_rss_mb": 86.6875,
+          "output_bytes": 7109510,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 3.209424917004071,
+          "min_s": 3.19609933400352,
+          "peak_rss_mb": 34.2109375,
+          "output_bytes": 7198361,
+          "colored_pixels": 0,
+          "text_similarity": 0.5498406918525262
+        }
+      }
+    }
+  ]
+}

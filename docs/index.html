@@ -254,6 +254,35 @@
   .chip { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 8px; border: 1px solid var(--sei); }
   .table-scroll { overflow-x: auto; }
 
+  /* Benchmark: one row per PDF, bars scaled to Ghostscript's time */
+  .bench { margin: 32px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--sei); }
+  .bench-row {
+    display: grid;
+    grid-template-columns: minmax(0, 14em) minmax(0, 1fr) 6em;
+    gap: 8px 32px;
+    align-items: center;
+    padding-block: 16px;
+    border-bottom: 1px solid var(--sei);
+  }
+  .bench .bench-name { margin: 0; font-weight: 700; color: var(--sho); line-height: 1.6; }
+  .bench-name span { display: block; font-weight: 400; font-size: 0.8125rem; color: var(--ju); }
+  .bench-bars { display: grid; gap: 6px; }
+  .bar { display: grid; grid-template-columns: 11em minmax(0, 1fr); gap: 12px; align-items: center; font-size: 0.8125rem; color: var(--ju); }
+  .bar span { white-space: nowrap; }
+  .bar b { font-family: var(--code); font-weight: 400; color: var(--sho); }
+  .bar-fill { height: 12px; width: var(--w); min-width: 2px; background: var(--sho); }
+  .bar-gs .bar-fill { background: var(--tan); }
+  .bench .bench-ratio { margin: 0; text-align: right; font-family: var(--code); font-size: 1.125rem; color: var(--sho); }
+  .bench-notes { font-variant-ligatures: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(32px, 5vw, 72px); margin: 40px 0 0; padding: 0; list-style: none; }
+  .bench-notes li { padding: 12px 0; border-top: 1px solid var(--sei); }
+  .bench-notes strong { display: block; color: var(--sho); }
+  .bench-notes span { display: block; font-size: 0.9375rem; color: var(--ju); }
+  .method { margin-top: 32px; border-top: 2px solid var(--sho); }
+  .method summary { padding: 14px 0; font-weight: 700; color: var(--sho); cursor: pointer; }
+  .method-body { padding-bottom: 8px; font-size: 0.9375rem; }
+  .method-body p { color: var(--no); }
+  .method-body .cmd { margin-block: 12px 20px; }
+
   /* Scope */
   .scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(32px, 5vw, 72px); margin-top: 8px; }
   .scope ul { margin: 0; padding: 0; list-style: none; }
@@ -311,6 +340,13 @@
   @media (max-width: 900px) {
     .hero .wrap, .split { grid-template-columns: minmax(0, 1fr); }
     .scope { grid-template-columns: minmax(0, 1fr); }
+    .bench-notes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .bench-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .bench-bars { grid-column: 1 / -1; }
+    .bench .bench-ratio { grid-row: 1; grid-column: 2; align-self: start; }
+    .bar { grid-template-columns: 12.5em minmax(0, 1fr); }
   }
   @media (max-width: 640px) {
     body { font-size: 1rem; }
@@ -334,6 +370,7 @@
     </a>
     <nav class="site-nav" aria-label="ページ内">
       <a href="#how">しくみ</a>
+      <a href="#benchmark">速さ</a>
       <a href="#scope">対応範囲</a>
       <a href="#install">インストール</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
@@ -457,6 +494,85 @@ Q</code></pre>
         </div>
         <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。</p>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="benchmark" aria-labelledby="benchmark-title">
+    <div class="wrap">
+      <h2 id="benchmark-title">Ghostscript との比較</h2>
+      <p>同じ PDF をグレースケールに変換する時間を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。棒の長さは、PDF ごとに Ghostscript の時間を基準にしています。</p>
+
+      <ul class="bench">
+        <li class="bench-row">
+          <p class="bench-name">請求書<span>2 ページ、Chrome で作成</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>20 ms</b></span><div class="bar-fill" style="--w: 13%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>154 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 154 ms。</span>7.7 倍</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">請求書<span>50 ページ、Chrome で作成</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>63 ms</b></span><div class="bar-fill" style="--w: 2.5%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>2,502 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 63 ms、Ghostscript 2,502 ms。</span>39.8 倍</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">インフォグラフィック<span>1 ページ、Adobe PDF Library</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>33 ms</b></span><div class="bar-fill" style="--w: 18.8%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>176 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 33 ms、Ghostscript 176 ms。</span>5.4 倍</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">NASA ファクトシート<span>2 ページ、写真あり</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>56 ms</b></span><div class="bar-fill" style="--w: 6.8%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>822 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 56 ms、Ghostscript 822 ms。</span>14.6 倍</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">ポスター<span>1 ページ、5.9 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>527 ms</b></span><div class="bar-fill" style="--w: 43.1%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>1,223 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 527 ms、Ghostscript 1,223 ms。</span>2.3 倍</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">地図<span>1 ページ、6.7 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>1,366 ms</b></span><div class="bar-fill" style="--w: 42.6%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>3,209 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,366 ms、Ghostscript 3,209 ms。</span>2.3 倍</p>
+        </li>
+      </ul>
+
+      <ul class="bench-notes">
+        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。</span></li>
+        <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは 6 件とも元の PDF と一致しました。Ghostscript の出力では、合字の「fi」が「Þ」として抽出され、「first」で検索できなくなった PDF がありました。</span></li>
+        <li><strong>メモリは 6 件中 5 件で少なく済みました</strong><span>6.7 MB の地図だけは、文書全体を読み込む sumi のほうが多く使いました（87 MB と 34 MB）。</span></li>
+        <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi は JPEG 画像を可逆圧縮で保存し直すためです（NASA ファクトシートで 0.84 MB と 0.51 MB）。</span></li>
+      </ul>
+
+      <details class="method">
+        <summary>計測方法</summary>
+        <div class="method-body">
+          <p>Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2 で、sumi 0.1.0 と Ghostscript 10.05.1 を比べました。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリは <code>/usr/bin/time</code> で取得しました。</p>
+          <div class="cmd"><pre><code>sumi input.pdf -o output.pdf --overwrite
+
+gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
+   -sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray \
+   -o output.pdf input.pdf</code></pre><button class="copy" type="button">コピー</button></div>
+          <p>変換後の PDF は poppler でレンダリングして色が残っていないことを確かめ、<code>pdftotext</code> で抽出したテキストを元の PDF と比べました。Ghostscript にはベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。1 台のノート PC での結果なので、数値は環境によって変わります。</p>
+          <p>入力 PDF の出典と、計測を再現するスクリプトは <a href="https://github.com/champierre/sumi#ghostscript-との比較">README</a> と <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a> にあります。</p>
+        </div>
+      </details>
     </div>
   </section>
 
