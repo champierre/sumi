@@ -6,6 +6,35 @@ Ghostscript などの AGPL 製品には依存していません。
 
 仕様は [sumi_spec.md](sumi_spec.md) を参照してください。仕様から変えた点は「[仕様との差分](#仕様との差分)」にまとめています。
 
+## 変換例
+
+Wikimedia Commons で公開されているパブリックドメインの PDF を変換した例です。画像は変換前後の PDF を poppler でレンダリングしたもので、インフォグラフィックは上部だけを切り出しています。
+
+### インフォグラフィック
+
+| 元の PDF | グレースケール | モノクロ |
+|---|---|---|
+| <img src="docs/images/samples/equal-pay-original.png" width="260" alt="元のインフォグラフィック。オレンジと青緑で色分けされている"> | <img src="docs/images/samples/equal-pay-grayscale.png" width="260" alt="グレースケールに変換したインフォグラフィック"> | <img src="docs/images/samples/equal-pay-monochrome.png" width="260" alt="モノクロに変換したインフォグラフィック。文字とグラフが黒と白で残っている"> |
+
+```bash
+sumi samples/equal-pay.pdf -o samples/equal-pay-grayscale.pdf
+sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
+```
+
+モノクロでも、見出し、数字、グラフはそのまま読めます。変換前後の PDF は [samples/](samples/) にあります。
+
+出典: [Equal Pay Infographic](https://commons.wikimedia.org/wiki/File:Equal_Pay_Infographic.pdf)（U.S. Department of Labor、パブリックドメイン）
+
+### 地図
+
+| 元の PDF | グレースケール | モノクロ |
+|---|---|---|
+| <img src="docs/images/samples/europe-original.png" width="260" alt="国ごとに淡い色で塗り分けられたヨーロッパの地図"> | <img src="docs/images/samples/europe-grayscale.png" width="260" alt="グレースケールに変換した地図。国ごとの濃淡の違いが残っている"> | <img src="docs/images/samples/europe-monochrome.png" width="260" alt="モノクロに変換した地図。塗り分けと海岸線が消え、地名だけが残っている"> |
+
+グレースケールでは、国ごとの濃淡の違いが残ります。モノクロでは淡い色がすべて白になり、塗り分けも海岸線も消えて地名だけが残ります。色の違いで情報を伝える資料は、グレースケールで変換してください。
+
+出典: [Political map of Europe](https://commons.wikimedia.org/wiki/File:Political_map_of_Europe.pdf)（CIA World Factbook、パブリックドメイン）
+
 ## インストール
 
 [GitHub Releases](https://github.com/champierre/sumi/releases/latest) からビルド済みの CLI をダウンロードできます。

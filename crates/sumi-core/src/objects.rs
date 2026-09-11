@@ -91,7 +91,7 @@ pub(crate) fn get_dict<'a>(
 }
 
 pub(crate) fn pairs(nums: &[f64]) -> Vec<[f64; 2]> {
-    nums.chunks_exact(2).map(|c| [c[0], c[1]]).collect()
+    nums.as_chunks::<2>().0.to_vec()
 }
 
 pub(crate) fn name_str(name: &[u8]) -> String {

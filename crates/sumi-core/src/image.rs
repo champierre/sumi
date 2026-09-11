@@ -209,12 +209,12 @@ fn to_gray8(
             match space {
                 ColorSpace::Gray => dst.copy_from_slice(&src[..width]),
                 ColorSpace::Rgb => {
-                    for (d, p) in dst.iter_mut().zip(src.chunks_exact(3)) {
+                    for (d, p) in dst.iter_mut().zip(src.as_chunks::<3>().0) {
                         *d = rgb8_to_gray(p[0], p[1], p[2]);
                     }
                 }
                 _ => {
-                    for (d, p) in dst.iter_mut().zip(src.chunks_exact(4)) {
+                    for (d, p) in dst.iter_mut().zip(src.as_chunks::<4>().0) {
                         *d = cmyk8_to_gray(p[0], p[1], p[2], p[3]);
                     }
                 }
