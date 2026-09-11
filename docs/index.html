@@ -254,8 +254,10 @@
   .chip { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 8px; border: 1px solid var(--sei); }
   .table-scroll { overflow-x: auto; }
 
-  /* Benchmark: one row per PDF, bars scaled to Ghostscript's time */
-  .bench { margin: 32px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--sei); }
+  /* Benchmark: one row per PDF, bars scaled to the larger of the two values */
+  .section .bench-title { margin: 48px 0 4px; font-size: 1.25rem; }
+  .section .bench-lede { font-size: 0.9375rem; color: var(--ju); }
+  .bench { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--sei); }
   .bench-row {
     display: grid;
     grid-template-columns: minmax(0, 14em) minmax(0, 1fr) 6em;
@@ -370,7 +372,7 @@
     </a>
     <nav class="site-nav" aria-label="ページ内">
       <a href="#how">しくみ</a>
-      <a href="#benchmark">速さ</a>
+      <a href="#benchmark">性能</a>
       <a href="#scope">対応範囲</a>
       <a href="#install">インストール</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
@@ -500,70 +502,125 @@ Q</code></pre>
   <section class="section" id="benchmark" aria-labelledby="benchmark-title">
     <div class="wrap">
       <h2 id="benchmark-title">Ghostscript との比較</h2>
-      <p>同じ PDF をグレースケールに変換する時間を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。棒の長さは、PDF ごとに Ghostscript の時間を基準にしています。</p>
+      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。</p>
 
+      <h3 class="bench-title">実行時間</h3>
+      <p class="bench-lede">棒の長さは、PDF ごとに Ghostscript の時間を基準にしています。右の数字は、sumi が何倍速かったかです。</p>
       <ul class="bench">
         <li class="bench-row">
           <p class="bench-name">請求書<span>2 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>20 ms</b></span><div class="bar-fill" style="--w: 13%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>154 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>20 ms</b></span><div class="bar-fill" style="--w: 13.3%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>150 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 154 ms。</span>7.7 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 150 ms。</span>7.5 倍</p>
         </li>
         <li class="bench-row">
           <p class="bench-name">請求書<span>50 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>63 ms</b></span><div class="bar-fill" style="--w: 2.5%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>2,502 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>59 ms</b></span><div class="bar-fill" style="--w: 2.4%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>2,441 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 63 ms、Ghostscript 2,502 ms。</span>39.8 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、Ghostscript 2,441 ms。</span>41.2 倍</p>
         </li>
         <li class="bench-row">
           <p class="bench-name">インフォグラフィック<span>1 ページ、Adobe PDF Library</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>33 ms</b></span><div class="bar-fill" style="--w: 18.8%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>176 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>32 ms</b></span><div class="bar-fill" style="--w: 18.3%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>175 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 33 ms、Ghostscript 176 ms。</span>5.4 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 32 ms、Ghostscript 175 ms。</span>5.5 倍</p>
         </li>
         <li class="bench-row">
           <p class="bench-name">NASA ファクトシート<span>2 ページ、写真あり</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>56 ms</b></span><div class="bar-fill" style="--w: 6.8%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>822 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>55 ms</b></span><div class="bar-fill" style="--w: 6.9%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>794 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 56 ms、Ghostscript 822 ms。</span>14.6 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 55 ms、Ghostscript 794 ms。</span>14.4 倍</p>
         </li>
         <li class="bench-row">
           <p class="bench-name">ポスター<span>1 ページ、5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>527 ms</b></span><div class="bar-fill" style="--w: 43.1%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>1,223 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>511 ms</b></span><div class="bar-fill" style="--w: 42.5%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>1,201 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 527 ms、Ghostscript 1,223 ms。</span>2.3 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 511 ms、Ghostscript 1,201 ms。</span>2.4 倍</p>
         </li>
         <li class="bench-row">
           <p class="bench-name">地図<span>1 ページ、6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>1,366 ms</b></span><div class="bar-fill" style="--w: 42.6%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>3,209 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>1,371 ms</b></span><div class="bar-fill" style="--w: 43.1%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>3,181 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 1,366 ms、Ghostscript 3,209 ms。</span>2.3 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,371 ms、Ghostscript 3,181 ms。</span>2.3 倍</p>
+        </li>
+      </ul>
+
+      <h3 class="bench-title">メモリ使用量</h3>
+      <p class="bench-lede">プロセスの最大常駐メモリです。棒の長さは、PDF ごとに多く使ったほうを基準にしています。右の数字は、sumi が Ghostscript の何 % のメモリを使ったかです。</p>
+      <ul class="bench">
+        <li class="bench-row">
+          <p class="bench-name">請求書<span>2 ページ、0.34 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>9.9 MB</b></span><div class="bar-fill" style="--w: 32.3%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>30.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 9.9 MB、Ghostscript 30.7 MB。sumi は Ghostscript の</span>32%</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">請求書<span>50 ページ、1.0 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>20.6 MB</b></span><div class="bar-fill" style="--w: 24%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>86.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20.6 MB、Ghostscript 86.0 MB。sumi は Ghostscript の</span>24%</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">インフォグラフィック<span>1 ページ、0.30 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>6.2 MB</b></span><div class="bar-fill" style="--w: 22.3%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>28.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB、Ghostscript 28.0 MB。sumi は Ghostscript の</span>22%</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">NASA ファクトシート<span>2 ページ、0.30 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>8.1 MB</b></span><div class="bar-fill" style="--w: 18.9%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>43.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 8.1 MB、Ghostscript 43.0 MB。sumi は Ghostscript の</span>19%</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">ポスター<span>1 ページ、5.9 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>34.2 MB</b></span><div class="bar-fill" style="--w: 90.6%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>37.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 34.2 MB、Ghostscript 37.7 MB。sumi は Ghostscript の</span>91%</p>
+        </li>
+        <li class="bench-row">
+          <p class="bench-name">地図<span>1 ページ、6.7 MB</span></p>
+          <div class="bench-bars" aria-hidden="true">
+            <div class="bar"><span>sumi <b>85.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>32.5 MB</b></span><div class="bar-fill" style="--w: 37.9%"></div></div>
+          </div>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 85.8 MB、Ghostscript 32.5 MB。sumi は Ghostscript の</span>264%</p>
         </li>
       </ul>
 
       <ul class="bench-notes">
-        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。</span></li>
+        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。50 ページの請求書では 41.2 倍速く、メモリは 4 分の 1 でした。</span></li>
+        <li><strong>大きな PDF では sumi のほうがメモリを使うことがあります</strong><span>sumi は PDF 全体をメモリに読み込むので、ファイルが大きいほど多く使います。6.7 MB の地図では 85.8 MB と、Ghostscript（32.5 MB）の 2.6 倍でした。</span></li>
         <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは 6 件とも元の PDF と一致しました。Ghostscript の出力では、合字の「fi」が「Þ」として抽出され、「first」で検索できなくなった PDF がありました。</span></li>
-        <li><strong>メモリは 6 件中 5 件で少なく済みました</strong><span>6.7 MB の地図だけは、文書全体を読み込む sumi のほうが多く使いました（87 MB と 34 MB）。</span></li>
         <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi は JPEG 画像を可逆圧縮で保存し直すためです（NASA ファクトシートで 0.84 MB と 0.51 MB）。</span></li>
       </ul>
 
       <details class="method">
         <summary>計測方法</summary>
         <div class="method-body">
-          <p>Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2 で、sumi 0.1.0 と Ghostscript 10.05.1 を比べました。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリは <code>/usr/bin/time</code> で取得しました。</p>
+          <p>2026 年 9 月 11 日に、Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2 で、sumi 0.1.0 と Ghostscript 10.05.1 を比べました。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time -l</code> で取得しました。</p>
           <div class="cmd"><pre><code>sumi input.pdf -o output.pdf --overwrite
 
 gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
