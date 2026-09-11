@@ -154,7 +154,9 @@ fn fixtures_render_without_color() {
             for page in pages {
                 let (width, height, pixels) = read_ppm(&page);
                 let colored = pixels
-                    .chunks_exact(3)
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
                     .filter(|p| p.iter().max().unwrap() - p.iter().min().unwrap() > 3)
                     .count();
                 assert_eq!(
