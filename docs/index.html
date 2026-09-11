@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sumi | カラーの PDF を、文字のまま白黒に</title>
+<meta name="description" content="sumi は PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンドです。ページを画像にしないので、テキストの検索やコピーはそのまま使えます。MIT ライセンス。">
+<meta property="og:title" content="sumi | カラーの PDF を、文字のまま白黒に">
+<meta property="og:description" content="PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンド。Ghostscript 不要、MIT ライセンス。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://champierre.github.io/sumi/">
+<meta property="og:image" content="https://champierre.github.io/sumi/images/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* The page has no color of its own: five shades of sumi ink on paper.
+     The only color on the page belongs to documents before conversion. */
+  :root {
+    --kami: #f2f2f2;   /* paper */
+    --shiro: #ffffff;  /* document sheet */
+    --sho: #000000;    /* 焦墨: headlines, ink marks */
+    --no: #2b2b2b;     /* 濃墨: body text */
+    --ju: #575757;     /* 重墨: secondary text */
+    --tan: #9b9b9b;    /* 淡墨: quiet rules */
+    --sei: #d4d4d4;    /* 清墨: borders, fills */
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --code: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    --measure: 38em;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+    font-feature-settings: "palt" 0;
+  }
+
+  img { max-width: 100%; height: auto; display: block; }
+
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* Seal mark (角印): the brand is stamped like a company seal on an invoice. */
+  .seal {
+    display: inline-grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 3px solid var(--sho);
+    font-family: var(--mincho);
+    font-weight: 800;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--sho);
+  }
+
+  /* Header */
+  .site-header { padding-block: 20px; }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: var(--sho); }
+  .brand-name { font-family: var(--code); font-size: 1.25rem; letter-spacing: 0.02em; }
+  .site-nav { display: flex; gap: clamp(12px, 3vw, 28px); font-size: 0.9375rem; }
+  .site-nav a { text-decoration: none; color: var(--ju); }
+  .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+
+  /* Hero */
+  .hero { padding-block: clamp(24px, 5vw, 64px) clamp(56px, 8vw, 104px); }
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: start;
+  }
+  .hero h1 {
+    margin: 0 0 28px;
+    font-family: var(--mincho);
+    font-weight: 800;
+    font-size: clamp(1.85rem, 3.4vw, 3.2rem);
+    line-height: 1.38;
+    letter-spacing: 0.01em;
+    color: var(--sho);
+    font-feature-settings: "palt" 1;
+  }
+  .hero h1 span { display: block; white-space: nowrap; }
+  .lede { margin: 0 0 32px; max-width: 30em; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 10px 22px;
+    border: 2px solid var(--sho);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--sho);
+    background: transparent;
+  }
+  .button:hover { text-decoration: none; background: var(--shiro); }
+  .button-primary { background: var(--sho); color: var(--shiro); }
+  .button-primary:hover { background: var(--no); border-color: var(--no); }
+
+  .facts { margin: 36px 0 0; padding: 0; list-style: none; font-size: 0.9375rem; color: var(--ju); }
+  .facts li { padding-block: 8px; border-top: 1px solid var(--sei); }
+  .facts li:last-child { border-bottom: 1px solid var(--sei); }
+
+  /* Before/after comparison */
+  .compare { margin: 0; }
+  .compare-stage {
+    --pos: 100%;
+    position: relative;
+    background: var(--shiro);
+    border: 1px solid var(--sei);
+    overflow: hidden;
+    cursor: ew-resize;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .compare-stage img { width: 100%; pointer-events: none; }
+  .compare-stage .before {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+  .compare-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 2px;
+    margin-left: -1px;
+    background: var(--sho);
+    pointer-events: none;
+  }
+  .compare-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    background: var(--sho);
+    border: 3px solid var(--shiro);
+    border-radius: 50%;
+  }
+  .compare-knob::before, .compare-knob::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-block: 6px solid transparent;
+    transform: translateY(-50%);
+  }
+  .compare-knob::before { left: 8px; border-right: 7px solid var(--shiro); }
+  .compare-knob::after { right: 8px; border-left: 7px solid var(--shiro); }
+  .compare-range:focus-visible ~ .compare-line .compare-knob { outline: 3px solid var(--sho); outline-offset: 3px; }
+  .compare-tag {
+    position: absolute;
+    top: 12px;
+    padding: 2px 10px;
+    font-size: 0.8125rem;
+    background: var(--shiro);
+    border: 1px solid var(--sho);
+    color: var(--sho);
+    pointer-events: none;
+  }
+  .compare-tag-before { left: 12px; }
+  .compare-tag-after { right: 12px; }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .compare-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 14px; }
+  .modes { display: inline-flex; border: 2px solid var(--sho); }
+  .modes button {
+    min-height: 40px;
+    padding: 4px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--sho);
+    font: inherit;
+    font-size: 0.9375rem;
+    cursor: pointer;
+  }
+  .modes button + button { border-left: 2px solid var(--sho); }
+  .modes button[aria-pressed="true"] { background: var(--sho); color: var(--shiro); font-weight: 700; }
+  .compare figcaption { margin-top: 10px; font-size: 0.875rem; line-height: 1.8; color: var(--ju); max-width: 44em; }
+  .compare-hint { font-size: 0.875rem; color: var(--ju); }
+
+  /* Sections */
+  .section { padding-block: clamp(56px, 8vw, 104px); border-top: 1px solid var(--sei); }
+  .section h2 {
+    margin: 0 0 24px;
+    font-family: var(--mincho);
+    font-weight: 800;
+    font-size: clamp(1.7rem, 3vw, 2.3rem);
+    line-height: 1.45;
+    color: var(--sho);
+    font-feature-settings: "palt" 1;
+  }
+  .section h3 { margin: 0 0 12px; font-size: 1.0625rem; font-weight: 700; color: var(--sho); }
+  .section p { margin: 0 0 1em; max-width: var(--measure); }
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 72px); align-items: start; }
+
+  /* Content stream diff */
+  code { font-family: var(--code); font-size: 0.9em; }
+  .diff { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--sei); background: var(--shiro); }
+  .diff-col + .diff-col { border-left: 1px solid var(--sei); }
+  .diff-head { margin: 0; padding: 8px 16px; font-size: 0.8125rem; color: var(--ju); border-bottom: 1px solid var(--sei); }
+  .diff pre { margin: 0; padding: 14px 16px 18px; overflow-x: auto; }
+  .diff code { font-family: var(--code); font-size: 0.8125rem; line-height: 1.85; color: var(--ju); }
+  .diff mark { display: inline-block; padding-inline: 4px; margin-inline: -4px; background: var(--sho); color: var(--shiro); }
+  .diff-note { margin-top: 12px; font-size: 0.875rem; color: var(--ju); }
+
+  /* Gray formula table */
+  .formula {
+    margin: 32px 0 16px;
+    font-family: var(--code);
+    font-size: 0.9375rem;
+    color: var(--sho);
+  }
+  .tones { width: 100%; min-width: 540px; border-collapse: collapse; font-size: 0.9375rem; }
+  .tones td { white-space: nowrap; }
+  .tones th, .tones td { padding: 10px 12px 10px 0; text-align: left; border-bottom: 1px solid var(--sei); vertical-align: middle; }
+  .tones th { font-weight: 400; font-size: 0.8125rem; color: var(--ju); }
+  .tones td.num { font-family: var(--code); font-size: 0.875rem; }
+  .chip { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 8px; border: 1px solid var(--sei); }
+  .table-scroll { overflow-x: auto; }
+
+  /* Scope */
+  .scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(32px, 5vw, 72px); margin-top: 8px; }
+  .scope ul { margin: 0; padding: 0; list-style: none; }
+  .scope li { padding: 12px 0; border-top: 1px solid var(--sei); }
+  .scope li strong { display: block; color: var(--sho); }
+  .scope li span { display: block; font-size: 0.9375rem; color: var(--ju); }
+
+  /* Install tabs */
+  .tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid var(--sho); margin-top: 8px; }
+  .tabs button {
+    min-height: 44px;
+    padding: 6px 16px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.9375rem;
+    color: var(--ju);
+    cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--sho); color: var(--shiro); font-weight: 700; }
+  .tabs button:hover:not([aria-selected="true"]) { color: var(--sho); }
+  .panel { padding-top: 20px; }
+  .panel[hidden] { display: none; }
+
+  .cmd { position: relative; background: var(--sho); color: var(--shiro); }
+  .cmd pre { margin: 0; padding: 18px 20px; padding-right: 96px; overflow-x: auto; }
+  .cmd code { font-family: var(--code); font-size: 0.875rem; line-height: 1.9; }
+  .cmd .comment { color: var(--tan); }
+  .copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    min-height: 34px;
+    padding: 2px 12px;
+    border: 1px solid var(--tan);
+    background: transparent;
+    color: var(--shiro);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .copy:hover { border-color: var(--shiro); }
+  .copy:focus-visible { outline-color: var(--shiro); }
+  .panel p, .install-note { font-size: 0.9375rem; color: var(--ju); margin-top: 12px; }
+
+  .install-alt { margin-top: 40px; }
+  .usage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+
+  /* Footer */
+  .site-footer { padding-block: 56px 72px; border-top: 1px solid var(--sei); font-size: 0.9375rem; color: var(--ju); }
+  .site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
+  .site-footer .brand { gap: 16px; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 24px; }
+
+  @media (max-width: 900px) {
+    .hero .wrap, .split { grid-template-columns: minmax(0, 1fr); }
+    .scope { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 1rem; }
+    .diff { grid-template-columns: minmax(0, 1fr); }
+    .diff-col + .diff-col { border-left: 0; border-top: 1px solid var(--sei); }
+    .site-nav a:not(:last-child) { display: none; }
+    /* Long commands scroll sideways; keep the copy button out of their way. */
+    .cmd { display: flex; flex-direction: column; }
+    .cmd .copy { position: static; order: -1; align-self: flex-end; margin: 10px 10px 0 0; }
+    .cmd pre { padding: 10px 16px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="sumi トップ">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <nav class="site-nav" aria-label="ページ内">
+      <a href="#how">しくみ</a>
+      <a href="#scope">対応範囲</a>
+      <a href="#install">インストール</a>
+      <a href="https://github.com/champierre/sumi">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div>
+        <h1 id="hero-title"><span>カラーの PDF を、</span><span>文字のまま</span><span>白黒に。</span></h1>
+        <p class="lede">sumi は PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンドです。ページを画像にしないので、テキストの検索やコピー、細い罫線はそのまま残ります。</p>
+        <div class="actions">
+          <a class="button button-primary" href="#install">インストール</a>
+          <a class="button" href="https://github.com/champierre/sumi">GitHub でソースを見る</a>
+        </div>
+        <ul class="facts">
+          <li>Ghostscript を使わない単体のコマンド。MIT ライセンス</li>
+          <li>macOS、Windows、Linux 用のビルド済みバイナリ</li>
+          <li>Rails などから外部コマンドとして呼び出せます</li>
+        </ul>
+      </div>
+
+      <figure class="compare" id="compare">
+        <div class="compare-stage">
+          <img class="after" src="images/invoice-gray.png" width="1240" height="1166" alt="sumi で変換した後の請求書。色が濃淡のグレーになっている">
+          <img class="before" src="images/invoice-color.png" width="1240" height="1166" alt="変換前の請求書。青い見出し、赤い社印と合計金額、グラデーションの帯がある">
+          <span class="compare-tag compare-tag-before" aria-hidden="true">変換前</span>
+          <span class="compare-tag compare-tag-after" aria-hidden="true">変換後</span>
+          <input class="compare-range visually-hidden" type="range" min="0" max="100" value="50" step="1" aria-label="変換前と変換後の境目の位置">
+          <div class="compare-line" aria-hidden="true"><span class="compare-knob"></span></div>
+        </div>
+        <div class="compare-bar">
+          <div class="modes" role="group" aria-label="変換モード">
+            <button type="button" data-mode="gray" aria-pressed="true">グレースケール</button>
+            <button type="button" data-mode="mono" aria-pressed="false">モノクロ</button>
+          </div>
+          <span class="compare-hint">画像を左右にドラッグして比べられます</span>
+        </div>
+        <figcaption id="compare-caption">Chrome で作った請求書の PDF を sumi で変換し、そのまま表示しています。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="wrap split">
+      <div>
+        <h2 id="how-title">画像にせず、色の命令だけを書き換える</h2>
+        <p>PDF のページは「この色で塗る」「ここに線を引く」「この文字を書く」という命令の並びでできています。sumi は色を指定する命令だけを見つけてグレーに置き換え、それ以外のバイトは元のままコピーします。</p>
+        <p>画像、グラデーション、注釈、フォームの中にある色も、同じ考え方で変換します。</p>
+      </div>
+      <div>
+        <div class="diff">
+          <div class="diff-col">
+            <p class="diff-head">変換前</p>
+<pre><code>q
+3.125 0 0 3.125 0 0 cm
+<mark>.102 .3098 .749 RG .102 .3098 .749 rg</mark>
+/G3 gs
+60 116 m
+60 57 l
+…
+729 53 l
+733 116 l
+h
+f
+Q</code></pre>
+          </div>
+          <div class="diff-col">
+            <p class="diff-head">変換後</p>
+<pre><code>q
+3.125 0 0 3.125 0 0 cm
+<mark>0.2958 G 0.2958 g</mark>
+/G3 gs
+60 116 m
+60 57 l
+…
+729 53 l
+733 116 l
+h
+f
+Q</code></pre>
+          </div>
+        </div>
+        <p class="diff-note">上の請求書の、青い見出し帯を描く部分です。変わったのは色の指定だけで、図形の命令はそのままです。</p>
+
+        <p class="formula">グレー = 0.30 × 赤 + 0.59 × 緑 + 0.11 × 青</p>
+        <div class="table-scroll">
+          <table class="tones">
+            <thead>
+              <tr><th scope="col">元の色</th><th scope="col">RGB</th><th scope="col">グレースケール</th><th scope="col">モノクロ（閾値 0.5）</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="chip" style="background: rgb(26, 79, 191)"></span>見出しの青</td>
+                <td class="num">.102 .310 .749</td>
+                <td class="num"><span class="chip" style="background: rgb(75, 75, 75)"></span>0.30</td>
+                <td class="num"><span class="chip" style="background: #000"></span>0</td>
+              </tr>
+              <tr>
+                <td><span class="chip" style="background: rgb(255, 0, 0)"></span>赤</td>
+                <td class="num">1 0 0</td>
+                <td class="num"><span class="chip" style="background: rgb(77, 77, 77)"></span>0.30</td>
+                <td class="num"><span class="chip" style="background: #000"></span>0</td>
+              </tr>
+              <tr>
+                <td><span class="chip" style="background: rgb(0, 255, 0)"></span>緑</td>
+                <td class="num">0 1 0</td>
+                <td class="num"><span class="chip" style="background: rgb(150, 150, 150)"></span>0.59</td>
+                <td class="num"><span class="chip" style="background: #fff"></span>1</td>
+              </tr>
+              <tr>
+                <td><span class="chip" style="background: rgb(255, 255, 0)"></span>黄</td>
+                <td class="num">1 1 0</td>
+                <td class="num"><span class="chip" style="background: rgb(227, 227, 227)"></span>0.89</td>
+                <td class="num"><span class="chip" style="background: #fff"></span>1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="scope" aria-labelledby="scope-title">
+    <div class="wrap">
+      <h2 id="scope-title">変換できるもの、残るもの</h2>
+      <p>請求書や帳票でよく使われる要素は、一通り変換できます。変換できない部分は元の色のまま残し、警告を表示します。<code>--strict</code> を付けると、その場合はエラーで終了します。</p>
+      <div class="scope">
+        <div>
+          <h3>変換できるもの</h3>
+          <ul>
+            <li><strong>文字と図形の色</strong><span>RGB、CMYK、グレー、ICC プロファイル付きの色、スポットカラー</span></li>
+            <li><strong>画像</strong><span>PNG 由来の画像、パレット画像、JPEG、ページに直接埋め込まれた画像</span></li>
+            <li><strong>グラデーション</strong><span>直線状、円形、関数で定義されたもの</span></li>
+            <li><strong>部品として再利用される描画</strong><span>フォーム XObject、パターン、Type 3 フォント</span></li>
+            <li><strong>注釈とフォームフィールド</strong><span>表示用の外観、枠線や背景の色、入力欄の文字色</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>元のまま残るもの</h3>
+          <ul>
+            <li><strong>暗号化された PDF</strong><span>変換せずにエラーで終了します</span></li>
+            <li><strong>JPEG 2000、JBIG2 のカラー画像</strong><span>元の色のまま残し、警告を表示します</span></li>
+            <li><strong>頂点ごとに色を持つメッシュ状のグラデーション</strong><span>元の色のまま残し、警告を表示します</span></li>
+            <li><strong>CMYK の色味</strong><span>簡易な式で変換するため、色管理した表示よりシアンなどが明るくなります</span></li>
+          </ul>
+          <p class="install-note">詳しくは <a href="https://github.com/champierre/sumi#制限事項">README の制限事項</a>を参照してください。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <h2 id="install-title">インストール</h2>
+      <p>使っている環境を選んで、コマンドを実行してください。ファイルは <a href="https://github.com/champierre/sumi/releases/latest">GitHub Releases</a> からもダウンロードできます。</p>
+
+      <div class="tabs" role="tablist" aria-label="インストール先の環境">
+        <button type="button" role="tab" id="tab-mac-arm" aria-controls="panel-mac-arm" aria-selected="true">macOS（Apple Silicon）</button>
+        <button type="button" role="tab" id="tab-mac-intel" aria-controls="panel-mac-intel" aria-selected="false" tabindex="-1">macOS（Intel）</button>
+        <button type="button" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
+        <button type="button" role="tab" id="tab-linux-x64" aria-controls="panel-linux-x64" aria-selected="false" tabindex="-1">Linux（x86_64）</button>
+        <button type="button" role="tab" id="tab-linux-arm" aria-controls="panel-linux-arm" aria-selected="false" tabindex="-1">Linux（arm64）</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-mac-arm" aria-labelledby="tab-mac-arm">
+        <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-aarch64-apple-darwin.tar.gz | tar xz
+sudo mkdir -p /usr/local/bin
+sudo mv sumi-aarch64-apple-darwin/sumi /usr/local/bin/
+sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-mac-intel" aria-labelledby="tab-mac-intel" hidden>
+        <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-apple-darwin.tar.gz | tar xz
+sudo mkdir -p /usr/local/bin
+sudo mv sumi-x86_64-apple-darwin/sumi /usr/local/bin/
+sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" hidden>
+        <div class="cmd"><pre><code>Invoke-WebRequest -Uri https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-pc-windows-msvc.zip -OutFile sumi.zip
+Expand-Archive sumi.zip -DestinationPath .
+.\sumi-x86_64-pc-windows-msvc\sumi.exe --version</code></pre><button class="copy" type="button">コピー</button></div>
+        <p>PowerShell で実行します。<code>sumi.exe</code> を PATH の通ったフォルダに移すと、どこからでも <code>sumi</code> で使えます。</p>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-linux-x64" aria-labelledby="tab-linux-x64" hidden>
+        <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-unknown-linux-musl.tar.gz | tar xz
+sudo mv sumi-x86_64-unknown-linux-musl/sumi /usr/local/bin/
+sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+        <p>静的リンクのバイナリなので、ディストリビューションを問わず動きます。</p>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-linux-arm" aria-labelledby="tab-linux-arm" hidden>
+        <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-aarch64-unknown-linux-musl.tar.gz | tar xz
+sudo mv sumi-aarch64-unknown-linux-musl/sumi /usr/local/bin/
+sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+        <p>静的リンクのバイナリなので、ディストリビューションを問わず動きます。</p>
+      </div>
+
+      <p class="install-note install-alt">Rust の開発環境があれば、ソースからもインストールできます。</p>
+      <div class="cmd"><pre><code>cargo install --git https://github.com/champierre/sumi sumi-cli</code></pre><button class="copy" type="button">コピー</button></div>
+    </div>
+  </section>
+
+  <section class="section" id="usage" aria-labelledby="usage-title">
+    <div class="wrap split">
+      <div>
+        <h2 id="usage-title">使い方</h2>
+        <p>入力ファイルと出力先を指定するだけで、グレースケールに変換します。</p>
+        <p>出力先に同じ名前のファイルがあると、上書きせずに終了します。変換に失敗しても、途中まで書いたファイルは残りません。</p>
+        <p>オプションと終了コードの一覧は <code>sumi --help</code> で確認できます。</p>
+      </div>
+      <div class="usage">
+        <div>
+          <h3>コマンドライン</h3>
+          <div class="cmd"><pre><code><span class="comment"># グレースケール</span>
+sumi invoice.pdf -o invoice-gray.pdf
+
+<span class="comment"># 白黒 2 値（閾値を変えるときは --threshold）</span>
+sumi invoice.pdf -o invoice-mono.pdf --mode monochrome
+
+<span class="comment"># 既存のファイルを上書きする</span>
+sumi invoice.pdf -o invoice-gray.pdf --overwrite
+
+<span class="comment"># 標準入出力で変換する</span>
+cat invoice.pdf | sumi - -o - &gt; invoice-gray.pdf</code></pre><button class="copy" type="button">コピー</button></div>
+        </div>
+        <div>
+          <h3>Rails から呼び出す</h3>
+          <div class="cmd"><pre><code>require "open3"
+
+_stdout, stderr, status = Open3.capture3(
+  "sumi", input_path.to_s, "-o", output_path.to_s,
+  "--overwrite", "--timeout", "30"
+)
+raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class="copy" type="button">コピー</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <div class="footer-links">
+      <a href="https://github.com/champierre/sumi">GitHub</a>
+      <a href="https://github.com/champierre/sumi/releases">リリース</a>
+      <a href="https://github.com/champierre/sumi/blob/main/LICENSE">MIT License</a>
+      <span>© 2026 Junya Ishihara</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Comparison slider: drag anywhere on the image, or use the arrow keys on the hidden range input.
+  const stage = document.querySelector(".compare-stage");
+  const range = stage.querySelector(".compare-range");
+  const after = stage.querySelector(".after");
+  const caption = document.getElementById("compare-caption");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let intro = null;
+
+  const setPos = (percent) => {
+    const p = Math.min(100, Math.max(0, percent));
+    stage.style.setProperty("--pos", p + "%");
+    range.value = Math.round(p);
+  };
+  const stopIntro = () => { if (intro) { cancelAnimationFrame(intro); intro = null; } };
+  const fromPointer = (event) => {
+    const rect = stage.getBoundingClientRect();
+    setPos(((event.clientX - rect.left) / rect.width) * 100);
+  };
+
+  let dragging = false;
+  stage.addEventListener("pointerdown", (event) => {
+    stopIntro();
+    dragging = true;
+    stage.setPointerCapture(event.pointerId);
+    fromPointer(event);
+  });
+  stage.addEventListener("pointermove", (event) => { if (dragging) fromPointer(event); });
+  const endDrag = () => { dragging = false; };
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+  range.addEventListener("input", () => { stopIntro(); setPos(Number(range.value)); });
+
+  // One page-load moment: the color is wiped away to the middle.
+  const startIntro = () => {
+    if (reduceMotion) { setPos(50); return; }
+    const duration = 1600;
+    let start = null;
+    const step = (time) => {
+      if (start === null) start = time;
+      const t = Math.min(1, (time - start) / duration);
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      setPos(100 - 50 * eased);
+      intro = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    intro = requestAnimationFrame(step);
+  };
+  const images = [...stage.querySelectorAll("img")];
+  Promise.all(images.map((img) => img.complete ? Promise.resolve() : new Promise((r) => { img.onload = r; img.onerror = r; })))
+    .then(() => setTimeout(startIntro, 400));
+
+  // Grayscale / monochrome toggle.
+  const captions = {
+    gray: "Chrome で作った請求書の PDF を sumi で変換し、そのまま表示しています。",
+    mono: "モノクロでは、濃さ 0.5 を境に黒と白に分けます。黄色の文字や薄い背景色は白になり、見えなくなります。"
+  };
+  const alts = {
+    gray: "sumi でグレースケールに変換した後の請求書。色が濃淡のグレーになっている",
+    mono: "sumi でモノクロに変換した後の請求書。黒と白だけになり、薄い色の部分は消えている"
+  };
+  const mono = new Image();
+  mono.src = "images/invoice-mono.png";
+  document.querySelectorAll(".modes button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.mode;
+      document.querySelectorAll(".modes button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+      after.src = mode === "mono" ? "images/invoice-mono.png" : "images/invoice-gray.png";
+      after.alt = alts[mode];
+      caption.textContent = captions[mode];
+    });
+  });
+
+  // Install tabs, preselected from the visitor's platform.
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const select = (tab, focus) => {
+    tabs.forEach((t) => {
+      const selected = t === tab;
+      t.setAttribute("aria-selected", String(selected));
+      t.tabIndex = selected ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !selected;
+    });
+    if (focus) tab.focus();
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => select(tab, false));
+    tab.addEventListener("keydown", (event) => {
+      const moves = { ArrowRight: 1, ArrowLeft: -1 };
+      if (event.key in moves) {
+        event.preventDefault();
+        select(tabs[(index + moves[event.key] + tabs.length) % tabs.length], true);
+      }
+    });
+  });
+  const ua = navigator.userAgent;
+  const platform = /Windows/i.test(ua) ? "windows"
+    : /Android/i.test(ua) ? null
+    : /Linux/i.test(ua) ? (/aarch64|arm64/i.test(ua) ? "linux-arm" : "linux-x64")
+    : null;
+  if (platform) select(document.getElementById("tab-" + platform), false);
+
+  // Copy buttons.
+  document.querySelectorAll(".cmd").forEach((block) => {
+    const button = block.querySelector(".copy");
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code").innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = "コピーしました";
+      } catch {
+        button.textContent = "コピーできませんでした";
+      }
+      setTimeout(() => { button.textContent = "コピー"; }, 2000);
+    });
+  });
+})();
+</script>
+</body>
+</html>
