@@ -1,0 +1,150 @@
+{
+  "machine": {
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
+    "memory_gb": 27,
+    "os": "Omarchy 4.0.1 (Linux 7.1.9-arch1-2)"
+  },
+  "sumi": "sumi 0.1.0",
+  "ghostscript": "Ghostscript 10.07.1",
+  "runs": 10,
+  "results": [
+    {
+      "input": "nasa-sls-fact-sheet.pdf",
+      "pages": 2,
+      "input_bytes": 300675,
+      "tools": {
+        "sumi": {
+          "median_s": 0.05755744909401983,
+          "min_s": 0.05673148506321013,
+          "peak_rss_mb": 8.71875,
+          "output_bytes": 843510,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.6138300750171766,
+          "min_s": 0.6089976320508868,
+          "peak_rss_mb": 35.421875,
+          "output_bytes": 243601,
+          "colored_pixels": 0,
+          "text_similarity": 0.9830898424019325
+        }
+      }
+    },
+    {
+      "input": "equal-pay-infographic.pdf",
+      "pages": 1,
+      "input_bytes": 301309,
+      "tools": {
+        "sumi": {
+          "median_s": 0.035548087558709085,
+          "min_s": 0.03387684910558164,
+          "peak_rss_mb": 6.796875,
+          "output_bytes": 303951,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.1527731801616028,
+          "min_s": 0.15040314896032214,
+          "peak_rss_mb": 28.90625,
+          "output_bytes": 263022,
+          "colored_pixels": 0,
+          "text_similarity": 0.996822033898305
+        }
+      }
+    },
+    {
+      "input": "invoice.pdf",
+      "pages": 2,
+      "input_bytes": 336740,
+      "tools": {
+        "sumi": {
+          "median_s": 0.021350048948079348,
+          "min_s": 0.020552479894831777,
+          "peak_rss_mb": 10.50390625,
+          "output_bytes": 311465,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 0.15208499797154218,
+          "min_s": 0.14797338098287582,
+          "peak_rss_mb": 31.517578125,
+          "output_bytes": 176842,
+          "colored_pixels": 0,
+          "text_similarity": 0.75
+        }
+      }
+    },
+    {
+      "input": "invoice-50pages.pdf",
+      "pages": 50,
+      "input_bytes": 1034435,
+      "tools": {
+        "sumi": {
+          "median_s": 0.06792643514927477,
+          "min_s": 0.0656430539675057,
+          "peak_rss_mb": 20.2109375,
+          "output_bytes": 981798,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 2.556442147004418,
+          "min_s": 2.5343186932150275,
+          "peak_rss_mb": 78.810546875,
+          "output_bytes": 1123570,
+          "colored_pixels": 0,
+          "text_similarity": 0.75
+        }
+      }
+    },
+    {
+      "input": "communia-poster.pdf",
+      "pages": 1,
+      "input_bytes": 5902880,
+      "tools": {
+        "sumi": {
+          "median_s": 0.5948007665574551,
+          "min_s": 0.590856715105474,
+          "peak_rss_mb": 31.22265625,
+          "output_bytes": 5900230,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 1.1813695575110614,
+          "min_s": 1.178279388928786,
+          "peak_rss_mb": 36.69140625,
+          "output_bytes": 4653703,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        }
+      }
+    },
+    {
+      "input": "europe-map.pdf",
+      "pages": 1,
+      "input_bytes": 6700847,
+      "tools": {
+        "sumi": {
+          "median_s": 1.5871159030357376,
+          "min_s": 1.58186249807477,
+          "peak_rss_mb": 72.51953125,
+          "output_bytes": 7109510,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "ghostscript": {
+          "median_s": 3.2885406280402094,
+          "min_s": 3.2748718201182783,
+          "peak_rss_mb": 32.791015625,
+          "output_bytes": 7198348,
+          "colored_pixels": 0,
+          "text_similarity": 0.5498406918525262
+        }
+      }
+    }
+  ]
+}

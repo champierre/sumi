@@ -7,12 +7,18 @@ Writes bench/inputs/invoice-50pages.pdf (each copy of the invoice has 2 pages).
 import argparse
 import pathlib
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 SOURCE = HERE.parent / "fixtures" / "src" / "invoice.html"
-DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+DEFAULT_CHROME = (
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    if sys.platform == "darwin"
+    else shutil.which("google-chrome") or shutil.which("google-chrome-stable") or "google-chrome"
+)
 
 
 def main():

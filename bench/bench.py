@@ -7,6 +7,7 @@ timing, the outputs are checked with poppler (pdftoppm, pdftotext) for leftover 
 extractable text. Standard library only.
 
 Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH]
+Writes bench/results-macos.json or bench/results-linux.json.
 """
 import argparse
 import difflib
@@ -24,6 +25,7 @@ import time
 HERE = pathlib.Path(__file__).resolve().parent
 INPUTS = HERE / "inputs"
 OUTPUTS = HERE / "outputs"
+RESULTS = HERE / f"results-{'macos' if sys.platform == 'darwin' else sys.platform}.json"
 
 
 def tools(args):
@@ -105,6 +107,11 @@ def machine():
         cpu = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True).stdout.strip()
         memory = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True).stdout)
         os_name = "macOS " + subprocess.run(["sw_vers", "-productVersion"], capture_output=True, text=True).stdout.strip()
+    elif sys.platform.startswith("linux"):
+        cpu = re.search(r"model name\s*:\s*(.+)", pathlib.Path("/proc/cpuinfo").read_text()).group(1).strip()
+        memory = int(re.search(r"MemTotal:\s+(\d+) kB", pathlib.Path("/proc/meminfo").read_text()).group(1)) * 1024
+        release = platform.freedesktop_os_release()
+        os_name = f"{release.get('NAME', 'Linux')} {release.get('VERSION_ID', '')}".strip() + f" (Linux {platform.release()})"
     else:
         cpu, memory, os_name = platform.processor(), 0, platform.platform()
     return {"cpu": cpu, "memory_gb": round(memory / 2**30), "os": os_name}
@@ -155,8 +162,8 @@ def main():
                   file=sys.stderr)
         report["results"].append(entry)
 
-    (HERE / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    print(f"wrote {HERE / 'results.json'}", file=sys.stderr)
+    RESULTS.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    print(f"wrote {RESULTS}", file=sys.stderr)
 
 
 if __name__ == "__main__":

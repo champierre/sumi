@@ -37,9 +37,11 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 ## Ghostscript との比較
 
-同じ PDF をグレースケールに変換し、Ghostscript と実行時間、メモリ使用量、出力を比べました。表の入力名のリンクから、計測に使った PDF を開けます。
+同じ PDF をグレースケールに変換し、Ghostscript と実行時間、メモリ使用量、出力を比べました。Mac（Apple M1 Pro）と Linux（AMD Ryzen 7 6800H）の 2 台で計測しています。表の入力名のリンクから、計測に使った PDF を開けます。
 
 ### 実行時間
+
+#### Mac（Apple M1 Pro、Ghostscript 10.05.1）
 
 | 入力 | ページ | sumi | Ghostscript | 速度比 |
 |---|---:|---:|---:|---:|
@@ -50,9 +52,22 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 | [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 511 ms | 1,201 ms | 2.4 倍 |
 | [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,371 ms | 3,181 ms | 2.3 倍 |
 
-10 回実行した中央値です。すべての PDF で sumi のほうが速く、差は 2.3〜41.2 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
+#### Linux（AMD Ryzen 7 6800H、Ghostscript 10.07.1）
+
+| 入力 | ページ | sumi | Ghostscript | 速度比 |
+|---|---:|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf)（Chrome、0.34 MB） | 2 | 21 ms | 152 ms | 7.1 倍 |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（Chrome、1.0 MB） | 50 | 68 ms | 2,556 ms | 37.6 倍 |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（Adobe、0.30 MB） | 1 | 36 ms | 153 ms | 4.3 倍 |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（Acrobat Distiller、0.30 MB） | 2 | 58 ms | 614 ms | 10.7 倍 |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 595 ms | 1,181 ms | 2.0 倍 |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,587 ms | 3,289 ms | 2.1 倍 |
+
+10 回実行した中央値です。どちらの環境でも、すべての PDF で sumi のほうが速く、差は Mac で 2.3〜41.2 倍、Linux で 2.0〜37.6 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
 
 ### メモリ使用量
+
+#### Mac（Apple M1 Pro）
 
 | 入力 | sumi | Ghostscript | sumi / Ghostscript |
 |---|---:|---:|---:|
@@ -63,31 +78,51 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 | [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 34.2 MB | 37.7 MB | 91% |
 | [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 85.8 MB | 32.5 MB | 264% |
 
+#### Linux（AMD Ryzen 7 6800H）
+
+| 入力 | sumi | Ghostscript | sumi / Ghostscript |
+|---|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf)（0.34 MB） | 10.5 MB | 31.5 MB | 33% |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（1.0 MB） | 20.2 MB | 78.8 MB | 26% |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（0.30 MB） | 6.8 MB | 28.9 MB | 24% |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（0.30 MB） | 8.7 MB | 35.4 MB | 25% |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 31.2 MB | 36.7 MB | 85% |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 72.5 MB | 32.8 MB | 221% |
+
 プロセスの最大常駐メモリ（maximum resident set size）の、10 回実行した中央値です。
 
-- 6 件中 5 件で sumi のほうが少なく、Ghostscript の 19〜91% で済みました。1 MB 前後までの PDF では 19〜32% です。
-- sumi は PDF 全体をメモリに読み込んで変換するので、ファイルが大きいほどメモリを多く使います。6.7 MB の地図では、sumi のほうが多く使いました（85.8 MB と 32.5 MB）。
-- Ghostscript は 1 ページの PDF では 28〜43 MB でしたが、50 ページの請求書では 86.0 MB を使いました。
+- どちらの環境でも 6 件中 5 件で sumi のほうが少なく、Ghostscript の 19〜91%（Mac）、24〜85%（Linux）で済みました。1 MB 前後までの PDF では 19〜32%（Mac）、24〜33%（Linux）です。
+- sumi は PDF 全体をメモリに読み込んで変換するので、ファイルが大きいほどメモリを多く使います。6.7 MB の地図では、sumi のほうが多く使いました（Mac で 85.8 MB と 32.5 MB、Linux で 72.5 MB と 32.8 MB）。
+- Ghostscript は 1〜2 ページの PDF では 28〜43 MB（Mac）、29〜37 MB（Linux）でしたが、50 ページの請求書では 86.0 MB（Mac）、78.8 MB（Linux）を使いました。
 
 ### 出力
 
-| 入力 | 元の PDF | sumi | Ghostscript |
-|---|---:|---:|---:|
-| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.31 MB | 0.18 MB |
-| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.98 MB | 1.13 MB |
-| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.30 MB | 0.26 MB |
-| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0.30 MB | 0.84 MB | 0.51 MB |
-| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 5.90 MB | 5.90 MB | 4.51 MB |
-| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.11 MB | 7.20 MB |
+| 入力 | 元の PDF | sumi | Ghostscript 10.05.1（Mac） | Ghostscript 10.07.1（Linux） |
+|---|---:|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.31 MB | 0.18 MB | 0.18 MB |
+| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.98 MB | 1.13 MB | 1.12 MB |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.30 MB | 0.26 MB | 0.26 MB |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0.30 MB | 0.84 MB | 0.51 MB | 0.24 MB |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 5.90 MB | 5.90 MB | 4.51 MB | 4.65 MB |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.11 MB | 7.20 MB | 7.20 MB |
 
-- **出力サイズ**: 写真を含む NASA ファクトシートやポスターは、Ghostscript のほうが小さくなりました。sumi は JPEG 画像を可逆圧縮（Flate）で保存し直し、Ghostscript はフォントや画像を圧縮し直すためです。
-- **見た目**: 両方の出力をレンダリングして比べたところ、見た目はほぼ同じで、どちらにも色は残っていませんでした。
-- **テキスト**: sumi の出力から抽出したテキストは、6 件すべてで元の PDF と完全に一致しました。Ghostscript の出力では、NASA ファクトシートの合字「fi」「fl」が「Þ」「ß」として抽出され、「first」で検索できなくなりました。請求書では文字の抽出順が変わり、「発行日」が一続きの文字列として見つからなくなりました（文字自体の欠落はありません）。
+sumi の出力は、Mac と Linux で同じサイズでした。
+
+- **出力サイズ**: 写真を含む NASA ファクトシートやポスターは、Ghostscript のほうが小さくなりました。sumi は JPEG 画像を可逆圧縮（Flate）で保存し直し、Ghostscript はフォントや画像を圧縮し直すためです。NASA ファクトシートは、Linux の Ghostscript 10.07.1 では 0.24 MB と、Mac の 10.05.1（0.51 MB）の半分以下になりました。
+- **見た目**: Mac、Linux とも、両方の出力をレンダリングして比べたところ、見た目はほぼ同じで、どちらにも色は残っていませんでした。
+- **テキスト**: sumi の出力から抽出したテキストは、どちらの環境でも 6 件すべてで元の PDF と完全に一致しました。Ghostscript の出力では、請求書の文字の抽出順が変わり、「発行日」が一続きの文字列として見つからなくなりました（文字自体の欠落はありません。Mac、Linux とも）。Mac の Ghostscript 10.05.1 では、NASA ファクトシートの合字「fi」「fl」が「Þ」「ß」として抽出され、「first」で検索できなくなりました。Linux の 10.07.1 ではこの問題は起きず、段落 1 つの抽出順が変わっただけでした。
 
 ### 比較方法
 
-- **環境**: Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2。sumi 0.1.0（`cargo build --release`）、Ghostscript 10.05.1（Homebrew）。2026 年 9 月 11 日に計測しました。
-- **実行方法**: アプリケーションから呼び出すのと同じく、どちらもコマンドとして実行し、プロセスの起動時間も含めて計測しました。PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリは `/usr/bin/time -l` で取得しました。
+- **環境**: 2026 年 9 月 11 日に、次の 2 台で計測しました。sumi はどちらも 0.1.0（`cargo build --release`）です。
+
+  | | Mac | Linux |
+  |---|---|---|
+  | マシン | Apple M1 Pro（メモリ 16 GB） | GEEKOM A6、AMD Ryzen 7 6800H（OS から使えるメモリ 27 GB） |
+  | OS | macOS 26.5.2 | Omarchy 4.0.1（Arch Linux ベース、Linux 7.1.9） |
+  | Ghostscript | 10.05.1（Homebrew） | 10.07.1（Arch Linux のパッケージ） |
+
+- **実行方法**: アプリケーションから呼び出すのと同じく、どちらもコマンドとして実行し、プロセスの起動時間も含めて計測しました。PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリは `/usr/bin/time` で取得しました（macOS は `-l`、Linux は GNU time の `-v`）。
 - **コマンド**:
 
   ```bash
@@ -116,12 +151,12 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
   ```bash
   cargo build --release
   python3 bench/fetch.py        # 入力 PDF を bench/inputs に用意（Wikimedia Commons からダウンロード）
-  python3 bench/bench.py        # 計測。結果は bench/results.json
+  python3 bench/bench.py        # 計測。結果は bench/results-macos.json または bench/results-linux.json
   ```
 
-  50 ページの請求書は、計測に使ったものを `bench/invoice-50pages.pdf` に置いています。作り直すときは `python3 bench/make_batch.py` を実行してください（Google Chrome が必要）。
+  50 ページの請求書は、計測に使ったものを `bench/invoice-50pages.pdf` に置いています。Mac と Linux のどちらも、このファイルで計測しました。作り直すときは `python3 bench/make_batch.py` を実行してください（Google Chrome が必要）。
 
-1 台のノート PC での計測なので、数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。Ghostscript の結果は、オプションによっても変わります。
+2 台での計測なので、数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。Ghostscript の結果は、バージョンやオプションによっても変わります。
 
 ## インストール
 
