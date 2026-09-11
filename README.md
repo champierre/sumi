@@ -6,11 +6,32 @@ Ghostscript などの AGPL 製品には依存していません。
 
 仕様は [sumi_spec.md](sumi_spec.md) を参照してください。仕様から変えた点は「[仕様との差分](#仕様との差分)」にまとめています。
 
-## ビルド
+## インストール
+
+[GitHub Releases](https://github.com/champierre/sumi/releases/latest) からビルド済みの CLI をダウンロードできます。
+
+| OS | ファイル |
+|---|---|
+| macOS（Apple Silicon） | `sumi-aarch64-apple-darwin.tar.gz` |
+| macOS（Intel） | `sumi-x86_64-apple-darwin.tar.gz` |
+| Windows（x64） | `sumi-x86_64-pc-windows-msvc.zip` |
+| Linux（x86_64） | `sumi-x86_64-unknown-linux-musl.tar.gz` |
+| Linux（arm64） | `sumi-aarch64-unknown-linux-musl.tar.gz` |
 
 ```bash
-cargo build --release
-# => target/release/sumi
+# 例: macOS（Apple Silicon）
+curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-aarch64-apple-darwin.tar.gz | tar xz
+sudo mv sumi-aarch64-apple-darwin/sumi /usr/local/bin/
+```
+
+Linux 版は静的リンク（musl）なので、ディストリビューションを問わず動きます。ブラウザでダウンロードした macOS 版がブロックされる場合は、`xattr -d com.apple.quarantine sumi` を実行してください。
+
+### ソースからビルド
+
+```bash
+cargo install --git https://github.com/champierre/sumi sumi-cli
+# または
+cargo build --release   # => target/release/sumi
 ```
 
 Rust 1.88 以降が必要です（edition 2024）。
@@ -160,6 +181,15 @@ cargo test
 
 fixture の再生成方法は [fixtures/README.md](fixtures/README.md) を参照してください。
 
+## リリース
+
+`v0.1.0` のように `Cargo.toml` のバージョンと同じタグを push すると、GitHub Actions（`.github/workflows/release.yml`）が各プラットフォーム向けの CLI をビルドし、GitHub Releases に公開します。
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## ライセンス
 
-MIT OR Apache-2.0（予定）。依存クレートはすべて MIT / Apache-2.0 / BSD / Zlib 系のライセンスです。
+[MIT](LICENSE)。依存クレートはすべて MIT / Apache-2.0 / BSD / Zlib 系のライセンスです。
