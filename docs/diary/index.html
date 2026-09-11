@@ -155,6 +155,7 @@
       <a href="#day1">実装</a>
       <a href="#bench">性能比較</a>
       <a href="#validation">実世界検証</a>
+      <a href="#ycck-title">見つかったバグ</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
     </nav>
   </div>
@@ -361,12 +362,43 @@
       仕様書の制限事項どおりで、不具合ではありません。
     </p>
 
-    <h3>いま進めていること</h3>
+    <h3>grayscale の結果</h3>
     <p>
-      1008 件の本番検証を実行中です。当初は grayscale と monochrome を同時に走らせましたが、
-      6 コアを 6 ワーカーで奪い合って 1 モードあたり約 4 件/分まで落ちたため、
-      いったん止めて 1 モードずつ流す形に変えました。現在は約 8 件/分で進んでいます。
+      1008 件を約 80 分（12.6 件/分）で流しました。当初は grayscale と monochrome を
+      同時に走らせましたが、6 コアを 6 ワーカーで奪い合って 1 モードあたり約 4 件/分まで
+      落ちたため、いったん止めて 1 モードずつ流す形に変えています。
     </p>
+
+    <div class="scroll">
+      <table>
+        <caption>grayscale・1008 件</caption>
+        <thead><tr><th>指標</th><th class="num">結果</th><th class="num">割合</th></tr></thead>
+        <tbody>
+          <tr><td>変換成功</td><td class="num">1001 / 1008</td><td class="num">99.3%</td></tr>
+          <tr><td>色残りなし</td><td class="num">799 / 945</td><td class="num">84.6%</td></tr>
+          <tr><td>表示崩れなし</td><td class="num">935 / 945</td><td class="num">98.9%</td></tr>
+          <tr><td>テキスト保持</td><td class="num">943 / 945</td><td class="num">99.8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      変換できなかった 7 件は、暗号化 PDF が 6 件（仕様どおり非対応）と、
+      ページの描画に必要なオブジェクトが読めない壊れた PDF が 1 件でした。
+      色残り 146 件のうち 145 件は JPEG 2000 などの未対応警告と対応していて、
+      仕様どおりです。
+    </p>
+
+    <div class="note">
+      <span class="label">つまずき: 変換成功率を 93.8% と誤って集計した</span>
+      <p>
+        最初の集計は 56 件を「変換失敗」に数えていました。実際に測り直すと、
+        変換は 1.0〜1.4 秒で成功していて、遅いのは <code>pdftoppm</code> の描画
+        （70〜105 秒）でした。変換・描画・テキスト抽出をまとめて 1 つの制限時間に
+        入れていたため、描画が間に合わないと変換ごと失敗として記録されていました。
+        終了コードが 0 なのに失敗と出ていたのが手がかりです。正しくは 99.3% です。
+      </p>
+    </div>
 
     <div class="note">
       <span class="label">見落とし: 進捗が見えない作りだった</span>
@@ -380,15 +412,65 @@
     </div>
 
     <div class="note">
-      <span class="label">未対処: 大きすぎる画像が測定から漏れる</span>
+      <span class="label">大きすぎる画像が測定から漏れる</span>
       <p>
         検証ログに <code>DecompressionBombWarning</code> が出ています。
         画像処理ライブラリが 8,900 万画素を超える画像のデコードを拒否するため、
         大判のポスターや地図を 150dpi で描画したページは測定がスキップされます。
-        何件が影響を受けたかを記録していないのがハーネス側の不備で、
-        完走後に対処方針を決めます。
+        1008 件で 4 回だけだったので、結果への影響は小さいと判断しました。
       </p>
     </div>
+
+    <h2 id="ycck-title" style="margin-top:2em">見つかったバグ — Adobe の CMYK JPEG が白黒反転する</h2>
+
+    <p>
+      表示崩れとして検出された 10 件のうち <strong>9 件が同じ原因</strong>でした。
+      Adobe 系のツールが書き出した CMYK の JPEG（APP14 の transform が 2、YCCK）を
+      含む PDF を変換すると、ほぼ白いポスターが<strong>ほぼ真っ黒</strong>になります。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>ポスター 1 枚のグレー値（平均）</caption>
+        <thead><tr><th>測りかた</th><th class="num">グレー値</th></tr></thead>
+        <tbody>
+          <tr><td>元の見た目</td><td class="num">168.7</td></tr>
+          <tr><td>sumi の出力（修正前）</td><td class="num">28.0</td></tr>
+          <tr><td>元の画像を反転してから変換</td><td class="num">162.7</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      元との相関が <code>-0.900</code>、元を反転したものとの相関が <code>+0.900</code> で、
+      反転しているのは明らかでした。原因は sumi ではなく、JPEG のデコードに使っている
+      zune-jpeg 側にあります。YCCK を RGB にデコードすると色が反転します
+      （0.5.15 と 0.5.16-rc2 の両方で確認）。
+    </p>
+
+    <div class="note">
+      <span class="label">直せなかった直しかた</span>
+      <p>
+        最初は「デコーダに CMYK 出力を要求すればよい」と考えましたが、
+        <code>Unimplemented colorspace mapping from YCCK to CMYK</code> で失敗しました。
+        次に「返ってきた RGB を反転すればよい」と考えましたが、これも 226.8 にしかならず、
+        正解の 168.7 には戻りません。正しい値は、生の 4 成分を反転した場合にだけ出ます。
+      </p>
+    </div>
+
+    <p>
+      そこで YCCK は<strong>未対応として扱い、画像を元のまま残して警告を出す</strong>
+      ことにしました。黙ってページを黒くするより、色が残るほうが害が小さいためです。
+      該当 9 件で黒化は消え、元との相関は <code>+0.96〜+1.00</code> に戻りました。
+      引き換えに、これらの文書では色が残ります（色残りの割合は平均 0.00 から 0.30 へ）。
+      transform が 0 や 1 の通常の CMYK JPEG は、これまでどおり変換されます。
+    </p>
+
+    <p>
+      再発を防ぐため、YCCK の JPEG を埋め込んだ 1.3KB の PDF を
+      <code>fixtures/ycck_jpeg.pdf</code> として追加し、警告が出ることと画像が
+      変換されないことを確かめるテストを書きました。
+    </p>
 
     <h3>実行のしかた</h3>
 <pre><code>python3 validation/fetch_corpus.py --count 1000
