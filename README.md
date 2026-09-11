@@ -118,7 +118,7 @@ sumi の出力は、Mac と Linux で同じサイズでした。
 
   | | Mac | Linux |
   |---|---|---|
-  | マシン | Apple M1 Pro（メモリ 16 GB） | GEEKOM A6、AMD Ryzen 7 6800H（OS から使えるメモリ 27 GB） |
+  | マシン | Apple M1 Pro（メモリ 16 GB） | GEEKOM A6、AMD Ryzen 7 6800H（メモリ 32 GB） |
   | OS | macOS 26.5.2 | Omarchy 4.0.1（Arch Linux ベース、Linux 7.1.9） |
   | Ghostscript | 10.05.1（Homebrew） | 10.07.1（Arch Linux のパッケージ） |
 

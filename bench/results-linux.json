@@ -1,7 +1,7 @@
 {
   "machine": {
     "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
-    "memory_gb": 27,
+    "memory_gb": 32,
     "os": "Omarchy 4.0.1 (Linux 7.1.9-arch1-2)"
   },
   "sumi": "sumi 0.1.0",

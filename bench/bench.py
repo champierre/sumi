@@ -109,7 +109,15 @@ def machine():
         os_name = "macOS " + subprocess.run(["sw_vers", "-productVersion"], capture_output=True, text=True).stdout.strip()
     elif sys.platform.startswith("linux"):
         cpu = re.search(r"model name\s*:\s*(.+)", pathlib.Path("/proc/cpuinfo").read_text()).group(1).strip()
-        memory = int(re.search(r"MemTotal:\s+(\d+) kB", pathlib.Path("/proc/meminfo").read_text()).group(1)) * 1024
+        # Installed memory from the DMI data udev exposes without root; MemTotal (which leaves out
+        # memory reserved for firmware and the integrated GPU) when that is not available.
+        try:
+            dmi = subprocess.run(["udevadm", "info", "-q", "property", "-p", "/sys/devices/virtual/dmi/id"],
+                                 capture_output=True, text=True).stdout
+        except FileNotFoundError:
+            dmi = ""
+        memory = sum(int(size) for size in re.findall(r"^MEMORY_DEVICE_\d+_SIZE=(\d+)$", dmi, re.M))
+        memory = memory or int(re.search(r"MemTotal:\s+(\d+) kB", pathlib.Path("/proc/meminfo").read_text()).group(1)) * 1024
         release = platform.freedesktop_os_release()
         os_name = f"{release.get('NAME', 'Linux')} {release.get('VERSION_ID', '')}".strip() + f" (Linux {platform.release()})"
     else:

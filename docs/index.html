@@ -735,7 +735,7 @@ Q</code></pre>
       <details class="method">
         <summary>計測方法</summary>
         <div class="method-body">
-          <p>2026 年 9 月 11 日に、2 台で sumi 0.1.0 と Ghostscript を比べました。Mac は Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2、Ghostscript 10.05.1。Linux は AMD Ryzen 7 6800H（GEEKOM A6）、Omarchy 4.0.1（Arch Linux ベース）、Ghostscript 10.07.1 です。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time</code> で取得しました。</p>
+          <p>2026 年 9 月 11 日に、2 台で sumi 0.1.0 と Ghostscript を比べました。Mac は Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2、Ghostscript 10.05.1。Linux は AMD Ryzen 7 6800H（GEEKOM A6、メモリ 32 GB）、Omarchy 4.0.1（Arch Linux ベース）、Ghostscript 10.07.1 です。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time</code> で取得しました。</p>
           <div class="cmd"><pre><code>sumi input.pdf -o output.pdf --overwrite
 
 gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
