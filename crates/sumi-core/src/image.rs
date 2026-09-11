@@ -355,6 +355,16 @@ fn decode_jpeg(data: &[u8], settings: &Settings) -> Result<Jpeg, Problem> {
     let input = headers
         .input_colorspace()
         .ok_or_else(|| Problem::invalid("JPEG without color space"))?;
+    // YCCK (Adobe APP14 transform 2) is left unconverted on purpose.
+    // zune-jpeg's YCCK to RGB path returns inverted colors (checked with 0.5.15 and
+    // 0.5.16-rc2): a near-white poster decodes to a gray level of 28 instead of 169,
+    // so the page comes out almost black. Decoding to CMYK is not implemented either
+    // ("Unimplemented colorspace mapping from YCCK to CMYK"), and inverting the RGB
+    // the decoder returns does not recover the right tone. Leaving the image in color
+    // with a warning is better than silently turning the page black.
+    if input == Z::YCCK {
+        return Err(Problem::unsupported("YCCK (Adobe CMYK) JPEG image"));
+    }
     let (output, components) = match input {
         Z::Luma => (Z::Luma, 1),
         Z::CMYK => (Z::CMYK, 4),

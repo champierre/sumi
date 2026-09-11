@@ -17,6 +17,8 @@ xref streams, etc).
 - `inspect.py` — stdlib-only script that reports which color-related PDF
   features a given PDF contains (content operators, color-space dictionary
   keys, image types, xref/object-stream structure, etc).
+- `src/make_ycck_pdf.py` — wraps a JPEG in a minimal one-page PDF; used to
+  build `ycck_jpeg.pdf`.
 - The fixture PDFs themselves (this directory).
 
 ## Regenerating

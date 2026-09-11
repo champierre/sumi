@@ -10,7 +10,20 @@ use lopdf::content::Content;
 use lopdf::{Document, Object};
 use sumi_core::{ConvertOptions, convert_bytes};
 
+/// Fixtures that convert completely. `ycck_jpeg.pdf` is excluded on purpose: it is the
+/// regression fixture for an image that is deliberately left unconverted, and it has its
+/// own test below.
 fn fixtures() -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = all_fixtures()
+        .into_iter()
+        .filter(|p| p.file_name().is_none_or(|n| n != "ycck_jpeg.pdf"))
+        .collect();
+    assert!(!paths.is_empty());
+    paths.sort();
+    paths
+}
+
+fn all_fixtures() -> Vec<PathBuf> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
     let mut paths: Vec<PathBuf> = std::fs::read_dir(dir)
         .unwrap()
@@ -20,6 +33,31 @@ fn fixtures() -> Vec<PathBuf> {
     paths.sort();
     assert!(!paths.is_empty());
     paths
+}
+
+/// A YCCK (Adobe APP14 transform 2) JPEG is left in color with a warning.
+///
+/// zune-jpeg decodes YCCK to inverted RGB (checked with 0.5.15 and 0.5.16-rc2), which used
+/// to turn a near-white poster almost black. Converting to CMYK is not implemented in the
+/// decoder either, so the image is reported as unsupported instead of being converted wrong.
+#[test]
+fn ycck_jpeg_is_left_unconverted_with_a_warning() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/ycck_jpeg.pdf");
+    let input = std::fs::read(&path).unwrap();
+    let converted = convert_bytes(&input, &ConvertOptions::grayscale()).unwrap();
+    assert!(
+        converted
+            .report
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("YCCK")),
+        "{:?}",
+        converted.report.warnings
+    );
+    assert_eq!(
+        converted.report.images, 0,
+        "the image must stay unconverted"
+    );
 }
 
 /// Text showing operations of every page, in order.
