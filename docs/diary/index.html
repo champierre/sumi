@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>開発日誌 | sumi</title>
+<meta name="description" content="sumi の開発日誌。実装の開始から、Ghostscript との比較、実世界 PDF 1008 件による自動検証までの記録。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* 体裁はトップページに合わせる。色は墨の五彩だけ。 */
+  :root {
+    --kami: #f2f2f2;
+    --shiro: #ffffff;
+    --sho: #000000;
+    --no: #2b2b2b;
+    --ju: #575757;
+    --tan: #9b9b9b;
+    --sei: #d4d4d4;
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --code: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    --measure: 40em;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+  }
+
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ヘッダ */
+  .site-header { border-bottom: 1px solid var(--sei); background: var(--shiro); }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding-block: 14px; flex-wrap: wrap;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .seal {
+    display: grid; place-items: center; width: 32px; height: 32px;
+    background: var(--sho); color: var(--shiro);
+    font-family: var(--mincho); font-size: 19px; line-height: 1;
+  }
+  .brand-name { font-family: var(--mincho); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
+  .site-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9375rem; }
+
+  /* 見出し */
+  .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
+  .page-head h1 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
+    margin: 0 0 .4em;
+  }
+  .lede { max-width: var(--measure); color: var(--ju); margin: 0; }
+
+  .section { padding-block: clamp(32px, 6vw, 56px); }
+  .section h2 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.3rem, 3.4vw, 1.75rem); line-height: 1.5;
+    margin: 0 0 .8em; padding-bottom: .35em; border-bottom: 2px solid var(--sho);
+  }
+  .section h3 {
+    font-family: var(--mincho); font-weight: 700;
+    font-size: 1.125rem; margin: 2em 0 .5em;
+  }
+  .section p, .section li { max-width: var(--measure); }
+
+  /* 年表 */
+  .log { list-style: none; margin: 0; padding: 0; }
+  .log > li {
+    position: relative; padding-left: 26px; padding-bottom: 28px;
+    border-left: 1px solid var(--sei);
+  }
+  .log > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .log > li::before {
+    content: ""; position: absolute; left: -5px; top: .62em;
+    width: 9px; height: 9px; background: var(--sho);
+  }
+  .log time {
+    display: block; font-family: var(--code); font-size: .8125rem;
+    color: var(--ju); letter-spacing: .02em;
+  }
+  .log h3 { margin: .15em 0 .35em; font-size: 1.0625rem; }
+  .log p { margin: 0 0 .5em; }
+  .log .hash {
+    font-family: var(--code); font-size: .8125rem; color: var(--tan);
+  }
+
+  /* 表 */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; min-width: 30em; }
+  caption { text-align: left; color: var(--ju); font-size: .875rem; padding-bottom: .5em; }
+  th, td { border-bottom: 1px solid var(--sei); padding: .5em .7em; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--sho); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--code); white-space: nowrap; }
+
+  /* 補足の囲み */
+  .note {
+    background: var(--shiro); border-left: 3px solid var(--sho);
+    padding: 14px 18px; margin: 1.2em 0; max-width: var(--measure);
+  }
+  .note p { margin: 0 0 .5em; }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+
+  code {
+    font-family: var(--code); font-size: .9em;
+    background: var(--shiro); padding: .1em .35em; border: 1px solid var(--sei);
+  }
+  pre {
+    font-family: var(--code); font-size: .875rem; line-height: 1.7;
+    background: var(--shiro); border: 1px solid var(--sei);
+    padding: 14px 16px; overflow-x: auto; margin: 1em 0;
+  }
+  pre code { background: none; border: 0; padding: 0; }
+
+  .site-footer {
+    border-top: 1px solid var(--sei); background: var(--shiro);
+    padding-block: 28px; margin-top: clamp(40px, 8vw, 72px);
+    color: var(--ju); font-size: .9375rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="sumi トップ">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <nav class="site-nav" aria-label="ページ内">
+      <a href="../">トップ</a>
+      <a href="#day1">実装</a>
+      <a href="#bench">性能比較</a>
+      <a href="#validation">実世界検証</a>
+      <a href="https://github.com/champierre/sumi">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap page-head">
+  <h1>開発日誌</h1>
+  <p class="lede">
+    PDF の色指定だけを書き換えて白黒にする sumi を、どう作り、どう確かめてきたかの記録です。
+    うまくいかなかったことと、その原因も残しています。
+  </p>
+</div>
+
+<section class="section" id="day1" aria-labelledby="day1-title">
+  <div class="wrap">
+    <h2 id="day1-title">1 日目 — 実装と公開</h2>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-09-11T15:53">2026-09-11 15:53</time>
+        <h3>ライブラリと CLI を実装</h3>
+        <p>
+          38 ファイル 8,427 行。ページを画像化せず、コンテンツストリームの色演算子だけを
+          書き換える方針を採りました。PDF のパーサは自前実装をやめて
+          <code>lopdf</code> を使い、字句解析と色変換だけを自前で持っています。
+          incremental update、xref stream、object stream、壊れた xref の修復を
+          最初から扱えるようにするためです。
+        </p>
+        <p class="hash">7f4b545</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T16:11">2026-09-11 16:11</time>
+        <h3>MIT ライセンスと CI</h3>
+        <p>
+          依存クレートをすべて MIT / Apache-2.0 / BSD / Zlib 系で揃え、
+          AGPL の Ghostscript に依存しない構成にしました。
+          GitHub Actions で CI とリリースを用意しています。
+        </p>
+        <p class="hash">f895ad5</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T16:15">2026-09-11 16:15</time>
+        <h3>ランディングページを公開</h3>
+        <p>
+          GitHub Pages に載せるページを追加し、デプロイのワークフローも用意しました。
+          ページの色は墨の五彩だけに絞り、色が付いているのは変換前の書類だけ、という作りにしています。
+        </p>
+        <p class="hash">1be9238 / 916a583</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T16:18">2026-09-11 16:18</time>
+        <h3>変換例の追加と clippy 対応</h3>
+        <p>
+          Wikimedia Commons のパブリックドメイン PDF を変換した例を README に載せました。
+          新しい Rust の clippy が指摘した箇所もあわせて直しています。
+        </p>
+        <p class="hash">b8c5e2e / 6a944dd</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="bench" aria-labelledby="bench-title">
+  <div class="wrap">
+    <h2 id="bench-title">2 日目（夜）— Ghostscript との比較</h2>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-09-11T22:16">2026-09-11 22:16</time>
+        <h3>実行時間とメモリを計測</h3>
+        <p>
+          同じ PDF をグレースケールに変換し、Ghostscript と比べました。
+          計測に使った PDF は README とランディングページからリンクし、
+          誰でも同じ条件で追試できるようにしています。
+        </p>
+        <p class="hash">0a9ec6b / f680218 / b4bf2da</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T23:05">2026-09-11 23:05</time>
+        <h3>Linux でも計測して 2 台分を掲載</h3>
+        <p>
+          Mac（Apple M1 Pro）に加えて Linux（AMD Ryzen 7 6800H）でも計測し、
+          搭載メモリも記録しました。1 台の数字だけで速いと言わないためです。
+        </p>
+        <p class="hash">4da0d1c / ab3371d</p>
+      </li>
+    </ol>
+
+    <div class="scroll">
+      <table>
+        <caption>実行時間の比較（Mac、Apple M1 Pro、Ghostscript 10.05.1）</caption>
+        <thead>
+          <tr><th>入力</th><th class="num">ページ</th><th class="num">sumi</th><th class="num">Ghostscript</th><th class="num">速度比</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>請求書（Chrome、0.34 MB）</td><td class="num">2</td><td class="num">20 ms</td><td class="num">150 ms</td><td class="num">7.5 倍</td></tr>
+          <tr><td>請求書 50 ページ（Chrome、1.0 MB）</td><td class="num">50</td><td class="num">59 ms</td><td class="num">2,441 ms</td><td class="num">41.2 倍</td></tr>
+          <tr><td>インフォグラフィック（Adobe、0.30 MB）</td><td class="num">1</td><td class="num">32 ms</td><td class="num">175 ms</td><td class="num">5.5 倍</td></tr>
+          <tr><td>ポスター（cairo、5.9 MB）</td><td class="num">1</td><td class="num">511 ms</td><td class="num">1,201 ms</td><td class="num">2.4 倍</td></tr>
+          <tr><td>地図（Aspose、6.7 MB）</td><td class="num">1</td><td class="num">1,371 ms</td><td class="num">3,181 ms</td><td class="num">2.3 倍</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="validation" aria-labelledby="validation-title">
+  <div class="wrap">
+    <h2 id="validation-title">3 日目 — 実世界 PDF 1008 件による検証</h2>
+
+    <p>
+      「どんな PDF なら安全に sumi へ渡せるか」を、実物の PDF を大量に変換して確かめる作業です。
+      手で選んだ数件ではなく、実世界の分布に近いものを集めて自動で測ります。
+    </p>
+
+    <h3>集めかた</h3>
+    <p>
+      Wikimedia Commons から 20 の検索軸（請求書、報告書、プレゼン、地図、論文、図表など）で
+      約 55 件ずつ均等に集め、Chrome で生成した PDF と既存の fixture を加えました。
+      合計 1008 件・3.66 GB、取得失敗はゼロです。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>コーパスの内訳</caption>
+        <thead><tr><th>項目</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>検証対象</td><td>1008 件（3.66 GB）</td></tr>
+          <tr><td>出所</td><td>Wikimedia 1000 件 / Chrome 生成 4 件 / fixtures 4 件</td></tr>
+          <tr><td>サイズ</td><td>中央値 1.85 MB、最大 19.32 MB</td></tr>
+          <tr><td>ライセンス</td><td>パブリックドメイン 441、CC BY-SA 4.0 339、CC BY 4.0 100、CC BY-SA 3.0 72、CC0 29</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="label">つまずき: 取得の 7 割が失敗した</span>
+      <p>
+        最初は 8 並列でダウンロードして、40 件中 29 件が <code>HTTP 429</code> で失敗しました。
+        逐次に落として 1 件ごとに 0.4 秒空け、429 なら待って再試行する形に変えたところ、
+        1000 件すべて取得できました。
+      </p>
+    </div>
+
+    <h3>測る指標</h3>
+    <ul>
+      <li><strong>変換成功率</strong> — CLI の終了コード（0 成功 / 3 不正な PDF / 4 未対応・暗号化 / 5 入出力 / 6 時間切れ）</li>
+      <li><strong>色残り</strong> — 出力を 150dpi で描画し、RGB の最大と最小の差が 3 を超える画素を数える</li>
+      <li><strong>表示崩れ</strong> — インクのある位置が動いていないか</li>
+      <li><strong>テキスト保持</strong> — <code>pdftotext</code> の抽出結果が変換前後で一致するか</li>
+    </ul>
+
+    <div class="note">
+      <span class="label">つまずき: 輝度差で「崩れ」を測ると CMYK 文書が全滅する</span>
+      <p>
+        最初は変換前後の輝度差で崩れを測りました。ところが CMYK の fixture が
+        崩れ 0.0206 と出ます。調べると、ずれた画素は輝度 128 → 178 と
+        <em>明るくなる</em>方向で、最大差は 50 でした。
+        これは仕様書にある「CMYK は簡易式を使うため ICC 管理より明るくなる」
+        （シアン 100% は 0.70、poppler は約 0.5 ＝ 255 換算で約 51）と一致します。
+      </p>
+      <p>
+        色を変えるのが仕事のツールを輝度差で測るのが誤りでした。
+        インクのある位置（輝度 200 未満の画素）が動いたかで測る方式に作り直し、
+        さらに増減を分けました。monochrome で薄い色が白に飛ぶのは仕様どおりなので
+        「消えた」側に、塗り潰しや黒化は「増えた」側に出ます。
+        崩れとして扱うのは増えた側だけです。これで monochrome の誤検出が
+        <strong>39.7% から 0%</strong> になりました。
+      </p>
+    </div>
+
+    <div class="note">
+      <span class="label">つまずき: 閾値の際にある明るい色を誤検出した</span>
+      <p>
+        grayscale で 1 件だけインクが 17% 消えました。調べると彩度 186 の黄緑
+        （R=167 G=215 B=29）で、仕様の係数で計算すると
+        167×0.30 + 215×0.59 + 29×0.11 = <strong>180</strong>。実測の輝度 180 と完全に一致します。
+        明るい黄緑が明るいグレーになっただけで、私が決めた閾値 200 のすぐ際にあったのが原因でした。
+        閾値をまたいだうえで 25 以上動いた画素だけを数えるようにして解消しています。
+      </p>
+    </div>
+
+    <h3>68 件での試走結果</h3>
+    <div class="scroll">
+      <table>
+        <caption>指標を直したあとの試走（grayscale / monochrome）</caption>
+        <thead><tr><th>指標</th><th class="num">grayscale</th><th class="num">monochrome</th></tr></thead>
+        <tbody>
+          <tr><td>変換成功</td><td class="num">68 / 68</td><td class="num">68 / 68</td></tr>
+          <tr><td>色残りなし</td><td class="num">64 / 68</td><td class="num">64 / 68</td></tr>
+          <tr><td>表示崩れなし</td><td class="num">68 / 68</td><td class="num">68 / 68</td></tr>
+          <tr><td>テキスト保持</td><td class="num">68 / 68</td><td class="num">68 / 68</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      色残りの 4 件はすべて JPEG 2000（JPXDecode）の未対応警告と対応していました。
+      仕様書の制限事項どおりで、不具合ではありません。
+    </p>
+
+    <h3>いま進めていること</h3>
+    <p>
+      1008 件の本番検証を実行中です。当初は grayscale と monochrome を同時に走らせましたが、
+      6 コアを 6 ワーカーで奪い合って 1 モードあたり約 4 件/分まで落ちたため、
+      いったん止めて 1 モードずつ流す形に変えました。現在は約 8 件/分で進んでいます。
+    </p>
+
+    <div class="note">
+      <span class="label">見落とし: 進捗が見えない作りだった</span>
+      <p>
+        件数を出す処理は書いていたのに、標準出力がパイプ越しにバッファされて届かず、
+        結果ファイルも完了時にしか書かれない設計でした。
+        30 分走らせても「どこまで進んだか」を答えられない状態だったので、
+        10 件ごとに件数・速度・残り時間を即時出力し、
+        <code>validation/progress-&lt;mode&gt;.txt</code> にも書くよう直しました。
+      </p>
+    </div>
+
+    <div class="note">
+      <span class="label">未対処: 大きすぎる画像が測定から漏れる</span>
+      <p>
+        検証ログに <code>DecompressionBombWarning</code> が出ています。
+        画像処理ライブラリが 8,900 万画素を超える画像のデコードを拒否するため、
+        大判のポスターや地図を 150dpi で描画したページは測定がスキップされます。
+        何件が影響を受けたかを記録していないのがハーネス側の不備で、
+        完走後に対処方針を決めます。
+      </p>
+    </div>
+
+    <h3>実行のしかた</h3>
+<pre><code>python3 validation/fetch_corpus.py --count 1000
+cargo build --release
+python3 validation/validate.py --mode grayscale
+python3 validation/validate.py --mode monochrome</code></pre>
+    <p>
+      コーパスと結果は容量が大きいので git 管理外にしています。
+      手順と指標の詳細は <code>validation/README.md</code> にまとめました。
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>sumi — PDF の色をグレースケール・白黒 2 値に変換する Rust 製ライブラリ兼 CLI。MIT ライセンス。</p>
+  </div>
+</footer>
+
+</body>
+</html>

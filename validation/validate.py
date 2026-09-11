@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 import numpy as np
 from PIL import Image
@@ -219,14 +220,25 @@ def main():
         entries = entries[:args.limit]
     print(f"== {len(entries)} 件を {args.mode} で検証（並列 {args.jobs}）==")
 
+    # 進捗は別ファイルにも書く。標準出力はパイプ越しだとバッファされて
+    # 届かないことがあり、長い実行では進み具合が分からなくなるため。
+    progress_path = HERE / f"progress-{args.mode}.txt"
+    started = time.time()
+
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
         futures = [pool.submit(check_one, e, args.mode, args.timeout) for e in entries]
         for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
             results.append(future.result())
-            if i % 25 == 0 or i == len(entries):
+            if i % 10 == 0 or i == len(entries):
                 ok = sum(1 for r in results if r.get("status") == "converted")
-                print(f"  {i}/{len(entries)}（変換成功 {ok}）")
+                elapsed = time.time() - started
+                rate = i / elapsed * 60
+                left = (len(entries) - i) / rate if rate else 0
+                line = (f"{i}/{len(entries)}（変換成功 {ok}）"
+                        f" {rate:.1f}件/分 残り約{left:.0f}分")
+                print(f"  {line}", flush=True)
+                progress_path.write_text(line + "\n", encoding="utf-8")
 
     out_path = pathlib.Path(args.out) if args.out else HERE / f"results-{args.mode}.json"
     out_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
