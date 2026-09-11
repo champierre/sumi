@@ -502,13 +502,13 @@ Q</code></pre>
   <section class="section" id="benchmark" aria-labelledby="benchmark-title">
     <div class="wrap">
       <h2 id="benchmark-title">Ghostscript との比較</h2>
-      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。</p>
+      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。PDF の名前から、計測に使った PDF を開けます。</p>
 
       <h3 class="bench-title">実行時間</h3>
       <p class="bench-lede">棒の長さは、PDF ごとに Ghostscript の時間を基準にしています。右の数字は、sumi が何倍速かったかです。</p>
       <ul class="bench">
         <li class="bench-row">
-          <p class="bench-name">請求書<span>2 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>20 ms</b></span><div class="bar-fill" style="--w: 13.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>150 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -516,7 +516,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 150 ms。</span>7.5 倍</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">請求書<span>50 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>59 ms</b></span><div class="bar-fill" style="--w: 2.4%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>2,441 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -524,7 +524,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、Ghostscript 2,441 ms。</span>41.2 倍</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">インフォグラフィック<span>1 ページ、Adobe PDF Library</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、Adobe PDF Library</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>32 ms</b></span><div class="bar-fill" style="--w: 18.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>175 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -532,7 +532,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 32 ms、Ghostscript 175 ms。</span>5.5 倍</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">NASA ファクトシート<span>2 ページ、写真あり</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、写真あり</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>55 ms</b></span><div class="bar-fill" style="--w: 6.9%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>794 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -540,7 +540,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 55 ms、Ghostscript 794 ms。</span>14.4 倍</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">ポスター<span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>511 ms</b></span><div class="bar-fill" style="--w: 42.5%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>1,201 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -548,7 +548,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 511 ms、Ghostscript 1,201 ms。</span>2.4 倍</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">地図<span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>1,371 ms</b></span><div class="bar-fill" style="--w: 43.1%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>3,181 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -561,7 +561,7 @@ Q</code></pre>
       <p class="bench-lede">プロセスの最大常駐メモリです。棒の長さは、PDF ごとに多く使ったほうを基準にしています。右の数字は、sumi が Ghostscript の何 % のメモリを使ったかです。</p>
       <ul class="bench">
         <li class="bench-row">
-          <p class="bench-name">請求書<span>2 ページ、0.34 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、0.34 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>9.9 MB</b></span><div class="bar-fill" style="--w: 32.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>30.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -569,7 +569,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 9.9 MB、Ghostscript 30.7 MB。sumi は Ghostscript の</span>32%</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">請求書<span>50 ページ、1.0 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、1.0 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>20.6 MB</b></span><div class="bar-fill" style="--w: 24%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>86.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -577,7 +577,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 20.6 MB、Ghostscript 86.0 MB。sumi は Ghostscript の</span>24%</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">インフォグラフィック<span>1 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>6.2 MB</b></span><div class="bar-fill" style="--w: 22.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>28.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -585,7 +585,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB、Ghostscript 28.0 MB。sumi は Ghostscript の</span>22%</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">NASA ファクトシート<span>2 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>8.1 MB</b></span><div class="bar-fill" style="--w: 18.9%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>43.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -593,7 +593,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 8.1 MB、Ghostscript 43.0 MB。sumi は Ghostscript の</span>19%</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">ポスター<span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>34.2 MB</b></span><div class="bar-fill" style="--w: 90.6%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>37.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
@@ -601,7 +601,7 @@ Q</code></pre>
           <p class="bench-ratio"><span class="visually-hidden">sumi 34.2 MB、Ghostscript 37.7 MB。sumi は Ghostscript の</span>91%</p>
         </li>
         <li class="bench-row">
-          <p class="bench-name">地図<span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>85.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>32.5 MB</b></span><div class="bar-fill" style="--w: 37.9%"></div></div>

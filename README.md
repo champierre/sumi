@@ -37,18 +37,18 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 ## Ghostscript との比較
 
-同じ PDF をグレースケールに変換し、Ghostscript と実行時間、メモリ使用量、出力を比べました。
+同じ PDF をグレースケールに変換し、Ghostscript と実行時間、メモリ使用量、出力を比べました。表の入力名のリンクから、計測に使った PDF を開けます。
 
 ### 実行時間
 
 | 入力 | ページ | sumi | Ghostscript | 速度比 |
 |---|---:|---:|---:|---:|
-| 請求書（Chrome、0.34 MB） | 2 | 20 ms | 150 ms | 7.5 倍 |
-| 請求書 50 ページ（Chrome、1.0 MB） | 50 | 59 ms | 2,441 ms | 41.2 倍 |
-| インフォグラフィック（Adobe、0.30 MB） | 1 | 32 ms | 175 ms | 5.5 倍 |
-| NASA ファクトシート（Acrobat Distiller、0.30 MB） | 2 | 55 ms | 794 ms | 14.4 倍 |
-| ポスター（cairo、5.9 MB） | 1 | 511 ms | 1,201 ms | 2.4 倍 |
-| 地図（Aspose、6.7 MB） | 1 | 1,371 ms | 3,181 ms | 2.3 倍 |
+| [請求書](fixtures/chrome_invoice.pdf)（Chrome、0.34 MB） | 2 | 20 ms | 150 ms | 7.5 倍 |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（Chrome、1.0 MB） | 50 | 59 ms | 2,441 ms | 41.2 倍 |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（Adobe、0.30 MB） | 1 | 32 ms | 175 ms | 5.5 倍 |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（Acrobat Distiller、0.30 MB） | 2 | 55 ms | 794 ms | 14.4 倍 |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 511 ms | 1,201 ms | 2.4 倍 |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,371 ms | 3,181 ms | 2.3 倍 |
 
 10 回実行した中央値です。すべての PDF で sumi のほうが速く、差は 2.3〜41.2 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
 
@@ -56,12 +56,12 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 | 入力 | sumi | Ghostscript | sumi / Ghostscript |
 |---|---:|---:|---:|
-| 請求書（0.34 MB） | 9.9 MB | 30.7 MB | 32% |
-| 請求書 50 ページ（1.0 MB） | 20.6 MB | 86.0 MB | 24% |
-| インフォグラフィック（0.30 MB） | 6.2 MB | 28.0 MB | 22% |
-| NASA ファクトシート（0.30 MB） | 8.1 MB | 43.0 MB | 19% |
-| ポスター（5.9 MB） | 34.2 MB | 37.7 MB | 91% |
-| 地図（6.7 MB） | 85.8 MB | 32.5 MB | 264% |
+| [請求書](fixtures/chrome_invoice.pdf)（0.34 MB） | 9.9 MB | 30.7 MB | 32% |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（1.0 MB） | 20.6 MB | 86.0 MB | 24% |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（0.30 MB） | 6.2 MB | 28.0 MB | 22% |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（0.30 MB） | 8.1 MB | 43.0 MB | 19% |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 34.2 MB | 37.7 MB | 91% |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 85.8 MB | 32.5 MB | 264% |
 
 プロセスの最大常駐メモリ（maximum resident set size）の、10 回実行した中央値です。
 
@@ -73,12 +73,12 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 | 入力 | 元の PDF | sumi | Ghostscript |
 |---|---:|---:|---:|
-| 請求書 | 0.34 MB | 0.31 MB | 0.18 MB |
-| 請求書 50 ページ | 1.03 MB | 0.98 MB | 1.13 MB |
-| インフォグラフィック | 0.30 MB | 0.30 MB | 0.26 MB |
-| NASA ファクトシート | 0.30 MB | 0.84 MB | 0.51 MB |
-| ポスター | 5.90 MB | 5.90 MB | 4.51 MB |
-| 地図 | 6.70 MB | 7.11 MB | 7.20 MB |
+| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.31 MB | 0.18 MB |
+| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.98 MB | 1.13 MB |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.30 MB | 0.26 MB |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0.30 MB | 0.84 MB | 0.51 MB |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 5.90 MB | 5.90 MB | 4.51 MB |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.11 MB | 7.20 MB |
 
 - **出力サイズ**: 写真を含む NASA ファクトシートやポスターは、Ghostscript のほうが小さくなりました。sumi は JPEG 画像を可逆圧縮（Flate）で保存し直し、Ghostscript はフォントや画像を圧縮し直すためです。
 - **見た目**: 両方の出力をレンダリングして比べたところ、見た目はほぼ同じで、どちらにも色は残っていませんでした。
@@ -102,23 +102,24 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 - **比べていないもの**: Ghostscript にはベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。
 - **入力**:
 
-  | 入力 | 出典 |
-  |---|---|
-  | 請求書 | `fixtures/chrome_invoice.pdf` |
-  | 請求書 50 ページ | `fixtures/src/invoice.html` を 25 回繰り返して Chrome で PDF にしたもの |
-  | インフォグラフィック | [Equal Pay Infographic](https://commons.wikimedia.org/wiki/File:Equal_Pay_Infographic.pdf)（パブリックドメイン） |
-  | NASA ファクトシート | [SLS Fact Sheet](https://commons.wikimedia.org/wiki/File:0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_(656622902519).pdf)（パブリックドメイン） |
-  | ポスター | [Best Case Scenarios for Copyright - poster](https://commons.wikimedia.org/wiki/File:Best_Case_Scenarios_for_Copyright_-_poster.pdf)（CC0） |
-  | 地図 | [Political map of Europe](https://commons.wikimedia.org/wiki/File:Political_map_of_Europe.pdf)（パブリックドメイン） |
+  | 入力 | PDF | 出典 |
+  |---|---|---|
+  | 請求書 | [chrome_invoice.pdf](fixtures/chrome_invoice.pdf) | [fixtures/src/invoice.html](fixtures/src/invoice.html) を Chrome で PDF にしたもの |
+  | 請求書 50 ページ | [invoice-50pages.pdf](bench/invoice-50pages.pdf) | `fixtures/src/invoice.html` を 25 回繰り返して Chrome で PDF にしたもの |
+  | インフォグラフィック | [Equal_Pay_Infographic.pdf](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | [Equal Pay Infographic](https://commons.wikimedia.org/wiki/File:Equal_Pay_Infographic.pdf)（パブリックドメイン） |
+  | NASA ファクトシート | [0080_SLS_Fact_Sheet_…pdf](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | [SLS Fact Sheet](https://commons.wikimedia.org/wiki/File:0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_(656622902519).pdf)（パブリックドメイン） |
+  | ポスター | [Best_Case_Scenarios_for_Copyright_-_poster.pdf](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | [Best Case Scenarios for Copyright - poster](https://commons.wikimedia.org/wiki/File:Best_Case_Scenarios_for_Copyright_-_poster.pdf)（CC0） |
+  | 地図 | [Political_map_of_Europe.pdf](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | [Political map of Europe](https://commons.wikimedia.org/wiki/File:Political_map_of_Europe.pdf)（パブリックドメイン） |
 
 - **再現手順**:
 
   ```bash
   cargo build --release
-  python3 bench/fetch.py        # 入力 PDF を Wikimedia Commons からダウンロード
-  python3 bench/make_batch.py   # 50 ページの請求書を作る（Google Chrome が必要）
+  python3 bench/fetch.py        # 入力 PDF を bench/inputs に用意（Wikimedia Commons からダウンロード）
   python3 bench/bench.py        # 計測。結果は bench/results.json
   ```
+
+  50 ページの請求書は、計測に使ったものを `bench/invoice-50pages.pdf` に置いています。作り直すときは `python3 bench/make_batch.py` を実行してください（Google Chrome が必要）。
 
 1 台のノート PC での計測なので、数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。Ghostscript の結果は、オプションによっても変わります。
 

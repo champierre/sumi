@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Download the benchmark input PDFs from Wikimedia Commons into bench/inputs/.
+"""Put the benchmark input PDFs into bench/inputs/.
 
-All files are public domain or CC0. Standard library only.
+The invoices are copied from the repository (the 50-page one is the file that was measured;
+make_batch.py rebuilds it). The rest are downloaded from Wikimedia Commons; all of them are
+public domain or CC0. Standard library only.
 """
 import json
 import pathlib
@@ -30,6 +32,7 @@ def get(url):
 def main():
     INPUTS.mkdir(exist_ok=True)
     shutil.copy(HERE.parent / "fixtures" / "chrome_invoice.pdf", INPUTS / "invoice.pdf")
+    shutil.copy(HERE / "invoice-50pages.pdf", INPUTS / "invoice-50pages.pdf")
     query = urllib.parse.urlencode({
         "action": "query",
         "titles": "|".join(COMMONS.values()),
