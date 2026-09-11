@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = ["crates/sumi-core", "crates/sumi-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.88"
+
+[workspace.dependencies]
+sumi-core = { path = "crates/sumi-core" }
+lopdf = { version = "0.45", default-features = false }
+flate2 = "1"
+zune-jpeg = "0.5"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

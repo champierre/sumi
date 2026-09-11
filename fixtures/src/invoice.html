@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>請求書</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+    margin: 0;
+    color: #222;
+    font-size: 13px;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 14mm 16mm;
+    position: relative;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .header-bar {
+    background: #1a4fbf;
+    color: #ffffff;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 4px;
+  }
+  .header-bar h1 {
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 4px;
+  }
+  .header-bar .meta {
+    text-align: right;
+    font-size: 12px;
+  }
+
+  .gradient-banner {
+    margin-top: 14px;
+    height: 46px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #ff512f 0%, #f09819 35%, #2193b0 70%, #6dd5ed 100%);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  .info-row {
+    margin-top: 18px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .company-block { font-size: 12px; line-height: 1.6; }
+  .company-block .name { font-size: 16px; font-weight: bold; }
+
+  .seal-wrap {
+    position: relative;
+    width: 260px;
+    height: 100px;
+    padding-right: 90px;
+  }
+  .seal-wrap img.seal {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    opacity: 0.92;
+  }
+
+  table.items {
+    width: 100%;
+    margin-top: 22px;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.items th {
+    background: #1a4fbf;
+    color: #fff;
+    padding: 8px 6px;
+    text-align: left;
+  }
+  table.items td {
+    padding: 7px 6px;
+    border-bottom: 1px solid #ccc;
+  }
+  table.items tr.row-gray { background: #e8e8e8; }
+  table.items tr.row-blue { background: #d6e8fb; }
+  table.items tr.row-yellow td { color: #f5c400; background: #ffffff; font-weight: bold; }
+  table.items td.num { text-align: right; }
+
+  .total-block {
+    margin-top: 16px;
+    text-align: right;
+    font-size: 15px;
+  }
+  .total-block .label { color: #222; margin-right: 10px; }
+  .total-block .amount {
+    color: #d21f1f;
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .logo-photo {
+    margin-top: 20px;
+    width: 300px;
+    height: 120px;
+    border: 1px solid #ccc;
+  }
+
+  .chart-wrap {
+    margin-top: 24px;
+  }
+  .chart-wrap h2 {
+    font-size: 14px;
+    border-left: 6px solid #1a4fbf;
+    padding-left: 8px;
+  }
+
+  .notes {
+    margin-top: 30px;
+    font-size: 11px;
+    color: #444;
+    line-height: 1.7;
+  }
+  .notes .highlight { color: #d21f1f; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header-bar">
+    <h1>請求書</h1>
+    <div class="meta">
+      請求書番号: INV-2026-0091<br>
+      発行日: 2026年9月11日
+    </div>
+  </div>
+
+  <div class="gradient-banner">
+    株式会社サミグラフィックス &mdash; いつもご利用ありがとうございます
+  </div>
+
+  <div class="info-row">
+    <div class="company-block">
+      株式会社テスト商会 御中<br>
+      〒100-0001 東京都千代田区千代田1-1<br>
+      ご担当: 山田 太郎 様
+    </div>
+    <div class="seal-wrap">
+      <div class="company-block" style="text-align:right;">
+        <span class="name">山田商事株式会社</span><br>
+        東京都渋谷区渋谷2-2-2<br>
+        TEL: 03-1234-5678
+      </div>
+      <img class="seal" src="seal.png" alt="社印">
+    </div>
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>品目</th>
+        <th>数量</th>
+        <th>単価</th>
+        <th>金額</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="row-gray">
+        <td>PDFグレースケール変換ライセンス</td>
+        <td class="num">1</td>
+        <td class="num">¥120,000</td>
+        <td class="num">¥120,000</td>
+      </tr>
+      <tr class="row-blue">
+        <td>サポート契約（年間）</td>
+        <td class="num">1</td>
+        <td class="num">¥60,000</td>
+        <td class="num">¥60,000</td>
+      </tr>
+      <tr class="row-gray">
+        <td>カスタム開発費</td>
+        <td class="num">20</td>
+        <td class="num">¥8,000</td>
+        <td class="num">¥160,000</td>
+      </tr>
+      <tr class="row-yellow">
+        <td>注意事項（黄色テキストのテスト行）</td>
+        <td class="num">1</td>
+        <td class="num">¥0</td>
+        <td class="num">¥0</td>
+      </tr>
+      <tr class="row-blue">
+        <td>出張費</td>
+        <td class="num">2</td>
+        <td class="num">¥15,000</td>
+        <td class="num">¥30,000</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="total-block">
+    <span class="label">合計金額（税込）</span>
+    <span class="amount">¥370,000</span>
+  </div>
+
+  <img class="logo-photo" src="logo.jpg" alt="logo">
+</div>
+
+<div class="page">
+  <div class="header-bar">
+    <h1>請求書</h1>
+    <div class="meta">
+      2ページ目 / 明細つづき
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <h2>月別売上グラフ</h2>
+    <svg width="480" height="220" viewBox="0 0 480 220" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="480" height="220" fill="#ffffff" stroke="#ccc"/>
+      <rect x="30" y="140" width="40" height="60" fill="#e63946"/>
+      <rect x="90" y="100" width="40" height="100" fill="#f1c40f"/>
+      <rect x="150" y="60"  width="40" height="140" fill="#2a9d8f"/>
+      <rect x="210" y="30"  width="40" height="170" fill="#1a4fbf"/>
+      <rect x="270" y="80"  width="40" height="120" fill="#9b5de5"/>
+      <rect x="330" y="50"  width="40" height="150" fill="#ff70a6"/>
+      <rect x="390" y="20"  width="40" height="180" fill="#43aa8b"/>
+      <line x1="20" y1="200" x2="460" y2="200" stroke="#333" stroke-width="2"/>
+      <text x="30" y="215" font-size="10" fill="#333">4月</text>
+      <text x="90" y="215" font-size="10" fill="#333">5月</text>
+      <text x="150" y="215" font-size="10" fill="#333">6月</text>
+      <text x="210" y="215" font-size="10" fill="#333">7月</text>
+      <text x="270" y="215" font-size="10" fill="#333">8月</text>
+      <text x="330" y="215" font-size="10" fill="#333">9月</text>
+      <text x="390" y="215" font-size="10" fill="#333">10月</text>
+    </svg>
+  </div>
+
+  <div class="notes">
+    <p>お支払期限は請求書発行日より <span class="highlight">30日以内</span> とさせていただきます。</p>
+    <p>お支払いは銀行振込にてお願いいたします。振込先は下記の通りです。</p>
+    <p>みずほ銀行 渋谷支店　普通　1234567　カ）ヤマダショウジ</p>
+    <p class="highlight">※本書はテスト用に生成されたフィクスチャです。実在の企業・団体とは一切関係ありません。</p>
+  </div>
+</div>
+
+</body>
+</html>

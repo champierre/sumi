@@ -1,0 +1,15 @@
+[package]
+name = "sumi-cli"
+description = "Command line tool to convert PDF colors to grayscale or monochrome"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "sumi"
+path = "src/main.rs"
+
+[dependencies]
+sumi-core.workspace = true
+clap.workspace = true
