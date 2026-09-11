@@ -1,4 +1,8 @@
 /target
 /bench/inputs
 /bench/outputs
+/validation/corpus
+/validation/corpus.json
+/validation/results-*.json
+/validation/synthetic_src
 .DS_Store
