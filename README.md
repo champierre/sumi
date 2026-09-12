@@ -45,12 +45,12 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 | 入力 | ページ | sumi | Ghostscript | 速度比 |
 |---|---:|---:|---:|---:|
-| [請求書](fixtures/chrome_invoice.pdf)（Chrome、0.34 MB） | 2 | 20 ms | 150 ms | 7.5 倍 |
-| [請求書 50 ページ](bench/invoice-50pages.pdf)（Chrome、1.0 MB） | 50 | 59 ms | 2,441 ms | 41.2 倍 |
-| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（Adobe、0.30 MB） | 1 | 32 ms | 175 ms | 5.5 倍 |
-| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（Acrobat Distiller、0.30 MB） | 2 | 55 ms | 794 ms | 14.4 倍 |
-| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 511 ms | 1,201 ms | 2.4 倍 |
-| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,371 ms | 3,181 ms | 2.3 倍 |
+| [請求書](fixtures/chrome_invoice.pdf)（Chrome、0.34 MB） | 2 | 21 ms | 154 ms | 7.3 倍 |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（Chrome、1.0 MB） | 50 | 63 ms | 2,562 ms | 40.7 倍 |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（Adobe、0.30 MB） | 1 | 33 ms | 178 ms | 5.4 倍 |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（Acrobat Distiller、0.30 MB） | 2 | 56 ms | 806 ms | 14.4 倍 |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 528 ms | 1,229 ms | 2.3 倍 |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,381 ms | 3,251 ms | 2.4 倍 |
 
 #### Linux（AMD Ryzen 7 6800H、Ghostscript 10.07.1）
 
@@ -63,7 +63,7 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 | [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 595 ms | 1,181 ms | 2.0 倍 |
 | [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,587 ms | 3,289 ms | 2.1 倍 |
 
-10 回実行した中央値です。どちらの環境でも、すべての PDF で sumi のほうが速く、差は Mac で 2.3〜41.2 倍、Linux で 2.0〜37.6 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
+10 回実行した中央値です。どちらの環境でも、すべての PDF で sumi のほうが速く、差は Mac で 2.3〜40.7 倍、Linux で 2.0〜37.6 倍でした。Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えるので、ページ数の多い帳票ほど差が開きます。
 
 ### メモリ使用量
 
@@ -71,12 +71,12 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 | 入力 | sumi | Ghostscript | sumi / Ghostscript |
 |---|---:|---:|---:|
-| [請求書](fixtures/chrome_invoice.pdf)（0.34 MB） | 9.9 MB | 30.7 MB | 32% |
-| [請求書 50 ページ](bench/invoice-50pages.pdf)（1.0 MB） | 20.6 MB | 86.0 MB | 24% |
-| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（0.30 MB） | 6.2 MB | 28.0 MB | 22% |
-| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（0.30 MB） | 8.1 MB | 43.0 MB | 19% |
-| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 34.2 MB | 37.7 MB | 91% |
-| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 85.8 MB | 32.5 MB | 264% |
+| [請求書](fixtures/chrome_invoice.pdf)（0.34 MB） | 9.9 MB | 31.1 MB | 32% |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（1.0 MB） | 20.8 MB | 86.5 MB | 24% |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（0.30 MB） | 6.3 MB | 28.0 MB | 22% |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（0.30 MB） | 9.8 MB | 43.2 MB | 23% |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 34.8 MB | 38.9 MB | 89% |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 87.6 MB | 35.8 MB | 245% |
 
 #### Linux（AMD Ryzen 7 6800H）
 
@@ -91,9 +91,9 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 プロセスの最大常駐メモリ（maximum resident set size）の、10 回実行した中央値です。
 
-- どちらの環境でも 6 件中 5 件で sumi のほうが少なく、Ghostscript の 19〜91%（Mac）、24〜85%（Linux）で済みました。1 MB 前後までの PDF では 19〜32%（Mac）、24〜33%（Linux）です。
-- sumi は PDF 全体をメモリに読み込んで変換するので、ファイルが大きいほどメモリを多く使います。6.7 MB の地図では、sumi のほうが多く使いました（Mac で 85.8 MB と 32.5 MB、Linux で 72.5 MB と 32.8 MB）。
-- Ghostscript は 1〜2 ページの PDF では 28〜43 MB（Mac）、29〜37 MB（Linux）でしたが、50 ページの請求書では 86.0 MB（Mac）、78.8 MB（Linux）を使いました。
+- どちらの環境でも 6 件中 5 件で sumi のほうが少なく、Ghostscript の 22〜89%（Mac）、24〜85%（Linux）で済みました。1 MB 前後までの PDF では 22〜32%（Mac）、24〜33%（Linux）です。
+- sumi は PDF 全体をメモリに読み込んで変換するので、ファイルが大きいほどメモリを多く使います。6.7 MB の地図では、sumi のほうが多く使いました（Mac で 87.6 MB と 35.8 MB、Linux で 72.5 MB と 32.8 MB）。
+- Ghostscript は 1〜2 ページの PDF では 28〜43 MB（Mac）、29〜37 MB（Linux）でしたが、50 ページの請求書では 86.5 MB（Mac）、78.8 MB（Linux）を使いました。
 
 ### 出力
 
@@ -114,7 +114,7 @@ sumi の出力は、Mac と Linux で同じサイズでした。
 
 ### 比較方法
 
-- **環境**: 2026 年 9 月 11 日に、次の 2 台で計測しました。sumi はどちらも 0.1.0（`cargo build --release`）です。
+- **環境**: 次の 2 台で計測しました。Mac は 2026 年 9 月 13 日（mutool との比較と同じ実行）、Linux は 2026 年 9 月 11 日です。sumi はどちらも 0.1.0（`cargo build --release`）です。
 
   | | Mac | Linux |
   |---|---|---|
@@ -157,6 +157,144 @@ sumi の出力は、Mac と Linux で同じサイズでした。
   50 ページの請求書は、計測に使ったものを `bench/invoice-50pages.pdf` に置いています。Mac と Linux のどちらも、このファイルで計測しました。作り直すときは `python3 bench/make_batch.py` を実行してください（Google Chrome が必要）。
 
 2 台での計測なので、数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。Ghostscript の結果は、バージョンやオプションによっても変わります。
+
+## mutool recolor との比較
+
+[MuPDF](https://mupdf.com/) の `mutool recolor` は、sumi と**同じ方式**の実装です。ページを画像化せず、PDF の色指定だけを書き換えます（MuPDF の `source/pdf/pdf-recolor.c`）。PDF を解釈して描き直す Ghostscript より、比較相手としては近い位置にあります。
+
+Mac（Apple M1 Pro）で、Ghostscript との比較と同じ入力・同じ方法で計測しました。
+
+### 方式とライセンス
+
+| | sumi | mutool recolor | Ghostscript |
+|---|---|---|---|
+| 方式 | 色指定を書き換え | 色指定を書き換え | PDF を再生成 |
+| ライセンス | **MIT** | AGPL-3.0-or-later | AGPL-3.0-or-later |
+| グレースケール | あり | あり | あり |
+| 白黒 2 値（ベクターのまま） | あり | なし | なし |
+
+`mutool recolor` の変換先は `gray` / `rgb` / `cmyk` の 3 つで、白黒 2 値はありません。そのため、比べたのはグレースケール変換だけです。
+
+### Shading を含む PDF は既定の設定では変換できない
+
+`mutool recolor` 1.28.3 は、**Shading（グラデーション）を 1 つでも含む PDF をセグメンテーション違反で落とします。** メッセージは出ず、出力ファイルもできないので、終了コードを見ないと成功と区別がつきません。
+
+| 入力 | Shading の数 | sumi | mutool recolor |
+|---|---:|---|---|
+| [請求書](fixtures/chrome_invoice.pdf) | 1 | 変換できる | **落ちる**（SIGSEGV） |
+| [請求書 50 ページ](bench/invoice-50pages.pdf) | 25 | 変換できる | **落ちる**（SIGSEGV） |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0 | 変換できる | 変換できる |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0 | 変換できる | 変換できる |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 1 | 変換できる | **落ちる**（SIGSEGV） |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 0 | 変換できる | 変換できる |
+
+原因は MuPDF 側のスタックの使い方です。`source/pdf/pdf-shade-recolor.c` の `fz_recolor_shade_type1` が
+
+```c
+#define FUNSEGS 256
+float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];   /* 257 * 257 * 32 * 4 = 8,454,272 バイト */
+```
+
+という 8.06 MB の配列をスタックに置いており、`pdf_recolor_shade` の 1 フレームが 8,455,008 バイトになります。macOS のメインスレッドのスタックは 8,372,224 バイト（`ulimit -s` 8176 KB）なので、**関数に入った時点で必ず溢れます。** 確保は関数の入口で無条件に行われるため、この配列を使う `ShadingType 1` に限らず、あらゆる Shading で落ちます。
+
+Shading を含まない PDF では起きません。**回避するにはスタックを広げます。**
+
+```bash
+( ulimit -s 65520 && mutool recolor -c gray -o output.pdf input.pdf )
+```
+
+Wikimedia Commons から集めた実 PDF 230 本で確かめたところ、次のようになりました。
+
+| 結果 | 既定のスタック | `ulimit -s 65520` |
+|---|---:|---:|
+| 完走（5 秒以内） | 180 | 214 |
+| 完走（5 秒超） | 14 | 15 |
+| セグメンテーション違反 | **35** | **0** |
+| 60 秒で終わらず | 1 | 1 |
+| **出力ができた** | **194（84.3%）** | **229（99.6%）** |
+
+落ちた 35 本はすべて Shading を含んでおり、Shading を含まない 195 本は 1 本も落ちませんでした（例外なし）。また 35 本すべてが、スタックを広げるだけで正常終了しました。スタックを広げても直らないクラッシュは見つかっていません。
+
+以降の実行時間・メモリ・出力の比較は、`mutool recolor` を `ulimit -s 65520` の下で実行し、6 件すべてを完走させたうえで並べています。
+
+MuPDF 1.28.3 と、2026 年 9 月 12 日時点の `master` の両方に当てはまります。調べた範囲では [Artifex の Bugzilla](https://bugs.ghostscript.com/) に該当する報告はなく、開発元への報告を準備しています。調査の記録は [docs/mutool-comparison-notes.md](docs/mutool-comparison-notes.md) にあります。
+
+### 実行時間
+
+| 入力 | ページ | sumi | mutool recolor | 速度比 |
+|---|---:|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf)（Chrome、0.34 MB） | 2 | 21 ms | 182 ms | 8.7 倍 |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（Chrome、1.0 MB） | 50 | 63 ms | 2,078 ms | 33.0 倍 |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（Adobe、0.30 MB） | 1 | 33 ms | 55 ms | 1.7 倍 |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（Acrobat Distiller、0.30 MB） | 2 | 56 ms | 96 ms | 1.7 倍 |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（cairo、5.9 MB） | 1 | 528 ms | 904 ms | 1.7 倍 |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（Aspose、6.7 MB） | 1 | 1,381 ms | 1,902 ms | 1.4 倍 |
+
+10 回実行した中央値です。6 件すべてで sumi のほうが速く、差は 1.4〜33.0 倍でした。Ghostscript との差（2.3〜40.7 倍）より小さく、方式が同じであることが数字にも出ています。
+
+差が最も大きいのは 50 ページの請求書です。同じ 1 ページを 25 回繰り返した PDF なので、ページごとの処理コストがそのまま出ます。
+
+### メモリ使用量
+
+| 入力 | sumi | mutool recolor | sumi / mutool |
+|---|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf)（0.34 MB） | 9.9 MB | 29.6 MB | 33% |
+| [請求書 50 ページ](bench/invoice-50pages.pdf)（1.0 MB） | 20.8 MB | 441.3 MB | 5% |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf)（0.30 MB） | 6.3 MB | 7.1 MB | 89% |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf)（0.30 MB） | 9.8 MB | 17.4 MB | 56% |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf)（5.9 MB） | 34.8 MB | 54.7 MB | 64% |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf)（6.7 MB） | 87.6 MB | 69.5 MB | 126% |
+
+プロセスの最大常駐メモリの、10 回実行した中央値です。
+
+- 6 件中 5 件で sumi のほうが少なく済みました。
+- 差が際立つのは 50 ページの請求書で、**sumi 20.8 MB に対し mutool は 441.3 MB** です。sumi の 21 倍にあたります。
+- sumi は PDF 全体をメモリに読み込むので、6.7 MB の地図では sumi のほうが多く使いました（87.6 MB 対 69.5 MB）。Ghostscript との比較と同じ傾向です。
+
+### 出力
+
+| 入力 | 元の PDF | sumi | mutool recolor |
+|---|---:|---:|---:|
+| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.31 MB | 0.25 MB |
+| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.98 MB | 0.88 MB |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.30 MB | 0.28 MB |
+| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0.30 MB | 0.84 MB | 0.83 MB |
+| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 5.90 MB | 5.90 MB | 5.77 MB |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.11 MB | 7.06 MB |
+
+- **出力サイズ**: 6 件すべてで mutool のほうがわずかに小さく、差は 0.009〜0.128 MB でした。写真を含む PDF を大きく縮める Ghostscript（NASA ファクトシートで 0.51 MB）とは違い、方式が同じなので差はほとんど出ません。NASA ファクトシートは両者とも元の 0.30 MB から 0.8 MB 台に増えています。JPEG を可逆圧縮で保存し直すためで、sumi の「[制限事項](#制限事項)」に挙げている挙動と同じです。mutool も同じように増えるので、方式に由来する挙動だと分かります。
+- **色残り**: 両方の出力をレンダリングして調べたところ、どちらも色の付いたピクセルはありませんでした（6 件とも）。
+- **テキスト**: `pdftotext` で抽出したテキストは、**sumi・mutool とも 6 件すべてで元の PDF と完全に一致**しました。この指標では差がつきません。抽出順が変わる Ghostscript とは、どちらも異なります。
+
+### 比較方法
+
+- **環境**: 2026 年 9 月 13 日に、Apple M1 Pro（メモリ 16 GB、macOS 26.5.2）で計測しました。sumi は 0.1.0（`cargo build --release`）、`mutool` は 1.28.3（Homebrew の bottle、arm64 ネイティブ）です。Linux では計測していません。
+- **実行方法**: Ghostscript との比較と同じです。コマンドとして実行し、プロセスの起動時間も含めて、1 回ウォームアップしてから 10 回実行しました。時間とメモリは `/usr/bin/time -l` で取得しています。
+- **コマンド**:
+
+  ```bash
+  sumi input.pdf -o output.pdf --overwrite
+
+  # スタックを広げないと Shading を含む PDF で落ちる
+  ( ulimit -s 65520 && mutool recolor -c gray -o output.pdf input.pdf )
+  ```
+
+- **既定のスタックでの結果**: 実行時間の計測とは別に、`ulimit` を付けずに 1 回実行した終了コードを記録しています（`bench/results-macos.json` の `mutool_default_exit`）。139 は SIGSEGV（128 + 11）です。
+- **出力の確認**: Ghostscript との比較と同じく、`pdftoppm` でレンダリングして色の付いたピクセルがないこと、`pdftotext` で抽出したテキストが元の PDF と一致するかを調べました。
+- **比べていないもの**: `mutool recolor` に白黒 2 値の変換先がないため、比べたのはグレースケール変換だけです。
+- **入力**: 「[Ghostscript との比較](#ghostscript-との比較)」の「比較方法」に載せた入力の表と同じ 6 件です。
+- **再現手順**:
+
+  ```bash
+  brew install mupdf-tools
+  cargo build --release
+  python3 bench/fetch.py        # 入力 PDF を bench/inputs に用意
+  python3 bench/bench.py        # sumi・Ghostscript・mutool をまとめて計測
+  ```
+
+  完走率の計測には `validation/corpus/` の PDF を使いました。集め方は [validation/README.md](validation/README.md) にあります。
+
+数値は環境によって変わります。特に小さな PDF では、プロセスの起動時間が大きな割合を占めます。
 
 ## インストール
 

@@ -6,7 +6,12 @@ application would call it. Wall-clock time and peak memory come from /usr/bin/ti
 timing, the outputs are checked with poppler (pdftoppm, pdftotext) for leftover color and for
 extractable text. Standard library only.
 
-Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH]
+mutool recolor needs a bigger stack than the default: one of its frames reserves 8.06 MB,
+more than the 8 MB main thread stack, so it dies with SIGSEGV on any PDF holding a shading. It
+is run under `ulimit -s 65520` here so that the timings cover every input; the exit code it
+gives with the default stack is recorded separately as "mutool_default_exit".
+
+Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH] [--mutool PATH]
 Writes bench/results-macos.json or bench/results-linux.json.
 """
 import argparse
@@ -27,6 +32,19 @@ INPUTS = HERE / "inputs"
 OUTPUTS = HERE / "outputs"
 RESULTS = HERE / f"results-{'macos' if sys.platform == 'darwin' else sys.platform}.json"
 
+# Stack limit mutool runs under. 65520 KB is the macOS hard limit for the main thread; Linux
+# usually allows it too. If the system refuses it, the shell exits 90 and the run is recorded
+# as a failure rather than silently measuring a crash.
+STACK_KB = 65520
+
+
+class ToolFailed(Exception):
+    """A tool exited non-zero. Recorded in the report instead of stopping the run."""
+
+    def __init__(self, name, code, stderr):
+        super().__init__(f"{name} failed with exit code {code}")
+        self.code, self.stderr = code, stderr
+
 
 def tools(args):
     return {
@@ -38,7 +56,25 @@ def tools(args):
             "-dProcessColorModel=/DeviceGray",
             "-o", str(dst), str(src),
         ],
+        # sh execs mutool, so /usr/bin/time still measures mutool itself.
+        "mutool": lambda src, dst: [
+            "/bin/sh", "-c",
+            f"ulimit -s {STACK_KB} || exit 90; "
+            f'exec "$0" recolor -c gray -o "$1" "$2"',
+            args.mutool, str(dst), str(src),
+        ],
     }
+
+
+def default_stack_exit(mutool, src, dst):
+    """Exit code of mutool recolor with the stack left alone. 139 means SIGSEGV."""
+    dst.unlink(missing_ok=True)
+    result = subprocess.run([mutool, "recolor", "-c", "gray", "-o", str(dst), str(src)],
+                            capture_output=True)
+    dst.unlink(missing_ok=True)
+    # subprocess reports a signal as a negative number; the shell would show 128 + signal.
+    code = result.returncode
+    return 128 - code if code < 0 else code
 
 
 def timed_run(command):
@@ -48,7 +84,7 @@ def timed_run(command):
     result = subprocess.run(["/usr/bin/time", flag, *command], capture_output=True, text=True)
     elapsed = time.perf_counter() - start
     if result.returncode != 0:
-        raise RuntimeError(f"{command[0]} failed: {result.stderr[-2000:]}")
+        raise ToolFailed(command[0], result.returncode, result.stderr[-2000:])
     if sys.platform == "darwin":
         rss = int(re.search(r"(\d+)\s+maximum resident set size", result.stderr).group(1))
     else:
@@ -131,6 +167,7 @@ def main():
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--sumi", default=str(HERE.parent / "target" / "release" / "sumi"))
     parser.add_argument("--gs", default="gs")
+    parser.add_argument("--mutool", default="mutool")
     args = parser.parse_args()
 
     OUTPUTS.mkdir(exist_ok=True)
@@ -142,6 +179,8 @@ def main():
         "machine": machine(),
         "sumi": version([args.sumi, "--version"]),
         "ghostscript": "Ghostscript " + version([args.gs, "--version"]),
+        "mutool": version([args.mutool, "-v"]),
+        "mutool_stack_kb": STACK_KB,
         "runs": args.runs,
         "results": [],
     }
@@ -149,12 +188,18 @@ def main():
 
     for src in inputs:
         entry = {"input": src.name, "pages": page_count(src), "input_bytes": src.stat().st_size, "tools": {}}
+        entry["mutool_default_exit"] = default_stack_exit(args.mutool, src, OUTPUTS / "probe.pdf")
         for name, build in tools(args).items():
             dst = OUTPUTS / f"{src.stem}.{name}.pdf"
             command = build(src, dst)
-            for _ in range(args.warmup):
-                timed_run(command)
-            samples = [timed_run(command) for _ in range(args.runs)]
+            try:
+                for _ in range(args.warmup):
+                    timed_run(command)
+                samples = [timed_run(command) for _ in range(args.runs)]
+            except ToolFailed as failure:
+                entry["tools"][name] = {"failed": True, "exit_code": failure.code}
+                print(f"{src.name:28s} {name:12s} failed (exit {failure.code})", file=sys.stderr)
+                continue
             times = [s[0] for s in samples]
             entry["tools"][name] = {
                 "median_s": statistics.median(times),

@@ -6,6 +6,8 @@
   },
   "sumi": "sumi 0.1.0",
   "ghostscript": "Ghostscript 10.05.1",
+  "mutool": "mutool version 1.28.3",
+  "mutool_stack_kb": 65520,
   "runs": 10,
   "results": [
     {
@@ -14,22 +16,31 @@
       "input_bytes": 300675,
       "tools": {
         "sumi": {
-          "median_s": 0.055041812505805865,
-          "min_s": 0.05463008300284855,
-          "peak_rss_mb": 8.1015625,
+          "median_s": 0.0556704999980866,
+          "min_s": 0.055305083995335735,
+          "peak_rss_mb": 9.7890625,
           "output_bytes": 843510,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.793966666504275,
-          "min_s": 0.7922974160028389,
-          "peak_rss_mb": 42.9609375,
-          "output_bytes": 511321,
+          "median_s": 0.8056862710000132,
+          "min_s": 0.795724000010523,
+          "peak_rss_mb": 43.2265625,
+          "output_bytes": 511320,
           "colored_pixels": 0,
           "text_similarity": 0.9738358690640848
+        },
+        "mutool": {
+          "median_s": 0.0962346875021467,
+          "min_s": 0.09537154099962208,
+          "peak_rss_mb": 17.4453125,
+          "output_bytes": 834194,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 0
     },
     {
       "input": "equal-pay-infographic.pdf",
@@ -37,22 +48,31 @@
       "input_bytes": 301309,
       "tools": {
         "sumi": {
-          "median_s": 0.03201452050416265,
-          "min_s": 0.031419749997439794,
-          "peak_rss_mb": 6.2265625,
+          "median_s": 0.03326095849479316,
+          "min_s": 0.03208824999455828,
+          "peak_rss_mb": 6.3203125,
           "output_bytes": 303951,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.17505185399932088,
-          "min_s": 0.17379154100490268,
-          "peak_rss_mb": 27.953125,
-          "output_bytes": 263008,
+          "median_s": 0.17803412499051774,
+          "min_s": 0.17490337499475572,
+          "peak_rss_mb": 27.984375,
+          "output_bytes": 263011,
           "colored_pixels": 0,
           "text_similarity": 0.996822033898305
+        },
+        "mutool": {
+          "median_s": 0.05533002049924107,
+          "min_s": 0.05445716700342018,
+          "peak_rss_mb": 7.1015625,
+          "output_bytes": 282911,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 0
     },
     {
       "input": "invoice.pdf",
@@ -60,22 +80,31 @@
       "input_bytes": 336740,
       "tools": {
         "sumi": {
-          "median_s": 0.0199393125003553,
-          "min_s": 0.01969404199917335,
-          "peak_rss_mb": 9.9140625,
+          "median_s": 0.021061208499304485,
+          "min_s": 0.01981908400193788,
+          "peak_rss_mb": 9.8828125,
           "output_bytes": 311465,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.14996175000123912,
-          "min_s": 0.1480581249925308,
-          "peak_rss_mb": 30.7109375,
-          "output_bytes": 177072,
+          "median_s": 0.15391516700037755,
+          "min_s": 0.15261795900005382,
+          "peak_rss_mb": 31.125,
+          "output_bytes": 177070,
           "colored_pixels": 0,
           "text_similarity": 0.75
+        },
+        "mutool": {
+          "median_s": 0.18217637448833557,
+          "min_s": 0.18008591698890086,
+          "peak_rss_mb": 29.6328125,
+          "output_bytes": 248980,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 139
     },
     {
       "input": "invoice-50pages.pdf",
@@ -83,22 +112,31 @@
       "input_bytes": 1034435,
       "tools": {
         "sumi": {
-          "median_s": 0.05930766700475942,
-          "min_s": 0.058847374995821156,
-          "peak_rss_mb": 20.609375,
+          "median_s": 0.06253581299824873,
+          "min_s": 0.06097979198966641,
+          "peak_rss_mb": 20.84375,
           "output_bytes": 981798,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 2.440730520997022,
-          "min_s": 2.386670208987198,
-          "peak_rss_mb": 85.984375,
-          "output_bytes": 1126587,
+          "median_s": 2.5621479369947338,
+          "min_s": 2.5332813749992056,
+          "peak_rss_mb": 86.453125,
+          "output_bytes": 1126585,
           "colored_pixels": 0,
           "text_similarity": 0.75
+        },
+        "mutool": {
+          "median_s": 2.077579812503245,
+          "min_s": 2.057305708003696,
+          "peak_rss_mb": 441.328125,
+          "output_bytes": 883653,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 139
     },
     {
       "input": "communia-poster.pdf",
@@ -106,22 +144,31 @@
       "input_bytes": 5902880,
       "tools": {
         "sumi": {
-          "median_s": 0.5106109580010525,
-          "min_s": 0.510466332998476,
-          "peak_rss_mb": 34.1875,
+          "median_s": 0.5280493954996928,
+          "min_s": 0.5266320420050761,
+          "peak_rss_mb": 34.8046875,
           "output_bytes": 5900230,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 1.200700979497924,
-          "min_s": 1.1966177499998594,
-          "peak_rss_mb": 37.7265625,
-          "output_bytes": 4510982,
+          "median_s": 1.2293123540002853,
+          "min_s": 1.2175163339998107,
+          "peak_rss_mb": 38.9140625,
+          "output_bytes": 4510981,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
+        },
+        "mutool": {
+          "median_s": 0.9043650625026203,
+          "min_s": 0.9018809999979567,
+          "peak_rss_mb": 54.6953125,
+          "output_bytes": 5772013,
           "colored_pixels": 0,
           "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 139
     },
     {
       "input": "europe-map.pdf",
@@ -129,22 +176,31 @@
       "input_bytes": 6700847,
       "tools": {
         "sumi": {
-          "median_s": 1.3706339375057723,
-          "min_s": 1.3268300000054296,
-          "peak_rss_mb": 85.8203125,
+          "median_s": 1.3806540625009802,
+          "min_s": 1.3639176249998854,
+          "peak_rss_mb": 87.5859375,
           "output_bytes": 7109510,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 3.1811008119912003,
-          "min_s": 3.1673918750020675,
-          "peak_rss_mb": 32.4921875,
-          "output_bytes": 7198361,
+          "median_s": 3.251082854498236,
+          "min_s": 3.242167167001753,
+          "peak_rss_mb": 35.828125,
+          "output_bytes": 7198359,
           "colored_pixels": 0,
           "text_similarity": 0.5498406918525262
+        },
+        "mutool": {
+          "median_s": 1.9024730835080845,
+          "min_s": 1.8857521659956547,
+          "peak_rss_mb": 69.46875,
+          "output_bytes": 7063980,
+          "colored_pixels": 0,
+          "text_similarity": 1.0
         }
-      }
+      },
+      "mutool_default_exit": 0
     }
   ]
 }
