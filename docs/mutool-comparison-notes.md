@@ -2,6 +2,11 @@
 
 別の Mac で計測するための覚え書き。2026-09-12 時点。
 
+> **2026-09-12 追記 — 決着した。**
+> Apple Silicon（M1 Pro / macOS 26.5.2 / arm64）でも同じ 3 本が SIGSEGV。**環境固有ではない。**
+> さらに原因を特定した。`mutool recolor` は Shading を含む PDF で必ずスタックを溢れさせる。
+> 詳しくは「[2 台目での結果](#2-台目での結果apple-silicon)」と「[原因](#原因--8-mb-のスタック配列)」。
+
 ## 何を確かめたいか
 
 `mutool recolor` が **セグメンテーション違反で落ちる**のが、この環境固有かどうか。
@@ -37,7 +42,8 @@ for f in fixtures/chrome_invoice.pdf fixtures/gs_objstm_cmyk.pdf \
          fixtures/quartz_graphics.pdf fixtures/libreoffice_table.pdf; do
   rm -f /tmp/o.pdf
   mutool recolor -c gray -o /tmp/o.pdf "$f" >/dev/null 2>&1
-  echo "$(basename "$f"): rc=$?  出力=$([ -f /tmp/o.pdf ] && echo あり || echo なし)"
+  rc=$?   # ← 先に控える。同じ行で $(basename ...) を使うと $? が 0 に潰れる
+  echo "$(basename "$f"): rc=$rc  出力=$([ -f /tmp/o.pdf ] && echo あり || echo なし)"
 done
 ```
 
@@ -56,7 +62,142 @@ done
 生成器が Chrome・Ghostscript・Quartz とばらばらなので、特定ツール固有ではなさそう。
 同じ Canva 製でもクラッシュする 1 本と成功する 5 本があり、ファイル依存に見える。
 
-## この環境での計測結果
+**このファイル依存の正体は「Shading（グラデーション）を含むかどうか」だった。** 下記参照。
+
+## 2 台目での結果（Apple Silicon）
+
+| 項目 | 1 台目 | 2 台目 |
+|---|---|---|
+| macOS | 14.8.7（Darwin 23.6.0） | 26.5.2（Darwin 25.5.0、build 25F84） |
+| CPU | Intel Core i5-8500B | Apple M1 Pro |
+| arch | x86_64 | **arm64** |
+| mutool | 1.28.3（bottle） | 1.28.3（bottle `arm64_tahoe`、ネイティブ arm64） |
+
+同じ fixture、同じ結果:
+
+| fixture | 1 台目 rc | 2 台目 rc |
+|---|---|---|
+| chrome_invoice.pdf | 139 | **139** |
+| gs_objstm_cmyk.pdf | 139 | **139** |
+| quartz_graphics.pdf | 139 | **139** |
+| libreoffice_table.pdf | 0 | 0 |
+
+**CPU 種別も OS 版も 12 世代違うのに一致した。環境固有ではない。**
+メモの目的だった切り分けはこれで済んだ。
+
+## 原因 — 8 MB のスタック配列
+
+`lldb` で止めるとスタックオーバーフローだった。再帰ではなく、**関数 1 つ分のフレームが
+スタック全体より大きい**。
+
+```
+stop reason = EXC_BAD_ACCESS (code=2, address=0x16f603ff8)
+  frame #0: libsystem_pthread.dylib`___chkstk_darwin + 60
+  frame #1: mutool`pdf_recolor_shade + 64
+  ...
+  frame #11: mutool`pdf_recolor_page + 136
+  frame #12: mutool`pdfrecolor_main + 576
+  frame #13: mutool`main + 492
+```
+
+`___chkstk_darwin` はスタックの伸長を確かめる処理で、ここで落ちるのは
+「確保しようとした量が残りより大きい」という意味。フレームは 15 段しかない。
+
+`pdf_recolor_shade` の冒頭を逆アセンブルすると、確保量がそのまま読める。
+
+```
+<+44>: mov  w9, #0x360                ; 確保量を w9 に
+<+48>: movk w9, #0x81, lsl #16        ;   → 0x00810360 = 8,455,008
+<+60>: blr  x16                       ; ___chkstk_darwin（ここで落ちる）
+<+64>: sub  sp, sp, #0x810, lsl #12
+<+68>: sub  sp, sp, #0x360
+```
+
+| | バイト |
+|---|---|
+| `pdf_recolor_shade` の 1 フレーム | 8,455,008（8.06 MB） |
+| macOS のメインスレッドのスタック（`ulimit -s` 8176 KB） | 8,372,224（7.98 MB） |
+| **超過分** | **82,784** |
+
+出どころは `source/pdf/pdf-shade-recolor.c`。
+
+```c
+#define FUNSEGS 256 /* size of sampled mesh for function-based shadings */
+
+static void
+fz_recolor_shade_type1(fz_context *ctx, pdf_obj *shade, pdf_function **func, recolor_details *rd)
+{
+	...
+	float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];
+```
+
+`FZ_MAX_COLORS` は 32（`include/mupdf/fitz/color.h`）なので
+257 × 257 × 32 × 4 = **8,454,272 バイト**。実測フレーム 8,455,008 の 99.99% がこれ 1 本。
+
+`fz_recolor_shade_type1` は `pdf_recolor_shade` にインライン展開されており、
+**確保は関数の入口で無条件に行われる。** シェーディングの種別を見る前に落ちる。
+
+証拠として、落ちた 3 本はどれも `ShadingType 2`（軸）と `3`（放射）で、
+この配列を使う `ShadingType 1`（関数ベース）は 1 本も含まれていない。
+
+```
+chrome_invoice.pdf   : /PatternType 2 /ShadingType 2
+gs_objstm_cmyk.pdf   : /ShadingType 2
+quartz_graphics.pdf  : /ShadingType 2, /ShadingType 3
+libreoffice_table.pdf: Shading なし          ← 唯一成功する
+```
+
+### 検証 1 — リポジトリ内の PDF 27 本で例外なし
+
+`fixtures/` `samples/` `bench/` にある PDF 27 本すべてについて、Shading の数と
+終了コードを突き合わせた。
+
+| Shading | 本数 | 既定スタックでの rc | `ulimit -s 32768` での rc |
+|---|---|---|---|
+| あり（1〜25 個） | 9 | **全 9 本が 139** | 全 9 本が 0 |
+| なし | 18 | 全 18 本が 0 | 全 18 本が 0 |
+
+**例外ゼロ。** 相関ではなく因果と見てよい。
+
+ついでに分かったこと: Ghostscript を通した出力（`*.ghostscript.pdf`）は Shading が
+消えているため落ちない。sumi の出力（`*.sumi.pdf`）は Shading を残すので、元が
+落ちるファイルは変換後も落ちる。色指定だけ書き換える方式である裏付けにもなっている。
+
+### 検証 2 — スタックを広げると通る
+
+```sh
+for kb in 8176 16384; do
+  rm -f /tmp/o.pdf
+  ( ulimit -s $kb && mutool recolor -c gray -o /tmp/o.pdf fixtures/chrome_invoice.pdf )
+  echo "ulimit -s ${kb}KB : rc=$?"
+done
+```
+
+| `ulimit -s` | rc | 出力 |
+|---|---|---|
+| 8176 KB（既定） | 139 | なし |
+| 16384 KB | **0** | あり |
+
+16 MB にすると 4 本とも rc=0 で出力ができる。診断はこれで確定。
+
+### 結論
+
+**`mutool recolor` は、Shading を 1 つでも含む PDF を、既定のスタックの環境で必ず落とす。**
+ファイル依存に見えたのは Shading の有無だっただけで、生成器も PDF の壊れ具合も関係ない。
+既定のスタックが 8 MB の環境（macOS、多くの Linux ディストリビューション）はすべて該当する。
+
+`master`（2026-09-12 時点）でも `pdf-shade-recolor.c` の当該行は 1.28.3 と同じで、**未修正**。
+
+直し方は素直で、`out` をスタックではなく `fz_malloc` で取れば済む。
+
+### 1 台目でやり直すと分かること
+
+1 台目のコーパス 150 本の計測は、**`ulimit -s 65520` を付けて流し直す価値がある。**
+クラッシュ 16 件がこれで 0 件になるなら、10.7% はすべてこの 1 件の不具合ということになり、
+「完走率」という指標自体が意味を失う（= README に載せる話ではなくなる）。
+残るなら別の不具合が混ざっている。どちらでも判断材料になる。
+
+## 1 台目での計測結果（x86_64）
 
 ### 完走率（コーパス 150 本を無作為抽出、60 秒上限）
 
@@ -121,6 +262,11 @@ GitHub 検索は 0 件だが、これは探す場所が違うだけ。
 **1.28.3 で通常の PDF が落ちる件に合致する報告は見つからなかった。**
 「未報告」と断定はできないが、公開範囲には該当なし。
 
+原因が分かったあとに `fz_recolor_shade_type1` / スタックオーバーフローで
+再検索しようとしたが、Bugzilla は bot 対策（Anubis）で機械的に引けない。
+手で確かめる場合は `product=MuPDF`、`Component=mutool`、`short_desc` に
+`recolor` または `shade` で検索する。
+
 ## 判断待ちの事項
 
 **README への掲載は保留中。** 数字をそのまま載せることは勧めていない。
@@ -129,6 +275,13 @@ GitHub 検索は 0 件だが、これは探す場所が違うだけ。
 - こちらの計測は 1 台・150 本の抽出で、Ghostscript 比較（2 台・10 回試行）と
   厳密さが揃っていない
 - 未報告の不具合の可能性が高く、公表より先に開発元へ報告するのが順序
+
+原因が特定できたことで、この判断はむしろ固まった。**完走率の差はほぼ単一の不具合
+1 件に帰着する。** 実装方式や設計の優劣ではないので、比較表の指標には向かない。
+直れば消える数字を README に刻むことになる。
+
+報告用の草稿を `docs/mutool-shade-stack-overflow.md` に用意した。
+Bugzilla（bugs.ghostscript.com）にアカウントを作って投稿する。投稿は人手で行うこと。
 
 **先に Artifex へ報告し、その後に掲載を判断する**のが筋と考えている。
 修正されなくても、「同じ方式の実装は AGPL のみ」というライセンス面の記述は
@@ -149,3 +302,14 @@ GitHub 検索は 0 件だが、これは探す場所が違うだけ。
 - `mutool recolor` の実装: MuPDF の `source/pdf/pdf-recolor.c`。
   `color_rewrite` / `image_rewrite` / `shade_rewrite` / `vertex_rewrite` があり、
   ラスタライズせずに色だけ書き換える。sumi と同じ方式。
+- クラッシュする側の実体は `source/pdf/pdf-shade-recolor.c` の `pdf_recolor_shade`。
+  ソースは GitHub ミラーから取れる（`git.ghostscript.com` は HTTP 401 を返す）:
+
+  ```sh
+  gh api "repos/ArtifexSoftware/mupdf/contents/source/pdf/pdf-shade-recolor.c?ref=1.28.3" \
+    --jq .content | base64 -d
+  ```
+- 逆アセンブルと再現に使った道具は `lldb`（Xcode Command Line Tools 付属）。
+  `lldb -b -o run -k "bt 60" -k quit -- mutool recolor -c gray -o /tmp/o.pdf <PDF>`
+  のように `-k` でクラッシュ時のコマンドを渡す。`-o "bt"` では出力されない。
+- 報告草稿: `docs/mutool-shade-stack-overflow.md`
