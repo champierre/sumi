@@ -254,7 +254,7 @@
   .chip { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 8px; border: 1px solid var(--sei); }
   .table-scroll { overflow-x: auto; }
 
-  /* Benchmark: one row per PDF, bars scaled to the larger of the two values */
+  /* Benchmark: one row per PDF, bars scaled to the largest value in the row */
   .section .bench-title { margin: 48px 0 4px; font-size: 1.25rem; }
   .section .bench-lede { font-size: 0.9375rem; color: var(--ju); }
   .bench-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 48px 0 4px; }
@@ -276,8 +276,10 @@
   .bar span { white-space: nowrap; }
   .bar b { font-family: var(--code); font-weight: 400; color: var(--sho); }
   .bar-fill { height: 12px; width: var(--w); min-width: 2px; background: var(--sho); }
+  .bar-mu .bar-fill { background: var(--ju); }
   .bar-gs .bar-fill { background: var(--tan); }
-  .bench .bench-ratio { margin: 0; text-align: right; font-family: var(--code); font-size: 1.125rem; color: var(--sho); }
+  .bench .bench-ratio { margin: 0; text-align: right; font-family: var(--code); font-size: 1.125rem; color: var(--sho); line-height: 1.3; }
+  .bench .bench-ratio small { display: block; font-size: 0.75rem; color: var(--ju); }
   .bench-notes { font-variant-ligatures: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(32px, 5vw, 72px); margin: 40px 0 0; padding: 0; list-style: none; }
   .bench-notes li { padding: 12px 0; border-top: 1px solid var(--sei); }
   .bench-notes strong { display: block; color: var(--sho); }
@@ -505,8 +507,9 @@ Q</code></pre>
 
   <section class="section" id="benchmark" aria-labelledby="benchmark-title">
     <div class="wrap">
-      <h2 id="benchmark-title">Ghostscript との比較</h2>
-      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と比べました。どちらもコマンドとして 10 回ずつ実行した中央値です。Mac と Linux の 2 台で計測したので、グラフの上のボタンで切り替えて見られます。PDF の名前から、計測に使った PDF を開けます。</p>
+      <h2 id="benchmark-title">Ghostscript と mutool との比較</h2>
+      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と、MuPDF の <code>mutool recolor</code> と比べました。いずれもコマンドとして 10 回ずつ実行した中央値です。グラフの上のボタンで、計測した 2 台を切り替えられます。mutool は Linux でだけ計測したので、Mac のグラフには出てきません。PDF の名前から、計測に使った PDF を開けます。</p>
+      <p><code>mutool recolor</code> は sumi と同じく、ページを画像化せずに色指定だけを書き換えます。Ghostscript のように描き直さないぶん、sumi との差は小さくなります。ただし MuPDF も Ghostscript と同じ Artifex 製で、ライセンスは AGPL-3.0（または商用ライセンス）です。</p>
 
       <div class="bench-head">
         <h3 class="bench-title">実行時間</h3>
@@ -515,7 +518,7 @@ Q</code></pre>
           <button type="button" data-show-env="linux" aria-pressed="false">Linux（Ryzen 7 6800H）</button>
         </div>
       </div>
-      <p class="bench-lede">棒の長さは、PDF ごとに Ghostscript の時間を基準にしています。右の数字は、sumi が何倍速かったかです。</p>
+      <p class="bench-lede">棒の長さは、PDF ごとにいちばん時間のかかったツールを基準にしています。右の数字は、sumi が何倍速かったか。差が小さいほうのツールと比べています。</p>
       <ul class="bench" data-env="mac">
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、Chrome で作成</span></p>
@@ -523,7 +526,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>20 ms</b></span><div class="bar-fill" style="--w: 13.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>150 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 150 ms。</span>7.5 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20 ms、Ghostscript 150 ms。</span>7.5 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、Chrome で作成</span></p>
@@ -531,7 +534,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>59 ms</b></span><div class="bar-fill" style="--w: 2.4%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>2,441 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、Ghostscript 2,441 ms。</span>41.2 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、Ghostscript 2,441 ms。</span>41.2 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、Adobe PDF Library</span></p>
@@ -539,7 +542,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>32 ms</b></span><div class="bar-fill" style="--w: 18.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>175 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 32 ms、Ghostscript 175 ms。</span>5.5 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 32 ms、Ghostscript 175 ms。</span>5.5 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、写真あり</span></p>
@@ -547,7 +550,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>55 ms</b></span><div class="bar-fill" style="--w: 6.9%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>794 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 55 ms、Ghostscript 794 ms。</span>14.4 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 55 ms、Ghostscript 794 ms。</span>14.4 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
@@ -555,7 +558,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>511 ms</b></span><div class="bar-fill" style="--w: 42.5%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>1,201 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 511 ms、Ghostscript 1,201 ms。</span>2.4 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 511 ms、Ghostscript 1,201 ms。</span>2.4 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
@@ -563,57 +566,63 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>1,371 ms</b></span><div class="bar-fill" style="--w: 43.1%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>3,181 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 1,371 ms、Ghostscript 3,181 ms。</span>2.3 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,371 ms、Ghostscript 3,181 ms。</span>2.3 倍<small>Ghostscript 比</small></p>
         </li>
       </ul>
       <ul class="bench" data-env="linux" hidden>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>21 ms</b></span><div class="bar-fill" style="--w: 14%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>152 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>21 ms</b></span><div class="bar-fill" style="--w: 10.7%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>194 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>150 ms</b></span><div class="bar-fill" style="--w: 77.42%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms、Ghostscript 152 ms。</span>7.1 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms、mutool 194 ms、Ghostscript 150 ms。sumi は Ghostscript の</span>7.2 倍<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、Chrome で作成</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>68 ms</b></span><div class="bar-fill" style="--w: 2.7%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>2,556 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>62 ms</b></span><div class="bar-fill" style="--w: 2.427%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>2,285 ms</b></span><div class="bar-fill" style="--w: 88.76%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>2,574 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 68 ms、Ghostscript 2,556 ms。</span>37.6 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 62 ms、mutool 2,285 ms、Ghostscript 2,574 ms。sumi は mutool の</span>36.6 倍<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、Adobe PDF Library</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>36 ms</b></span><div class="bar-fill" style="--w: 23.3%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>153 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>36 ms</b></span><div class="bar-fill" style="--w: 23.09%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>57 ms</b></span><div class="bar-fill" style="--w: 37.05%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>154 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 36 ms、Ghostscript 153 ms。</span>4.3 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 36 ms、mutool 57 ms、Ghostscript 154 ms。sumi は mutool の</span>1.6 倍<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、写真あり</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>58 ms</b></span><div class="bar-fill" style="--w: 9.4%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>614 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>59 ms</b></span><div class="bar-fill" style="--w: 9.431%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>92 ms</b></span><div class="bar-fill" style="--w: 14.77%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>621 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 58 ms、Ghostscript 614 ms。</span>10.7 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、mutool 92 ms、Ghostscript 621 ms。sumi は mutool の</span>1.6 倍<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>595 ms</b></span><div class="bar-fill" style="--w: 50.3%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>1,181 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>596 ms</b></span><div class="bar-fill" style="--w: 50.01%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>886 ms</b></span><div class="bar-fill" style="--w: 74.34%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>1,192 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 595 ms、Ghostscript 1,181 ms。</span>2.0 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 596 ms、mutool 886 ms、Ghostscript 1,192 ms。sumi は mutool の</span>1.5 倍<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>1,587 ms</b></span><div class="bar-fill" style="--w: 48.3%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>3,289 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>1,585 ms</b></span><div class="bar-fill" style="--w: 47.75%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>1,914 ms</b></span><div class="bar-fill" style="--w: 57.66%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>3,320 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 1,587 ms、Ghostscript 3,289 ms。</span>2.1 倍</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,585 ms、mutool 1,914 ms、Ghostscript 3,320 ms。sumi は mutool の</span>1.2 倍<small>mutool 比</small></p>
         </li>
       </ul>
 
@@ -624,7 +633,7 @@ Q</code></pre>
           <button type="button" data-show-env="linux" aria-pressed="false">Linux（Ryzen 7 6800H）</button>
         </div>
       </div>
-      <p class="bench-lede">プロセスの最大常駐メモリです。棒の長さは、PDF ごとに多く使ったほうを基準にしています。右の数字は、sumi が Ghostscript の何 % のメモリを使ったかです。</p>
+      <p class="bench-lede">プロセスの最大常駐メモリです。棒の長さは、PDF ごとにいちばん多く使ったツールを基準にしています。右の数字は、sumi が何 % のメモリで済んだか。いちばん少なかったツールと比べています。</p>
       <ul class="bench" data-env="mac">
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、0.34 MB</span></p>
@@ -632,7 +641,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>9.9 MB</b></span><div class="bar-fill" style="--w: 32.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>30.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 9.9 MB、Ghostscript 30.7 MB。sumi は Ghostscript の</span>32%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 9.9 MB、Ghostscript 30.7 MB。sumi は Ghostscript の</span>32%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、1.0 MB</span></p>
@@ -640,7 +649,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>20.6 MB</b></span><div class="bar-fill" style="--w: 24%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>86.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20.6 MB、Ghostscript 86.0 MB。sumi は Ghostscript の</span>24%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20.6 MB、Ghostscript 86.0 MB。sumi は Ghostscript の</span>24%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、0.30 MB</span></p>
@@ -648,7 +657,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>6.2 MB</b></span><div class="bar-fill" style="--w: 22.3%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>28.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB、Ghostscript 28.0 MB。sumi は Ghostscript の</span>22%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB、Ghostscript 28.0 MB。sumi は Ghostscript の</span>22%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、0.30 MB</span></p>
@@ -656,7 +665,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>8.1 MB</b></span><div class="bar-fill" style="--w: 18.9%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>43.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 8.1 MB、Ghostscript 43.0 MB。sumi は Ghostscript の</span>19%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 8.1 MB、Ghostscript 43.0 MB。sumi は Ghostscript の</span>19%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
@@ -664,7 +673,7 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>34.2 MB</b></span><div class="bar-fill" style="--w: 90.6%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>37.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 34.2 MB、Ghostscript 37.7 MB。sumi は Ghostscript の</span>91%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 34.2 MB、Ghostscript 37.7 MB。sumi は Ghostscript の</span>91%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
@@ -672,78 +681,87 @@ Q</code></pre>
             <div class="bar"><span>sumi <b>85.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>32.5 MB</b></span><div class="bar-fill" style="--w: 37.9%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 85.8 MB、Ghostscript 32.5 MB。sumi は Ghostscript の</span>264%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 85.8 MB、Ghostscript 32.5 MB。sumi は Ghostscript の</span>264%<small>Ghostscript 比</small></p>
         </li>
       </ul>
       <ul class="bench" data-env="linux" hidden>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、0.34 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>10.5 MB</b></span><div class="bar-fill" style="--w: 33.3%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>31.5 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>10.5 MB</b></span><div class="bar-fill" style="--w: 23.58%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>44.6 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>31.6 MB</b></span><div class="bar-fill" style="--w: 70.89%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 10.5 MB、Ghostscript 31.5 MB。sumi は Ghostscript の</span>33%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 10.5 MB、mutool 44.6 MB、Ghostscript 31.6 MB。sumi は Ghostscript の</span>33%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、1.0 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>20.2 MB</b></span><div class="bar-fill" style="--w: 25.6%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>78.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>20.2 MB</b></span><div class="bar-fill" style="--w: 4.37%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>462.5 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>78.8 MB</b></span><div class="bar-fill" style="--w: 17.03%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20.2 MB、Ghostscript 78.8 MB。sumi は Ghostscript の</span>26%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20.2 MB、mutool 462.5 MB、Ghostscript 78.8 MB。sumi は Ghostscript の</span>26%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>6.8 MB</b></span><div class="bar-fill" style="--w: 23.5%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>28.9 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>6.8 MB</b></span><div class="bar-fill" style="--w: 23.46%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>21.3 MB</b></span><div class="bar-fill" style="--w: 73.37%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>29.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 6.8 MB、Ghostscript 28.9 MB。sumi は Ghostscript の</span>24%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 6.8 MB、mutool 21.3 MB、Ghostscript 29.0 MB。sumi は mutool の</span>32%<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>8.7 MB</b></span><div class="bar-fill" style="--w: 24.6%"></div></div>
+            <div class="bar"><span>sumi <b>8.6 MB</b></span><div class="bar-fill" style="--w: 24.39%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>31.1 MB</b></span><div class="bar-fill" style="--w: 87.96%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>35.4 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 8.7 MB、Ghostscript 35.4 MB。sumi は Ghostscript の</span>25%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 8.6 MB、mutool 31.1 MB、Ghostscript 35.4 MB。sumi は mutool の</span>28%<small>mutool 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>31.2 MB</b></span><div class="bar-fill" style="--w: 85.1%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>36.7 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar"><span>sumi <b>30.8 MB</b></span><div class="bar-fill" style="--w: 48.8%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>63.1 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>36.6 MB</b></span><div class="bar-fill" style="--w: 58.02%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 31.2 MB、Ghostscript 36.7 MB。sumi は Ghostscript の</span>85%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 30.8 MB、mutool 63.1 MB、Ghostscript 36.6 MB。sumi は Ghostscript の</span>84%<small>Ghostscript 比</small></p>
         </li>
         <li class="bench-row">
           <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
-            <div class="bar"><span>sumi <b>72.5 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
-            <div class="bar bar-gs"><span>Ghostscript <b>32.8 MB</b></span><div class="bar-fill" style="--w: 45.2%"></div></div>
+            <div class="bar"><span>sumi <b>72.7 MB</b></span><div class="bar-fill" style="--w: 82.76%"></div></div>
+            <div class="bar bar-mu"><span>mutool <b>87.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
+            <div class="bar bar-gs"><span>Ghostscript <b>32.8 MB</b></span><div class="bar-fill" style="--w: 37.35%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 72.5 MB、Ghostscript 32.8 MB。sumi は Ghostscript の</span>221%</p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 72.7 MB、mutool 87.8 MB、Ghostscript 32.8 MB。sumi は Ghostscript の</span>222%<small>Ghostscript 比</small></p>
         </li>
       </ul>
 
       <ul class="bench-notes">
-        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。50 ページの請求書では Mac で 41.2 倍、Linux で 37.6 倍速く、メモリはどちらも Ghostscript の 4 分の 1 ほどでした。</span></li>
-        <li><strong>大きな PDF では sumi のほうがメモリを使うことがあります</strong><span>sumi は PDF 全体をメモリに読み込むので、ファイルが大きいほど多く使います。6.7 MB の地図では、Ghostscript の 2.6 倍（Mac）と 2.2 倍（Linux）でした。</span></li>
-        <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは、どちらの環境でも 6 件とも元の PDF と一致しました。Ghostscript の出力では、請求書の「発行日」が一続きの文字列として取り出せず、検索できなくなりました。</span></li>
-        <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi は JPEG 画像を可逆圧縮で保存し直すためです。NASA ファクトシートは sumi が 0.84 MB、Ghostscript が 0.51 MB（Mac）と 0.24 MB（Linux）でした。</span></li>
+        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。50 ページの請求書では、Ghostscript より Mac・Linux とも 41.2 倍、Linux では mutool より 36.6 倍速く済みました。</span></li>
+        <li><strong>mutool とはページ数で差がつきます</strong><span>mutool も色指定を書き換える方式なので、1 ページの PDF では 1.2〜1.6 倍の差です。ただし請求書を 2 ページから 50 ページにすると、mutool は 194 ms から 2,285 ms（11.8 倍）、sumi は 21 ms から 62 ms（3.0 倍）になりました。メモリも mutool は 44.6 MB から 462.5 MB、sumi は 10.5 MB から 20.2 MB です。</span></li>
+        <li><strong>大きな PDF では sumi のほうがメモリを使うことがあります</strong><span>sumi は PDF 全体をメモリに読み込むので、ファイルが大きいほど多く使います。6.7 MB の地図では、Ghostscript の 2.6 倍（Mac）と 2.2 倍（Linux）でした。mutool より少なかったのは Linux の 6 件すべてです。</span></li>
+        <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは、どちらの環境でも 6 件とも元の PDF と一致しました。mutool も 6 件とも一致します。Ghostscript の出力では、請求書の「発行日」が一続きの文字列として取り出せず、検索できなくなりました。</span></li>
+        <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi と mutool は JPEG 画像を可逆圧縮で保存し直すためです。NASA ファクトシートは sumi が 0.84 MB、mutool も 0.84 MB、Ghostscript が 0.51 MB（Mac）と 0.24 MB（Linux）でした。</span></li>
       </ul>
 
       <details class="method">
         <summary>計測方法</summary>
         <div class="method-body">
-          <p>2026 年 9 月 11 日に、2 台で sumi 0.1.0 と Ghostscript を比べました。Mac は Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2、Ghostscript 10.05.1。Linux は AMD Ryzen 7 6800H（GEEKOM A6、メモリ 32 GB）、Omarchy 4.0.1（Arch Linux ベース）、Ghostscript 10.07.1 です。どちらもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time</code> で取得しました。</p>
+          <p>2 台で sumi 0.1.0 を Ghostscript および mutool と比べました。Mac は Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2、Ghostscript 10.05.1 で、2026 年 9 月 11 日の計測です。Linux は AMD Ryzen 7 6800H（GEEKOM A6、メモリ 32 GB）、Omarchy 4.0.1（Arch Linux ベース）、Ghostscript 10.07.1、mutool 1.28.0 で、2026 年 9 月 12 日に mutool を加えて取り直しました。いずれもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time</code> で取得しました。</p>
           <div class="cmd"><pre><code>sumi input.pdf -o output.pdf --overwrite
 
 gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
    -sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray \
-   -o output.pdf input.pdf</code></pre><button class="copy" type="button">コピー</button></div>
-          <p>変換後の PDF は poppler でレンダリングして色が残っていないことを確かめ、<code>pdftotext</code> で抽出したテキストを元の PDF と比べました。Ghostscript にはベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。入力の PDF は Mac と Linux で同じものを使いましたが、数値は環境によって変わります。</p>
-          <p>入力 PDF の出典と、計測を再現するスクリプトは <a href="https://github.com/champierre/sumi#ghostscript-との比較">README</a> と <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a> にあります。</p>
+   -o output.pdf input.pdf
+
+mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" type="button">コピー</button></div>
+          <p>変換後の PDF は poppler でレンダリングして色が残っていないことを確かめ、<code>pdftotext</code> で抽出したテキストを元の PDF と比べました。Ghostscript にも <code>mutool recolor</code> にもベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。入力の PDF は Mac と Linux で同じものを使いましたが、数値は環境によって変わります。</p>
+          <p>入力 PDF の出典と、計測を再現するスクリプトは <a href="https://github.com/champierre/sumi#ghostscript-と-mutool-との比較">README</a> と <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a> にあります。</p>
         </div>
       </details>
     </div>

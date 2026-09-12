@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Compare sumi and Ghostscript converting PDFs to grayscale.
+"""Compare sumi, Ghostscript and mutool converting PDFs to grayscale.
 
 For every PDF in bench/inputs/ each tool is run as a command line program, the same way an
 application would call it. Wall-clock time and peak memory come from /usr/bin/time; after
 timing, the outputs are checked with poppler (pdftoppm, pdftotext) for leftover color and for
 extractable text. Standard library only.
 
-Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH]
+Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH] [--mutool PATH]
+A tool that is not installed is skipped.
 Writes bench/results-macos.json or bench/results-linux.json.
 """
 import argparse
@@ -16,6 +17,7 @@ import os
 import pathlib
 import platform
 import re
+import shutil
 import statistics
 import subprocess
 import sys
@@ -29,16 +31,21 @@ RESULTS = HERE / f"results-{'macos' if sys.platform == 'darwin' else sys.platfor
 
 
 def tools(args):
-    return {
-        "sumi": lambda src, dst: [args.sumi, str(src), "-o", str(dst), "--overwrite"],
-        "ghostscript": lambda src, dst: [
+    """Command builders, keyed by tool name. A tool whose binary is missing is left out."""
+    all_tools = {
+        "sumi": (args.sumi, lambda src, dst: [args.sumi, str(src), "-o", str(dst), "--overwrite"]),
+        "ghostscript": (args.gs, lambda src, dst: [
             args.gs, "-q", "-dNOPAUSE", "-dBATCH", "-dSAFER",
             "-sDEVICE=pdfwrite",
             "-sColorConversionStrategy=Gray",
             "-dProcessColorModel=/DeviceGray",
             "-o", str(dst), str(src),
-        ],
+        ]),
+        "mutool": (args.mutool, lambda src, dst: [
+            args.mutool, "recolor", "-c", "gray", "-o", str(dst), str(src),
+        ]),
     }
+    return {name: build for name, (binary, build) in all_tools.items() if shutil.which(binary)}
 
 
 def timed_run(command):
@@ -131,6 +138,7 @@ def main():
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--sumi", default=str(HERE.parent / "target" / "release" / "sumi"))
     parser.add_argument("--gs", default="gs")
+    parser.add_argument("--mutool", default="mutool")
     args = parser.parse_args()
 
     OUTPUTS.mkdir(exist_ok=True)
@@ -138,10 +146,17 @@ def main():
     if not inputs:
         sys.exit("no PDFs in bench/inputs (run fetch.py and make_batch.py first)")
 
+    versions = {
+        "sumi": lambda: version([args.sumi, "--version"]),
+        "ghostscript": lambda: "Ghostscript " + version([args.gs, "--version"]),
+        "mutool": lambda: version([args.mutool, "-v"]),
+    }
+    selected = tools(args)
+    if "sumi" not in selected:
+        sys.exit(f"sumi not found at {args.sumi} (run cargo build --release, or pass --sumi)")
     report = {
         "machine": machine(),
-        "sumi": version([args.sumi, "--version"]),
-        "ghostscript": "Ghostscript " + version([args.gs, "--version"]),
+        **{name: versions[name]() for name in selected},
         "runs": args.runs,
         "results": [],
     }
@@ -149,7 +164,7 @@ def main():
 
     for src in inputs:
         entry = {"input": src.name, "pages": page_count(src), "input_bytes": src.stat().st_size, "tools": {}}
-        for name, build in tools(args).items():
+        for name, build in selected.items():
             dst = OUTPUTS / f"{src.stem}.{name}.pdf"
             command = build(src, dst)
             for _ in range(args.warmup):
