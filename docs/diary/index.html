@@ -156,6 +156,7 @@
       <a href="#bench">性能比較</a>
       <a href="#validation">実世界検証</a>
       <a href="#ycck-title">見つかったバグ</a>
+      <a href="#upstream">上流への報告</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
     </nav>
   </div>
@@ -470,6 +471,80 @@
       再発を防ぐため、YCCK の JPEG を埋め込んだ 1.3KB の PDF を
       <code>fixtures/ycck_jpeg.pdf</code> として追加し、警告が出ることと画像が
       変換されないことを確かめるテストを書きました。
+    </p>
+
+    <h3>monochrome の結果</h3>
+
+    <div class="scroll">
+      <table>
+        <caption>1008 件・両モードの比較</caption>
+        <thead><tr><th>指標</th><th class="num">grayscale</th><th class="num">monochrome</th></tr></thead>
+        <tbody>
+          <tr><td>変換成功</td><td class="num">99.3%</td><td class="num">99.3%</td></tr>
+          <tr><td>色残りなし</td><td class="num">84.6%</td><td class="num">82.0%</td></tr>
+          <tr><td>表示崩れなし</td><td class="num">98.9%</td><td class="num">99.4%</td></tr>
+          <tr><td>テキスト保持</td><td class="num">99.8%</td><td class="num">99.8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      変換できなかったのは両モードとも同じ 7 件で、暗号化 PDF が 6 件と、
+      ページの描画に必要なオブジェクトが読めない壊れた PDF が 1 件でした。
+      YCCK の警告が出た 26 件は、修正後なので 1 件も黒化していません。
+    </p>
+
+    <div class="note">
+      <span class="label">つまずき: 検証中にバイナリを差し替えてデータを失った</span>
+      <p>
+        monochrome の 1 回目は、実行中に <code>cargo build</code> を走らせてしまい、
+        前半と後半で別のバイナリを測っていました。同じ入力なのにインクの増加が
+        0.745 と 0.000 に分かれたのを不審に思って調べるまで、気づけませんでした。
+        結果はすべて破棄し、書き込み禁止にしたコピーを
+        <code>SUMI_BIN</code> で指定して流し直しています。
+      </p>
+      <p>
+        「どのバイナリで測ったか」を固定できない作りだったのが原因です。
+        測定の最中に測定対象を変えてしまえば、どんなに件数を増やしても意味がありません。
+      </p>
+    </div>
+
+    <h3 id="upstream">上流への報告</h3>
+
+    <p>
+      白黒反転の原因は sumi ではなく、JPEG のデコードに使っている
+      <a href="https://github.com/etemesi254/zune-image">zune-jpeg</a> 側にありました。
+      調べた内容を上流に報告し、修正も提案しています。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>zune-image への報告</caption>
+        <thead><tr><th>番号</th><th>種別</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><a href="https://github.com/etemesi254/zune-image/issues/442">#442</a></td>
+            <td>issue</td>
+            <td>YCCK を RGB にすると色が反転する。CMYK への変換は未実装で回避もできない</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/etemesi254/zune-image/pull/443">#443</a></td>
+            <td>PR</td>
+            <td>YCCK から CMYK への変換を実装（48 行）。上流のテスト画像で libjpeg と一致することを確認</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/etemesi254/zune-image/issues/444">#444</a></td>
+            <td>issue</td>
+            <td>APP14 付きの 1 成分 JPEG が 0.5.16-rc1 以降で復号できない（退行）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      #444 は #443 を検証する過程で見つけたものです。YCCK が CMYK の経路を通るようになって
+      初めて表面化しました。コーパスでは 58 件（736 枚）が該当し、YCCK の 9 件より影響が広いため、
+      sumi としては当面 0.5.15 に留まり、両方が直ってから 0.5.16 に上げる判断にしています。
     </p>
 
     <h3>実行のしかた</h3>
