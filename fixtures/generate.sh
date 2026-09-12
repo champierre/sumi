@@ -95,20 +95,13 @@ fi
 
 # ---------------------------------------------------------------------------
 # 5. ycck_jpeg.pdf -- a YCCK (Adobe APP14 transform 2) CMYK JPEG in a minimal PDF.
-#    Regression fixture: zune-jpeg decodes YCCK to inverted RGB, so this image is
-#    left unconverted with a warning instead of coming out almost black.
+#    The JPEG in src/ycck_adobe.jpg is a real Adobe-produced image, taken from a
+#    public domain PDF (see README.md). An image written by ImageMagick will not do:
+#    it stores YCCK without Adobe's inversion, so it cannot tell the two apart.
 # ---------------------------------------------------------------------------
-echo "[5/5] ycck_jpeg.pdf (ImageMagick + python)"
-if ! command -v magick >/dev/null 2>&1; then
-  echo "  !! magick not found -- skipping ycck_jpeg.pdf"
-else
-  YCCK_TMP="$(mktemp -d)"
-  magick -size 60x40 gradient:'rgb(250,250,245)-rgb(30,60,120)' \
-    -colorspace CMYK -sampling-factor 1x1 "$YCCK_TMP/ycck.jpg"
-  python3 "$SRC/make_ycck_pdf.py" "$YCCK_TMP/ycck.jpg" "$OUT/ycck_jpeg.pdf"
-  echo "  -> $OUT/ycck_jpeg.pdf"
-  rm -rf "$YCCK_TMP"
-fi
+echo "[5/5] ycck_jpeg.pdf (python)"
+python3 "$SRC/make_ycck_pdf.py" "$SRC/ycck_adobe.jpg" "$OUT/ycck_jpeg.pdf"
+echo "  -> $OUT/ycck_jpeg.pdf"
 
 echo "== done =="
 ls -la "$OUT"/*.pdf 2>/dev/null || true

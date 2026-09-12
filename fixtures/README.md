@@ -19,6 +19,13 @@ xref streams, etc).
   keys, image types, xref/object-stream structure, etc).
 - `src/make_ycck_pdf.py` — wraps a JPEG in a minimal one-page PDF; used to
   build `ycck_jpeg.pdf`.
+- `src/ycck_adobe.jpg` — a YCCK (Adobe APP14 transform 2) JPEG, extracted from
+  [CLIA - Brochure 8 - Proficiency Testing DOs and DON'Ts](https://commons.wikimedia.org/wiki/File:CLIA_-_Brochure_8_-_Proficiency_Testing_DOs_and_DON%27Ts.pdf)
+  (a work of the US federal government, public domain). Adobe stores YCCK with
+  CMY inverted, which is what makes this image useful: read as plain CMYK it is
+  almost black (gray 0.3), and only inverting all four components gives the real
+  picture (gray 140.3). A YCCK file written by ImageMagick carries no such
+  inversion, so it cannot stand in for this one.
 - The fixture PDFs themselves (this directory).
 
 ## Regenerating

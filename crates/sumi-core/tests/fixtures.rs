@@ -40,6 +40,10 @@ fn all_fixtures() -> Vec<PathBuf> {
 /// zune-jpeg decodes YCCK to inverted RGB (checked with 0.5.15 and 0.5.16-rc2), which used
 /// to turn a near-white poster almost black. Converting to CMYK is not implemented in the
 /// decoder either, so the image is reported as unsupported instead of being converted wrong.
+///
+/// This asserts that such an image is refused, not that the colors would be right if it were
+/// converted: sumi never decodes it. The fixture still uses a genuinely inverted Adobe image,
+/// so it will keep exercising the real case once the decoder can handle YCCK.
 #[test]
 fn ycck_jpeg_is_left_unconverted_with_a_warning() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/ycck_jpeg.pdf");
