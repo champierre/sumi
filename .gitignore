@@ -1,4 +1,11 @@
 /target
 /bench/inputs
 /bench/outputs
+/validation/corpus
+/validation/corpus.json
+/validation/results-*.json
+/validation/synthetic_src
+/validation/log-*.txt
+/validation/progress-*.txt
+__pycache__/
 .DS_Store
