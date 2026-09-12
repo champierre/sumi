@@ -14,6 +14,7 @@
 import argparse
 import concurrent.futures
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -28,7 +29,9 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 CORPUS = HERE / "corpus"
 MANIFEST = HERE / "corpus.json"
-SUMI = ROOT / "target" / "release" / "sumi"
+# 実行中に cargo build でバイナリが差し替わると、前半と後半で別のものを測ることになる。
+# SUMI_BIN に固定したコピーを指定できるようにしておく。
+SUMI = pathlib.Path(os.environ.get("SUMI_BIN") or ROOT / "target" / "release" / "sumi")
 
 # 既存テスト（fixtures.rs）と同じ基準。RGB の最大と最小の差がこれを超えたら色とみなす。
 COLOR_TOLERANCE = 3
