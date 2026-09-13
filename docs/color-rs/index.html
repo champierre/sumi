@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>color.rs を読む | sumi</title>
+<meta name="description" content="sumi のコードリーディング第 1 回。129 行の color.rs を、Rust を知らない前提で 1 行ずつ読み解きます。型、関数、struct、match、テストまで、実際に動かした値とともに解説します。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* 体裁はトップページ・開発日誌・PDF 解説に合わせる。色は墨の五彩だけ。 */
+  :root {
+    --kami: #f2f2f2;
+    --shiro: #ffffff;
+    --sho: #000000;
+    --no: #2b2b2b;
+    --ju: #575757;
+    --tan: #9b9b9b;
+    --sei: #d4d4d4;
+    --usu: #ebebeb;
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    /* コード例が主役なので等幅を先に置く。BIZ UDGothic が先頭だと ASCII の数字が
+       全角幅で組まれ、"0.30 * r" のような式が間延びする。 */
+    --code: ui-monospace, "SFMono-Regular", Menlo, Consolas, "BIZ UDGothic", monospace;
+
+    --measure: 40em;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+  }
+
+  img, svg { max-width: 100%; }
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ヘッダ */
+  .site-header { border-bottom: 1px solid var(--sei); background: var(--shiro); }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding-block: 14px; flex-wrap: wrap;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .seal {
+    display: grid; place-items: center; width: 32px; height: 32px;
+    background: var(--sho); color: var(--shiro);
+    font-family: var(--mincho); font-size: 19px; line-height: 1;
+  }
+  .brand-name { font-family: var(--mincho); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
+  .site-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9375rem; }
+  .site-nav a { text-decoration: none; color: var(--ju); }
+  .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+
+  /* 見出し */
+  .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
+  .page-head .kicker {
+    font-family: var(--code); font-size: .8125rem; color: var(--ju);
+    letter-spacing: .08em; margin: 0 0 .8em;
+  }
+  .page-head h1 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
+    margin: 0 0 .4em;
+  }
+  .lede { max-width: var(--measure); color: var(--ju); margin: 0 0 1em; }
+
+  .section { padding-block: clamp(32px, 6vw, 56px); }
+  .section h2 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.3rem, 3.4vw, 1.75rem); line-height: 1.5;
+    margin: 0 0 .8em; padding-bottom: .35em; border-bottom: 2px solid var(--sho);
+  }
+  .section h3 {
+    font-family: var(--mincho); font-weight: 700;
+    font-size: 1.125rem; margin: 2.2em 0 .5em;
+  }
+  .section p, .section li { max-width: var(--measure); }
+
+  /* 目次 */
+  .toc { background: var(--shiro); border: 1px solid var(--sei); padding: 20px 24px; max-width: var(--measure); }
+  .toc h2 { font-family: var(--mincho); font-size: 1rem; margin: 0 0 .5em; border: 0; padding: 0; }
+  .toc ol { margin: 0; padding-left: 1.4em; }
+  .toc li { margin-bottom: .2em; }
+  .toc a { color: var(--no); }
+
+  /* 表 */
+  .scroll { overflow-x: auto; margin: 1.2em 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; min-width: 26em; }
+  caption { text-align: left; color: var(--ju); font-size: .875rem; padding-bottom: .5em; }
+  th, td { border-bottom: 1px solid var(--sei); padding: .5em .7em; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--sho); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--code); white-space: nowrap; }
+  td code { white-space: nowrap; }
+
+  /* 補足の囲み */
+  .note {
+    background: var(--shiro); border-left: 3px solid var(--sho);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .note p { margin: 0 0 .5em; }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  /* Rust の文法メモ */
+  .rust {
+    background: var(--usu); border-left: 3px solid var(--tan);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .rust .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  .rust p { margin: 0 0 .5em; }
+  .rust p:last-child { margin-bottom: 0; }
+
+  code {
+    font-family: var(--code); font-size: .9em;
+    background: var(--shiro); padding: .1em .35em; border: 1px solid var(--sei);
+  }
+  pre {
+    font-family: var(--code); font-size: .875rem; line-height: 1.7;
+    background: var(--shiro); border: 1px solid var(--sei);
+    padding: 14px 16px; overflow-x: auto; margin: 1em 0;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; }
+  pre .hl { background: #e4e4e4; font-weight: 700; padding: .05em .2em; }
+  pre .dim { color: var(--tan); }
+
+  /* 図 */
+  figure { margin: 1.6em 0; max-width: var(--measure); }
+  figure.wide { max-width: 100%; }
+  figcaption { font-size: .875rem; color: var(--ju); margin-top: .6em; }
+  .fig { background: var(--shiro); border: 1px solid var(--sei); padding: 18px; }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig svg text[font-family="monospace"] { font-family: var(--code); letter-spacing: 0; }
+
+  /* 用語 */
+  dl.terms { max-width: var(--measure); margin: 1.2em 0; }
+  dl.terms dt { font-weight: 700; margin-top: 1em; }
+  dl.terms dd { margin: .2em 0 0; padding-left: 1.2em; border-left: 2px solid var(--sei); }
+
+  .site-footer {
+    border-top: 1px solid var(--sei); background: var(--shiro);
+    padding-block: 28px; margin-top: clamp(40px, 8vw, 72px);
+    color: var(--ju); font-size: .9375rem;
+  }
+  .site-footer p { max-width: var(--measure); }
+
+  @media (max-width: 680px) {
+    .site-nav a:not(:last-child) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="sumi トップ">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <nav class="site-nav" aria-label="ページ内">
+      <a href="../">トップ</a>
+      <a href="../pdf/">PDF のしくみ</a>
+      <a href="#whole">全体を眺める</a>
+      <a href="#rgb">中心の 3 行</a>
+      <a href="#tone">Tone</a>
+      <a href="#tests">テスト</a>
+      <a href="../diary/">開発日誌</a>
+      <a href="https://github.com/champierre/sumi">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap page-head">
+  <p class="kicker">コードリーディング 第 1 回</p>
+  <h1><code style="font:inherit;background:none;border:0;padding:0;">color.rs</code> を読む</h1>
+  <p class="lede">
+    sumi のソースは 5,503 行ありますが、その中心にあるのは
+    <strong>129 行のファイル 1 つ</strong>です。ここから読み始めます。
+  </p>
+  <p class="lede">
+    Rust は知らない前提で進めます。文法は出てきたところで、
+    <strong>そのつど灰色の囲みで説明します。</strong>
+    先に文法を覚える必要はありません。
+  </p>
+
+  <div class="note">
+    <span class="label">この回で分かること</span>
+    <p>
+      <a href="../pdf/">前回</a>見た <code>1 0 0 rg</code> → <code>0.3 g</code> という書き換えの、
+      <strong>「0.3」を計算している場所</strong>です。
+      白黒化という仕事の核心が、たった 3 行の掛け算だと分かります。
+    </p>
+  </div>
+
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#whole">まず全体を眺める</a></li>
+      <li><a href="#head">ファイルの冒頭 — コメントと <code>use</code></a></li>
+      <li><a href="#clamp">最初の関数 <code>clamp01</code></a></li>
+      <li><a href="#rgb">中心の 3 行 — <code>rgb_to_gray</code></a></li>
+      <li><a href="#cmyk">印刷の色 — <code>cmyk_to_gray</code></a></li>
+      <li><a href="#lab">割り切った近似 — <code>lab_to_gray</code></a></li>
+      <li><a href="#int">速さのための整数版</a></li>
+      <li><a href="#tone"><code>Tone</code> — 初めての struct</a></li>
+      <li><a href="#format">最後の関数 <code>format_number</code></a></li>
+      <li><a href="#tests">テストを読む</a></li>
+      <li><a href="#map">この 129 行はどこから呼ばれるか</a></li>
+    </ol>
+  </div>
+</div>
+
+<section class="section" id="whole" aria-labelledby="whole-title">
+  <div class="wrap">
+    <h2 id="whole-title">1. まず全体を眺める</h2>
+
+    <p>
+      細部に入る前に、129 行に何が入っているかを把握します。
+      中身は <strong>7 つの関数と 1 つのデータ型</strong>、それにテストだけです。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 290" role="img" aria-labelledby="fig1-title">
+          <title id="fig1-title">color.rs の構成</title>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="10" y="10" width="330" height="26" fill="#ebebeb" stroke="#9b9b9b"/>
+            <text x="20" y="28" font-family="monospace" font-size="11">1–6 行</text>
+            <text x="120" y="28" fill="#575757">説明のコメントと use</text>
+
+            <rect x="10" y="42" width="330" height="70" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="20" y="60" font-family="monospace" font-size="11">8–23 行</text>
+            <text x="120" y="60" font-weight="700">色 → 灰色の計算（小数）</text>
+            <text x="20" y="80" font-family="monospace" font-size="11" fill="#575757">clamp01 / rgb_to_gray</text>
+            <text x="20" y="98" font-family="monospace" font-size="11" fill="#575757">cmyk_to_gray / lab_to_gray</text>
+
+            <rect x="10" y="118" width="330" height="52" fill="#fff" stroke="#000"/>
+            <text x="20" y="136" font-family="monospace" font-size="11">25–34 行</text>
+            <text x="120" y="136" fill="#2b2b2b">同じ計算の整数版（画像用）</text>
+            <text x="20" y="156" font-family="monospace" font-size="11" fill="#575757">rgb8_to_gray / cmyk8_to_gray</text>
+
+            <rect x="10" y="176" width="330" height="52" fill="#fff" stroke="#000"/>
+            <text x="20" y="194" font-family="monospace" font-size="11">36–64 行</text>
+            <text x="120" y="194" fill="#2b2b2b">灰色 → 出力の調子</text>
+            <text x="20" y="214" font-family="monospace" font-size="11" fill="#575757">struct Tone</text>
+
+            <rect x="10" y="234" width="330" height="46" fill="#fff" stroke="#000"/>
+            <text x="20" y="252" font-family="monospace" font-size="11">66–75 行</text>
+            <text x="120" y="252" fill="#2b2b2b">数を文字列にする</text>
+            <text x="20" y="270" font-family="monospace" font-size="11" fill="#575757">format_number</text>
+
+            <rect x="370" y="42" width="340" height="238" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
+            <text x="380" y="60" font-family="monospace" font-size="11">77–129 行</text>
+            <text x="380" y="80" fill="#2b2b2b" font-weight="700">テスト（全体の 4 割）</text>
+            <text x="380" y="104" fill="#575757" font-size="11">・仕様どおりの値になるか</text>
+            <text x="380" y="124" fill="#575757" font-size="11">・整数版と小数版が一致するか</text>
+            <text x="380" y="144" fill="#575757" font-size="11">・閾値の境界が正しいか</text>
+            <text x="380" y="164" fill="#575757" font-size="11">・数の書式が正しいか</text>
+            <text x="380" y="196" fill="#575757" font-size="11">129 行のうち 53 行がテストです。</text>
+            <text x="380" y="216" fill="#575757" font-size="11">「この計算が正しい」と言い切るための</text>
+            <text x="380" y="236" fill="#575757" font-size="11">根拠がファイル内に同居しています。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>129 行の内訳。実質のコードは 76 行で、残りはテストです。</figcaption>
+    </figure>
+
+    <p>
+      流れは一方向です。<strong>色の成分（数値の並び）を受け取り、灰色 1 つを返し、
+      それを文字列にする。</strong>それだけです。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 120" role="img" aria-labelledby="fig2-title">
+          <title id="fig2-title">color.rs の処理の流れ</title>
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="6" y="40" width="126" height="46" fill="#fff" stroke="#000"/>
+            <text x="69" y="60" text-anchor="middle" font-family="monospace" font-size="11">1.0, 0.0, 0.0</text>
+            <text x="69" y="77" text-anchor="middle" font-size="10" fill="#575757">赤の 3 成分</text>
+
+            <path d="M138 63 H196" stroke="#000" stroke-width="1.5" marker-end="url(#ar)"/>
+            <text x="167" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">rgb_to_gray</text>
+
+            <rect x="202" y="40" width="110" height="46" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="257" y="60" text-anchor="middle" font-family="monospace" font-size="11">0.30</text>
+            <text x="257" y="77" text-anchor="middle" font-size="10" fill="#575757">灰色の値</text>
+
+            <path d="M318 63 H376" stroke="#000" stroke-width="1.5" marker-end="url(#ar)"/>
+            <text x="347" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">Tone::apply</text>
+
+            <rect x="382" y="40" width="110" height="46" fill="#fff" stroke="#000"/>
+            <text x="437" y="60" text-anchor="middle" font-family="monospace" font-size="11">0.30</text>
+            <text x="437" y="77" text-anchor="middle" font-size="10" fill="#575757">モードを反映</text>
+
+            <path d="M498 63 H568" stroke="#000" stroke-width="1.5" marker-end="url(#ar)"/>
+            <text x="533" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">format_number</text>
+
+            <rect x="574" y="40" width="132" height="46" fill="#000"/>
+            <text x="640" y="60" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff">"0.3"</text>
+            <text x="640" y="77" text-anchor="middle" font-size="10" fill="#fff">PDF に書く文字列</text>
+
+            <text x="6" y="110" font-size="11" fill="#575757">この 4 段が、PDF の中の「1 0 0 rg」を「0.3 g」に変える計算のすべてです。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>左から右へ一方向。状態を持たず、同じ入力には必ず同じ出力を返します。</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="head" aria-labelledby="head-title">
+  <div class="wrap">
+    <h2 id="head-title">2. ファイルの冒頭 — コメントと <code>use</code></h2>
+
+<pre><code>//! Color math shared by content streams, images and shadings.
+//!
+//! The RGB and CMYK formulas are the ones the PDF specification gives for converting device
+//! colors to DeviceGray (ISO 32000-1, 10.3), which is also what Acrobat and Ghostscript use.
+
+use crate::Mode;</code></pre>
+
+    <p>
+      1〜4 行目はコメントです。
+      「コンテンツストリーム・画像・グラデーションで共通して使う色の計算」だと書いてあります。
+      <a href="../pdf/#stream">前回</a>見たコンテンツストリームだけでなく、
+      画像の画素やグラデーションも、最終的にここへ来ます。
+    </p>
+
+    <p>
+      大事なのは後半です。<strong>この計算式は sumi が考えたものではなく、
+      PDF 仕様（ISO 32000-1 の 10.3）が定めているもの</strong>で、
+      Acrobat も Ghostscript も同じ式を使う、と書いてあります。
+      出典が書いてあるので、疑ったら原典を当たれます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ： <code>//</code> と <code>//!</code></span>
+      <p>
+        <code>//</code> から行末まではコメントです。
+        <code>//!</code> は特別で、<strong>「このファイル自身の説明」</strong>を意味します。
+        <code>cargo doc</code> というコマンドで、ここから HTML のドキュメントが自動生成されます。
+        あとで出てくる <code>///</code> は「次に書かれている関数の説明」です。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ： <code>use crate::Mode;</code></span>
+      <p>
+        ほかのファイルにあるものを、このファイルで使えるようにする宣言です。
+        <code>crate</code> は「このライブラリ全体」を指す言葉で、
+        <code>crate::Mode</code> は「このライブラリの <code>Mode</code> というもの」。
+        実体は <code>options.rs</code> にあり、grayscale か monochrome かを表します。
+        これを書いておくと、以降 <code>Mode</code> と短く書けます。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="clamp" aria-labelledby="clamp-title">
+  <div class="wrap">
+    <h2 id="clamp-title">3. 最初の関数 <code>clamp01</code></h2>
+
+<pre><code>pub(crate) fn clamp01(v: f64) -> f64 {
+    if v.is_nan() { 0.0 } else { v.clamp(0.0, 1.0) }
+}</code></pre>
+
+    <p>
+      3 行です。やっていることは<strong>「0 未満なら 0 に、1 より大きければ 1 にする」</strong>だけ。
+      <a href="../pdf/#color">前回</a>見たとおり PDF の色の値は 0〜1 なので、
+      その範囲からはみ出さないよう最後に通す関門です。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：関数の書き方</span>
+      <p>
+        <code>fn 名前(引数: 型) -&gt; 戻り値の型 { ... }</code> が関数の形です。
+        <code>v: f64</code> は「<code>v</code> という引数、型は <code>f64</code>」。
+        <code>-&gt; f64</code> は「<code>f64</code> を返す」。
+      </p>
+      <p>
+        <code>f64</code> は<strong>小数を表す型</strong>です（64 ビットの浮動小数点数）。
+        Rust では型を必ず書きます。面倒に見えますが、
+        「ここには小数が来る」と決まっているので、書き間違いをコンパイラが見つけてくれます。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>pub(crate)</code> と、<code>return</code> がないこと</span>
+      <p>
+        <code>pub(crate)</code> は<strong>公開範囲</strong>の指定です。
+        <code>pub</code> なら誰からでも、何も書かなければ同じファイル内だけ、
+        <code>pub(crate)</code> は<strong>このライブラリの中からだけ</strong>使えます。
+        <code>color.rs</code> の関数はすべて <code>pub(crate)</code> で、
+        sumi を使う外部の人には見えません。内部の部品だからです。
+      </p>
+      <p>
+        そして <code>return</code> がありません。Rust では
+        <strong>ブロックの最後の式が、そのまま戻り値</strong>になります。
+        セミコロンを付けないのが目印です。
+        <code>if ... { 0.0 } else { ... }</code> 全体が 1 つの式で、その値が返ります。
+      </p>
+    </div>
+
+    <h3>なぜ NaN を特別扱いするのか</h3>
+
+    <p>
+      <code>is_nan()</code> の <strong>NaN</strong> は "Not a Number" の略で、
+      <code>0.0 / 0.0</code> のような計算で生まれる「数でない値」です。
+      これが厄介なのは、<strong>どんな比較をしても偽になる</strong>ことです。
+      NaN は 0 より大きくもなく、小さくもありません。
+    </p>
+
+    <p>
+      PDF の中の数値は壊れていることがあります。前回見たとおり PDF はただのテキストなので、
+      おかしな値が書かれていることもあれば、計算の途中で NaN が生まれることもあります。
+      そのまま通すと<strong>色が不定になり、最悪ページが真っ黒になります。</strong>
+      ここで 0.0（黒）に倒しているのは、
+      「不定なら決め打ちで黒」という安全側の判断です。
+    </p>
+
+    <div class="note">
+      <span class="label">この 1 行が守っているもの</span>
+      <p>
+        <code>clamp01</code> は、このあと出てくるすべての計算の出口に置かれています。
+        <strong>色の計算がどう転んでも、外に出る値は必ず 0〜1 の実数</strong>という保証を、
+        たった 3 行で作っています。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="rgb" aria-labelledby="rgb-title">
+  <div class="wrap">
+    <h2 id="rgb-title">4. 中心の 3 行 — <code>rgb_to_gray</code></h2>
+
+    <p>ここが sumi の心臓部です。</p>
+
+<pre><code>pub(crate) fn rgb_to_gray(r: f64, g: f64, b: f64) -> f64 {
+    <span class="hl">clamp01(0.30 * r + 0.59 * g + 0.11 * b)</span>
+}</code></pre>
+
+    <p>
+      赤・緑・青の 3 つを受け取り、それぞれに重みを掛けて足し、
+      <code>clamp01</code> に通して返す。<strong>これだけです。</strong>
+      5,503 行のライブラリの中心が、この 1 行の掛け算です。
+    </p>
+
+    <p>
+      重みが違うのは、<a href="../pdf/#color">前回</a>触れたとおり
+      <strong>人間の目が色ごとに明るさを違って感じる</strong>からです。
+      緑がいちばん明るく見えるので 0.59、青はほとんど明るさに寄与しないので 0.11。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 190" role="img" aria-labelledby="fig3-title">
+          <title id="fig3-title">重み付き平均の図</title>
+          <g font-family="sans-serif" font-size="12">
+            <text x="10" y="20" font-weight="700">1 0 0 rg（赤）を灰色にする</text>
+
+            <rect x="10" y="34" width="150" height="30" fill="#ff0000"/>
+            <text x="170" y="54" font-family="monospace" font-size="11">R = 1.0</text>
+            <text x="260" y="54" font-family="monospace" font-size="11">× 0.30 =</text>
+            <text x="350" y="54" font-family="monospace" font-size="11" font-weight="700">0.30</text>
+
+            <rect x="10" y="70" width="150" height="30" fill="#00ff00"/>
+            <text x="170" y="90" font-family="monospace" font-size="11">G = 0.0</text>
+            <text x="260" y="90" font-family="monospace" font-size="11">× 0.59 =</text>
+            <text x="350" y="90" font-family="monospace" font-size="11">0.00</text>
+
+            <rect x="10" y="106" width="150" height="30" fill="#0000ff"/>
+            <text x="170" y="126" font-family="monospace" font-size="11">B = 0.0</text>
+            <text x="260" y="126" font-family="monospace" font-size="11">× 0.11 =</text>
+            <text x="350" y="126" font-family="monospace" font-size="11">0.00</text>
+
+            <path d="M260 140 H410" stroke="#000" stroke-width="1.5"/>
+            <text x="260" y="162" font-family="monospace" font-size="12" font-weight="700">合計 = 0.30</text>
+
+            <rect x="450" y="34" width="150" height="102" fill="#4d4d4d"/>
+            <text x="525" y="162" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700">0.3 g</text>
+            <text x="525" y="180" text-anchor="middle" font-size="10" fill="#575757">PDF にこう書き込まれる</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>重みの合計は 0.30 + 0.59 + 0.11 = 1.00。だから白（1,1,1）は必ず白（1.0）になります。</figcaption>
+    </figure>
+
+    <h3>この式が「正しい」と言える根拠</h3>
+
+    <p>
+      冒頭のコメントにあったとおり、この係数は PDF 仕様が定めたものです。
+      勝手な値ではないので、Acrobat や Ghostscript で変換した結果と一致します。
+      <a href="../#benchmark">トップページの比較</a>で
+      「見た目はほぼ同じ」という結果が出ているのは、そもそも同じ式だからです。
+    </p>
+
+    <div class="note">
+      <span class="label">実際に確かめる</span>
+      <p>
+        前回作った 441 バイトの PDF（赤い長方形）を変換すると、
+        <code>1 0 0 rg</code> が <code>0.3 g</code> になります。
+        <code>0.30 × 1 + 0.59 × 0 + 0.11 × 0 = 0.3</code>。
+        この 1 行が動いた結果が、そのまま出力に現れています。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="cmyk" aria-labelledby="cmyk-title">
+  <div class="wrap">
+    <h2 id="cmyk-title">5. 印刷の色 — <code>cmyk_to_gray</code></h2>
+
+<pre><code>pub(crate) fn cmyk_to_gray(c: f64, m: f64, y: f64, k: f64) -> f64 {
+    clamp01(1.0 - (0.30 * c + 0.59 * m + 0.11 * y + k).min(1.0))
+}</code></pre>
+
+    <p>
+      CMYK は印刷用の色で、シアン・マゼンタ・イエロー・ブラックの
+      <strong>インクの量</strong>を表します。RGB と発想が逆で、
+      <strong>数値が大きいほど暗くなります</strong>（インクを多く乗せるので）。
+    </p>
+
+    <p>だから式も裏返しになっています。読み解くと 3 段階です。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>式を 3 つに分けて読む</caption>
+        <thead><tr><th>部分</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>0.30*c + 0.59*m + 0.11*y + k</code></td><td>インクの総量。CMY には RGB と同じ重み、K はそのまま足す</td></tr>
+          <tr><td><code>.min(1.0)</code></td><td>インクは 1.0 より濃くならないので頭打ちにする</td></tr>
+          <tr><td><code>1.0 - …</code></td><td>インクが多いほど暗い、に反転する</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>.min(1.0)</code> というメソッド呼び出し</span>
+      <p>
+        <code>(式).min(1.0)</code> は「その式の値と 1.0 の小さいほう」を返します。
+        値のうしろに <code>.</code> を付けて機能を呼ぶ書き方を<strong>メソッド</strong>と言います。
+        <code>v.is_nan()</code> や <code>v.clamp(0.0, 1.0)</code> も同じ形でした。
+      </p>
+    </div>
+
+    <h3>代表的な値</h3>
+
+    <p>実際に計算させた結果です。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>cmyk_to_gray の実測値</caption>
+        <thead><tr><th>色</th><th>CMYK</th><th class="num">結果</th><th>確認</th></tr></thead>
+        <tbody>
+          <tr><td>黒（K 100%）</td><td><code>0, 0, 0, 1</code></td><td class="num">0.00</td><td>真っ黒。正しい</td></tr>
+          <tr><td>白（インクなし）</td><td><code>0, 0, 0, 0</code></td><td class="num">1.00</td><td>紙の色。正しい</td></tr>
+          <tr><td>シアン 100%</td><td><code>1, 0, 0, 0</code></td><td class="num">0.70</td><td><code>1 - 0.30</code></td></tr>
+          <tr><td>赤（M+Y）</td><td><code>0, 1, 1, 0</code></td><td class="num">0.30</td><td><code>1 - (0.59+0.11)</code>。RGB の赤と一致</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      最後の行が気持ちのいいところです。CMYK で赤を作る（マゼンタ＋イエロー）と
+      <strong>0.30</strong> になり、RGB の赤と<strong>ぴったり同じ灰色</strong>になります。
+      2 つの式が矛盾していない証拠です。
+    </p>
+
+    <div class="note">
+      <span class="label">ここは簡易式だと仕様書に書いてある</span>
+      <p>
+        本来 CMYK から正確な色を出すには、ICC プロファイルという色の対応表が要ります。
+        sumi はそれを使わず、この簡易式を使っています。
+        <a href="https://github.com/champierre/sumi/blob/main/sumi_spec.md">仕様書</a>に
+        「より正確な色管理は将来バージョンで対応する」と明記されています。
+        <strong>実際、この簡易式では ICC を使う場合より明るめに出ます。</strong>
+        シアン 100% がここでは 0.70 ですが、poppler では約 0.5 です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="lab" aria-labelledby="lab-title">
+  <div class="wrap">
+    <h2 id="lab-title">6. 割り切った近似 — <code>lab_to_gray</code></h2>
+
+<pre><code>/// Approximates the lightness of a CIE L*a*b* color.
+pub(crate) fn lab_to_gray(l: f64) -> f64 {
+    clamp01(l / 100.0)
+}</code></pre>
+
+    <p>
+      Lab は色を「明るさ（L）＋色味（a, b）」で表す方式です。
+      L は 0〜100 の範囲なので、100 で割れば 0〜1 になる。それだけの関数です。
+      <strong>a と b は受け取ってすらいません。</strong>明るさだけ見ればいいからです。
+    </p>
+
+    <p>
+      注目すべきはコメントの <strong>Approximates（近似する）</strong> という言葉です。
+      これは「正確ではない」と自分で認めている書き方です。
+      実際どれくらいずれるのか、正しい変換式と比べてみました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>L/100 と、正しい変換（CIE の式）の比較</caption>
+        <thead><tr><th class="num">L*</th><th class="num">sumi（L/100）</th><th class="num">正しい値</th><th class="num">差</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.000</td></tr>
+          <tr><td class="num">25</td><td class="num">0.250</td><td class="num">0.044</td><td class="num">0.206</td></tr>
+          <tr><td class="num">50</td><td class="num">0.500</td><td class="num">0.184</td><td class="num">0.316</td></tr>
+          <tr><td class="num">75</td><td class="num">0.750</td><td class="num">0.483</td><td class="num">0.267</td></tr>
+          <tr><td class="num">100</td><td class="num">1.000</td><td class="num">1.000</td><td class="num">1.000 と一致</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      中間調で 0.3 近くずれます。<strong>小さくない差です。</strong>
+      それでもこの実装が選ばれているのは、
+      Lab を使う PDF がまれで、両端（真っ黒と真っ白）は正確に合うからでしょう。
+    </p>
+
+    <div class="note">
+      <span class="label">読み手として覚えておきたいこと</span>
+      <p>
+        コードには<strong>「わざと手を抜いた場所」</strong>があります。
+        大事なのは、それが隠されていないことです。
+        この関数は <code>Approximates</code> と書いてあるので、
+        精度が問題になったときに真っ先に見るべき場所だと分かります。
+        コメントが実装の質を正直に申告している、良い例です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="int" aria-labelledby="int-title">
+  <div class="wrap">
+    <h2 id="int-title">7. 速さのための整数版</h2>
+
+    <p>
+      ここまでと同じ計算が、もう一度別の形で書かれています。
+    </p>
+
+<pre><code>/// Integer version of [`rgb_to_gray`] for 8-bit samples (weights 77/151/28 out of 256).
+pub(crate) fn rgb8_to_gray(r: u8, g: u8, b: u8) -> u8 {
+    ((77 * r as u32 + 151 * g as u32 + 28 * b as u32 + 128) >> 8) as u8
+}</code></pre>
+
+    <p>
+      同じことをするのに、なぜ 2 つ用意するのか。
+      答えは<strong>画像</strong>です。写真 1 枚は数百万画素あり、
+      その 1 つ 1 つでこの計算が走ります。小数の計算より整数の計算のほうが速いので、
+      <strong>画像だけは専用の整数版を使います。</strong>
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>u8</code> と <code>u32</code>、そして <code>as</code></span>
+      <p>
+        <code>u8</code> は <strong>0〜255 の整数</strong>（8 ビット、符号なし）。
+        画像の 1 画素の 1 成分がちょうどこの範囲なので、画像データは <code>u8</code> で扱います。
+        <code>u32</code> は 0〜約 43 億の整数です。
+      </p>
+      <p>
+        <code>r as u32</code> は<strong>型の変換</strong>です。
+        なぜ必要かというと、<code>u8</code> のまま <code>77 * 255</code> を計算すると
+        19,635 になり <strong>255 を超えてあふれてしまう</strong>から。
+        先に大きな型へ移してから計算します。
+        最後の <code>as u8</code> で 0〜255 に戻しています。
+      </p>
+    </div>
+
+    <h3>77、151、28 という数字の正体</h3>
+
+    <p>
+      唐突に見えますが、種を明かすと簡単です。<strong>元の重みを 256 倍しただけ</strong>です。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>小数の重みと整数の重みの対応</caption>
+        <thead><tr><th>成分</th><th class="num">小数の重み</th><th class="num">× 256</th><th class="num">整数の重み</th></tr></thead>
+        <tbody>
+          <tr><td>赤</td><td class="num">0.30</td><td class="num">76.80</td><td class="num">77</td></tr>
+          <tr><td>緑</td><td class="num">0.59</td><td class="num">151.04</td><td class="num">151</td></tr>
+          <tr><td>青</td><td class="num">0.11</td><td class="num">28.16</td><td class="num">28</td></tr>
+          <tr><td><strong>合計</strong></td><td class="num"><strong>1.00</strong></td><td class="num">256.00</td><td class="num"><strong>256</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      合計がちょうど 256 になるのが肝心です。
+      256 倍して足したあと 256 で割れば、元の重み付き平均に戻ります。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>&gt;&gt; 8</code> は「256 で割る」</span>
+      <p>
+        <code>&gt;&gt;</code> は<strong>ビットを右にずらす</strong>演算です。
+        2 進数を 1 桁右にずらすと値が半分になるので、
+        8 桁ずらすと <strong>2<sup>8</sup> = 256 分の 1</strong> になります。
+        割り算より速いので、256 のような 2 の累乗で割るときによく使われます。
+      </p>
+      <p>
+        実測: <code>(77 × 255 + 128) = 19,763</code>。
+        <code>19763 / 256 = 77</code>、<code>19763 &gt;&gt; 8 = 77</code>。同じ結果です。
+      </p>
+    </div>
+
+    <h3>謎の <code>+ 128</code>（四捨五入）</h3>
+
+    <p>
+      <code>&gt;&gt; 8</code> は小数点以下を<strong>切り捨てます</strong>。
+      切り捨てだけだと常に暗い方へ寄ってしまうので、
+      あらかじめ <strong>半分（256 ÷ 2 = 128）を足しておいて、四捨五入と同じ効果</strong>を出しています。
+      整数だけで四捨五入する古典的な手です。
+    </p>
+
+    <p>実際に全 256 階調で、小数版とどれだけずれるか測りました。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>整数版と小数版の一致（実測）</caption>
+        <thead><tr><th>入力</th><th class="num">整数版</th><th class="num">小数版</th><th class="num">差</th></tr></thead>
+        <tbody>
+          <tr><td>白 (255,255,255)</td><td class="num">255</td><td class="num">255.000</td><td class="num">0.000</td></tr>
+          <tr><td>赤 (255,0,0)</td><td class="num">77</td><td class="num">76.500</td><td class="num">0.500</td></tr>
+          <tr><td>緑 (0,255,0)</td><td class="num">150</td><td class="num">150.450</td><td class="num">0.450</td></tr>
+          <tr><td>青 (0,0,255)</td><td class="num">28</td><td class="num">28.050</td><td class="num">0.050</td></tr>
+          <tr><td>灰色 全 256 階調</td><td class="num">—</td><td class="num">—</td><td class="num">0.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      差は最大でも 0.5、灰色にいたっては<strong>完全に一致</strong>します。
+      255 階調のうち 0.5 のずれは目に見えません。速さのために精度を捨てた、
+      という話ではなく<strong>実質同じ結果を速く出している</strong>わけです。
+    </p>
+
+    <p>
+      CMYK の整数版も同じ考えですが、最後に反転が入ります。
+    </p>
+
+<pre><code>pub(crate) fn cmyk8_to_gray(c: u8, m: u8, y: u8, k: u8) -> u8 {
+    let ink = ((77 * c as u32 + 151 * m as u32 + 28 * y as u32 + 128) >> 8) + k as u32;
+    255 - ink.min(255) as u8
+}</code></pre>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>let</code></span>
+      <p>
+        <code>let ink = ...;</code> は<strong>変数を作る</strong>宣言です。
+        式が複雑になったので、途中の「インク総量」に名前を付けて読みやすくしています。
+        Rust の変数は<strong>既定で書き換えられません</strong>。
+        あとから変えたいときは <code>let mut</code> と書きます。
+        うっかり書き換える事故が起きにくい仕組みです。
+      </p>
+    </div>
+
+    <p>
+      シアン 100%（255,0,0,0）を入れると <code>ink = 77</code>、
+      <code>255 - 77 = 178</code>。小数版の <code>0.70 × 255 = 178.5</code> とほぼ一致します。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="tone" aria-labelledby="tone-title">
+  <div class="wrap">
+    <h2 id="tone-title">8. <code>Tone</code> — 初めての struct</h2>
+
+    <p>
+      ここまでは関数だけでしたが、次はデータ型が出てきます。
+    </p>
+
+<pre><code>#[derive(Debug, Clone, Copy)]
+pub(crate) struct Tone {
+    pub mode: Mode,
+    pub threshold: f64,
+}</code></pre>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>struct</code></span>
+      <p>
+        <strong>関係するデータをまとめた型</strong>です。
+        ここでは「モード」と「閾値」の 2 つを <code>Tone</code>（調子）という名前で束ねています。
+        2 つはいつもセットで使うので、バラバラに持ち回るより間違いが減ります。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>#[derive(...)]</code></span>
+      <p>
+        <strong>よくある機能を自動で付けてもらう</strong>指定です。
+        <code>Debug</code> はデバッグ表示、<code>Clone</code> は複製、
+        <code>Copy</code> は「代入時に自動で複製される」性質。
+        <code>Tone</code> は小さなデータなので、複製しても安いから <code>Copy</code> が付いています。
+        自分で書けば何十行にもなるものを 1 行で済ませる仕組みです。
+      </p>
+    </div>
+
+    <p>そして、この型に<strong>ふるまい</strong>を与えるのが次のブロックです。</p>
+
+<pre><code>impl Tone {
+    /// Tolerance so that e.g. `0.5 0.5 0.5 rg` is not pushed below a 0.5 threshold by rounding.
+    const EPSILON: f64 = 1e-6;
+
+    pub(crate) fn apply(self, gray: f64) -> f64 {
+        let gray = clamp01(gray);
+        match self.mode {
+            Mode::Grayscale => gray,
+            Mode::Monochrome => {
+                if gray + Self::EPSILON &lt; self.threshold {
+                    0.0
+                } else {
+                    1.0
+                }
+            }
+        }
+    }
+
+    pub(crate) fn is_monochrome(self) -> bool {
+        self.mode == Mode::Monochrome
+    }
+}</code></pre>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>impl</code> と <code>self</code></span>
+      <p>
+        <code>impl Tone { ... }</code> は「<code>Tone</code> に属する関数をここに書く」という意味です。
+        中の関数の第 1 引数が <code>self</code> になっているのが目印で、
+        <strong>その <code>Tone</code> 自身</strong>を指します。
+        だから <code>tone.apply(0.3)</code> のように、値のうしろに <code>.</code> を付けて呼べます。
+        これまで使ってきた <code>v.clamp(...)</code> と同じ形です。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>match</code></span>
+      <p>
+        <strong>値によって処理を振り分ける</strong>書き方です。
+        <code>match self.mode</code> で、grayscale なら上、monochrome なら下、と分かれます。
+      </p>
+      <p>
+        便利なのは、<strong>Rust が「全部の場合を書いたか」を検査する</strong>こと。
+        もし将来 <code>Mode</code> に 3 つ目（たとえばセピア）を足したら、
+        ここを直すまで<strong>コンパイルが通りません</strong>。
+        対応漏れが実行時ではなくビルド時に見つかります。
+      </p>
+    </div>
+
+    <h3><code>apply</code> がしていること</h3>
+
+    <p>
+      grayscale モードなら、計算した灰色を<strong>そのまま返す</strong>。
+      monochrome モードなら、閾値と比べて<strong>0.0（黒）か 1.0（白）に振り分ける</strong>。
+      それだけです。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 200" role="img" aria-labelledby="fig4-title">
+          <title id="fig4-title">grayscale と monochrome の違い</title>
+          <g font-family="sans-serif" font-size="12">
+            <text x="10" y="18" font-weight="700">grayscale — 濃淡がそのまま残る</text>
+            <rect x="10" y="28" width="80" height="36" fill="#4b4b4b"/>
+            <rect x="90" y="28" width="80" height="36" fill="#797979"/>
+            <rect x="170" y="28" width="80" height="36" fill="#e7e7e7"/>
+            <rect x="250" y="28" width="80" height="36" fill="#f0f0f0"/>
+            <rect x="330" y="28" width="80" height="36" fill="#fff" stroke="#d4d4d4"/>
+            <text x="10" y="80" font-family="monospace" font-size="10" fill="#575757">0.2958</text>
+            <text x="90" y="80" font-family="monospace" font-size="10" fill="#575757">0.4743</text>
+            <text x="170" y="80" font-family="monospace" font-size="10" fill="#575757">0.9067</text>
+            <text x="250" y="80" font-family="monospace" font-size="10" fill="#575757">0.9382</text>
+            <text x="330" y="80" font-family="monospace" font-size="10" fill="#575757">1</text>
+
+            <text x="10" y="118" font-weight="700">monochrome（閾値 0.5）— 黒か白に倒れる</text>
+            <rect x="10" y="128" width="80" height="36" fill="#000"/>
+            <rect x="90" y="128" width="80" height="36" fill="#000"/>
+            <rect x="170" y="128" width="80" height="36" fill="#fff" stroke="#d4d4d4"/>
+            <rect x="250" y="128" width="80" height="36" fill="#fff" stroke="#d4d4d4"/>
+            <rect x="330" y="128" width="80" height="36" fill="#fff" stroke="#d4d4d4"/>
+            <text x="10" y="180" font-family="monospace" font-size="10" fill="#575757">0</text>
+            <text x="90" y="180" font-family="monospace" font-size="10" fill="#575757">0</text>
+            <text x="170" y="180" font-family="monospace" font-size="10" fill="#575757">1</text>
+            <text x="250" y="180" font-family="monospace" font-size="10" fill="#575757">1</text>
+            <text x="330" y="180" font-family="monospace" font-size="10" fill="#575757">1</text>
+
+            <path d="M440 40 V170" stroke="#d4d4d4"/>
+            <text x="460" y="60" font-size="11" fill="#575757">実際の PDF（表）を変換して</text>
+            <text x="460" y="80" font-size="11" fill="#575757">得られた 5 つのグレー値です。</text>
+            <text x="460" y="110" font-size="11" fill="#575757">閾値 0.5 では、0.4743 が黒側に</text>
+            <text x="460" y="130" font-size="11" fill="#575757">落ちます。閾値を 0.3 にすると</text>
+            <text x="460" y="150" font-size="11" fill="#575757">白側に移ります。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption><code>fixtures/libreoffice_table.pdf</code> を実際に両モードで変換した結果です。</figcaption>
+    </figure>
+
+    <h3>この 1 行がいちばん面白い — <code>EPSILON</code></h3>
+
+<pre><code>const EPSILON: f64 = 1e-6;
+...
+if gray + Self::EPSILON &lt; self.threshold { 0.0 } else { 1.0 }</code></pre>
+
+    <p>
+      なぜ、比べる前にごく小さい数（0.000001）を足すのか。
+      コメントに答えが書いてあります。
+      <strong>「<code>0.5 0.5 0.5 rg</code> が、丸め誤差で閾値 0.5 を下回らないようにするため」</strong>。
+    </p>
+
+    <p>実際に計算してみると、これは絵に描いた餅ではありません。</p>
+
+<pre><code><span class="dim">中間の灰色 (0.5, 0.5, 0.5) を変換すると:</span>
+0.30 × 0.5 + 0.59 × 0.5 + 0.11 × 0.5
+  = <span class="hl">0.49999999999999994</span>   <span class="dim">← 0.5 ちょうどにならない！</span>
+
+<span class="dim">閾値 0.5 と比べると:</span>
+0.49999999999999994 &lt; 0.5   → <span class="hl">真</span>（黒に落ちる）
+0.49999999999999994 + 1e-6 &lt; 0.5 → <span class="hl">偽</span>（白のまま）</code></pre>
+
+    <p>
+      コンピュータの小数は 2 進数なので、0.30 や 0.59 を正確には表せません。
+      その誤差が積もって、<strong>数学的には 0.5 ちょうどのはずの値が、
+      ほんのわずかに 0.5 未満になります。</strong>
+      EPSILON がなければ、ちょうど中間の灰色が黒に倒れてしまう。
+    </p>
+
+    <div class="note">
+      <span class="label">この 1 行から読み取れること</span>
+      <p>
+        これは<strong>実際に踏んだ人にしか書けないコード</strong>です。
+        「なんとなく安全のため」ではなく、具体的な入力（<code>0.5 0.5 0.5 rg</code>）が
+        コメントに書かれています。
+        <strong>コードを読むときは、こういう「不自然に見える 1 行」を探すと学びが多い</strong>です。
+        たいてい、そこに誰かがハマった跡があります。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="format" aria-labelledby="format-title">
+  <div class="wrap">
+    <h2 id="format-title">9. 最後の関数 <code>format_number</code></h2>
+
+    <p>
+      計算が終わったら、PDF に書き込むために<strong>文字列</strong>にします。
+    </p>
+
+<pre><code>pub(crate) fn format_number(v: f64) -> String {
+    let rounded = (v * 10000.0).round() / 10000.0;
+    if rounded == 0.0 || !rounded.is_finite() {
+        return "0".to_string();
+    }
+    let s = format!("{rounded:.4}");
+    let s = s.trim_end_matches('0').trim_end_matches('.');
+    s.to_string()
+}</code></pre>
+
+    <p>
+      コメントにある要件は 3 つ。
+      <strong>小数点以下は 4 桁まで／指数表記にしない／末尾の 0 を付けない。</strong>
+      理由は <a href="../pdf/#objects">前回</a>触れたとおり、
+      <strong>PDF は指数表記（<code>1e-5</code> のような書き方）を受け付けない</strong>からです。
+      うっかり出力すると壊れた PDF ができます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>String</code> と <code>format!</code></span>
+      <p>
+        <code>String</code> は文字列の型です。
+        <code>format!("{rounded:.4}")</code> は「<code>rounded</code> を小数点以下 4 桁で文字列にする」。
+        <code>{}</code> の中に変数名を書けるのが今どきの Rust の書き方です。
+      </p>
+      <p>
+        <code>trim_end_matches('0')</code> は<strong>末尾の 0 を削る</strong>メソッド。
+        <code>"0.3000"</code> → <code>"0.3"</code>、
+        さらに <code>trim_end_matches('.')</code> で
+        <code>"1."</code> → <code>"1"</code> にします。
+      </p>
+    </div>
+
+    <p>実際に動かした結果です。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>format_number の実測値</caption>
+        <thead><tr><th class="num">入力</th><th class="num">出力</th><th>なぜ</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0.3</td><td class="num"><code>"0.3"</code></td><td>そのまま</td></tr>
+          <tr><td class="num">1.0</td><td class="num"><code>"1"</code></td><td><code>"1.0000"</code> の末尾を削った</td></tr>
+          <tr><td class="num">0.123456</td><td class="num"><code>"0.1235"</code></td><td>4 桁に四捨五入</td></tr>
+          <tr><td class="num">-0.00001</td><td class="num"><code>"0"</code></td><td><strong>指数表記を避けるための特別扱い</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      最後の行が、この関数がある理由です。
+      <code>-0.00001</code> をそのまま文字列にすると <code>"-0.00001"</code>、
+      環境によっては <code>"-1e-5"</code> になります。
+      4 桁に丸めれば 0 なので、<strong>早々に <code>"0"</code> を返してしまう</strong>のが安全です。
+      <code>is_finite()</code> で無限大も同じ扱いにしています。
+    </p>
+
+    <p>
+      この関数が返した文字列が、<code>content.rs</code> で
+      <code>"0.3"</code> + <code>" g"</code> と組み立てられ、PDF に書き込まれます。
+      <a href="../pdf/#sumi">前回見た書き換え</a>の、最後の一歩がここです。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="tests" aria-labelledby="tests-title">
+  <div class="wrap">
+    <h2 id="tests-title">10. テストを読む</h2>
+
+    <p>
+      129 行のうち 53 行、<strong>4 割がテスト</strong>です。
+      テストは「このコードが何を約束しているか」の一覧なので、
+      仕様書としても読めます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>#[cfg(test)]</code> と <code>assert!</code></span>
+      <p>
+        <code>#[cfg(test)]</code> は「テストのときだけこの部分を含める」指定です。
+        製品に組み込むときは<strong>まるごと消えます</strong>ので、
+        テストを同じファイルに書いても本体は重くなりません。
+      </p>
+      <p>
+        <code>assert_eq!(a, b)</code> は「a と b が等しくなければ失敗」、
+        <code>assert!(条件)</code> は「条件が偽なら失敗」。
+        <code>cargo test</code> で実行します。
+      </p>
+    </div>
+
+    <h3>テスト 1 — 仕様どおりの値になるか</h3>
+
+<pre><code>assert!((rgb_to_gray(1.0, 0.0, 0.0) - 0.30).abs() &lt; 1e-9);
+assert_eq!(cmyk_to_gray(0.0, 0.0, 0.0, 1.0), 0.0);
+assert!((cmyk_to_gray(1.0, 0.0, 0.0, 0.0) - 0.70).abs() &lt; 1e-9);</code></pre>
+
+    <p>
+      赤は 0.30、K100% は 0、シアンは 0.70。
+      この記事で見てきた代表値が、そのままテストになっています。
+    </p>
+
+    <p>
+      注目は <code>(結果 - 期待値).abs() &lt; 1e-9</code> という書き方です。
+      <strong>小数は <code>==</code> で比べてはいけない</strong>ので、
+      「差が十分小さいか」で判定しています。
+      EPSILON のところで見た誤差の話と同じ理由です。
+    </p>
+
+    <h3>テスト 2 — 整数版と小数版が食い違わないか</h3>
+
+<pre><code>for &amp;(r, g, b) in &amp;[(255u8, 0u8, 0u8), (0, 255, 0), ..., (12, 200, 99)] {
+    let expected = rgb_to_gray(r as f64 / 255.0, ...) * 255.0;
+    assert!((rgb8_to_gray(r, g, b) as f64 - expected).abs() &lt;= 1.0, "{r} {g} {b}");
+}</code></pre>
+
+    <p>
+      <strong>2 つの実装が同じ答えを出すこと</strong>を、差 1 以内という基準で確かめています。
+      同じ計算を 2 通りで書いたら、必ずこういうテストが要ります。
+      片方だけ直して食い違う、という事故を防ぐためです。
+    </p>
+
+    <p>
+      末尾の <code>"{r} {g} {b}"</code> は<strong>失敗したときに表示されるメッセージ</strong>。
+      どの色で失敗したかがすぐ分かります。細かいですが、親切な書き方です。
+    </p>
+
+    <h3>テスト 3 — 例の <code>0.5 0.5 0.5</code></h3>
+
+<pre><code>assert_eq!(tone.apply(0.3), 0.0);
+assert_eq!(tone.apply(0.7), 1.0);
+<span class="hl">assert_eq!(tone.apply(rgb_to_gray(0.5, 0.5, 0.5)), 1.0);</span></code></pre>
+
+    <p>
+      3 行目が、EPSILON を守るためのテストです。
+      もし誰かが「この <code>+ Self::EPSILON</code> は要らないのでは」と消したら、
+      <strong>このテストが即座に失敗します。</strong>
+      コメントで理由を書き、テストで保護する。教科書どおりの守り方です。
+    </p>
+
+    <h3>実際に走らせる</h3>
+
+<pre><code>cargo test -p sumi-core --lib color
+
+<span class="dim">running 4 tests
+test color::tests::monochrome_threshold ... ok
+test color::tests::device_conversions_follow_pdf_spec ... ok
+test color::tests::integer_conversions_match_float ... ok
+test color::tests::number_formatting ... ok
+
+test result: ok. 4 passed; 0 failed</span></code></pre>
+
+    <p>
+      4 つとも通ります。手元で試すときは、
+      わざと <code>0.30</code> を <code>0.40</code> に書き換えて
+      <strong>テストが落ちるのを見てみる</strong>と、
+      何が守られているかが体感できます。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="map" aria-labelledby="map-title">
+  <div class="wrap">
+    <h2 id="map-title">11. この 129 行はどこから呼ばれるか</h2>
+
+    <p>
+      <code>color.rs</code> は誰も呼び出しません。<strong>呼ばれるだけの、いちばん下の層</strong>です。
+      だから最初に読むのに適しています。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 260" role="img" aria-labelledby="fig5-title">
+          <title id="fig5-title">color.rs の呼び出し元</title>
+          <defs>
+            <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="40" y="14" width="150" height="40" fill="#fff" stroke="#000"/>
+            <text x="115" y="32" text-anchor="middle" font-family="monospace" font-size="11">content.rs</text>
+            <text x="115" y="47" text-anchor="middle" font-size="10" fill="#575757">描画命令の色</text>
+
+            <rect x="210" y="14" width="150" height="40" fill="#fff" stroke="#000"/>
+            <text x="285" y="32" text-anchor="middle" font-family="monospace" font-size="11">image.rs</text>
+            <text x="285" y="47" text-anchor="middle" font-size="10" fill="#575757">画像の画素</text>
+
+            <rect x="380" y="14" width="150" height="40" fill="#fff" stroke="#000"/>
+            <text x="455" y="32" text-anchor="middle" font-family="monospace" font-size="11">colorspace.rs</text>
+            <text x="455" y="47" text-anchor="middle" font-size="10" fill="#575757">名前付き色空間</text>
+
+            <rect x="550" y="14" width="140" height="40" fill="#fff" stroke="#000"/>
+            <text x="620" y="32" text-anchor="middle" font-family="monospace" font-size="11">shading.rs</text>
+            <text x="620" y="47" text-anchor="middle" font-size="10" fill="#575757">グラデーション</text>
+
+            <path d="M115 58 V100 H340" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M285 58 V100" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M455 58 V100" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M620 58 V100 H380" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M360 100 V126" stroke="#000" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+            <rect x="230" y="130" width="260" height="52" fill="#000"/>
+            <text x="360" y="152" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">color.rs</text>
+            <text x="360" y="170" text-anchor="middle" font-size="10" fill="#fff">129 行・何にも依存しない</text>
+
+            <text x="40" y="212" font-size="11" fill="#575757">矢印は「使う」向き。color.rs から外へ出る矢印はありません。</text>
+            <text x="40" y="232" font-size="11" fill="#575757">だから単体で読めるし、単体でテストできます。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>4 つのファイルが <code>color.rs</code> を使います。逆向きの依存はありません。</figcaption>
+    </figure>
+
+    <div class="scroll">
+      <table>
+        <caption>実際の呼び出し箇所</caption>
+        <thead><tr><th>呼ぶ側</th><th>使うもの</th><th>場面</th></tr></thead>
+        <tbody>
+          <tr><td><code>colorspace.rs:101</code></td><td><code>rgb_to_gray</code></td><td>RGB の色空間</td></tr>
+          <tr><td><code>colorspace.rs:102</code></td><td><code>cmyk_to_gray</code></td><td>CMYK の色空間</td></tr>
+          <tr><td><code>colorspace.rs:103</code></td><td><code>lab_to_gray</code></td><td>Lab の色空間</td></tr>
+          <tr><td><code>colorspace.rs:116</code></td><td><code>clamp01</code></td><td>特色のインク量から</td></tr>
+          <tr><td><code>image.rs:213</code></td><td><code>rgb8_to_gray</code></td><td>画像の画素ループ</td></tr>
+          <tr><td><code>image.rs:218</code></td><td><code>cmyk8_to_gray</code></td><td>同上（CMYK 画像）</td></tr>
+          <tr><td><code>content.rs:197</code></td><td><code>format_number</code></td><td><code>0.3 g</code> を組み立てる</td></tr>
+          <tr><td><code>options.rs:95</code></td><td><code>Tone</code></td><td>設定として保持</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      たとえば <code>content.rs</code> の 197 行目は、こうなっています。
+    </p>
+
+<pre><code>let text = format!("{} {}", format_number(gray), if stroke { "G" } else { "g" });</code></pre>
+
+    <p>
+      <code>format_number(gray)</code> が <code>"0.3"</code> を返し、
+      線の色なら <code>"G"</code>、塗りの色なら <code>"g"</code> をつなげて
+      <code>"0.3 g"</code> を作る。<strong>まさにこの 1 行が、前回見た書き換えの正体</strong>です。
+    </p>
+
+    <div class="note">
+      <span class="label">この回のまとめ</span>
+      <p>
+        <strong>白黒化の核心は、重み付き平均 1 行。</strong>残りはすべて、
+        その周りを固める仕事です ——
+        範囲からはみ出さないようにする（<code>clamp01</code>）、
+        速くする（整数版）、モードを反映する（<code>Tone</code>）、
+        PDF が読める文字列にする（<code>format_number</code>）。
+      </p>
+      <p>
+        そして 4 割がテストです。
+        <strong>「正しいと信じる」のではなく「正しいと確かめられる」</strong>形になっています。
+      </p>
+    </div>
+
+    <h3>次に読むもの</h3>
+
+    <p>
+      次は <code>objects.rs</code>（201 行）です。
+      <a href="../pdf/#objects">前回</a>見た PDF のオブジェクト
+      —— 辞書・配列・名前・参照 —— を、Rust ではどう表現するのか。
+      <code>enum</code> という、Rust でいちばん気持ちのいい機能が出てきます。
+    </p>
+
+    <p>
+      その前に手を動かしたい人は、この記事で出てきた値を自分で確かめてみてください。
+    </p>
+
+<pre><code><span class="dim"># テストを走らせる</span>
+cargo test -p sumi-core --lib color
+
+<span class="dim"># 実際に変換して、0.3 g が出ることを見る</span>
+cargo build --release
+./target/release/sumi fixtures/libreoffice_table.pdf -o out.pdf --overwrite --verbose
+
+<span class="dim"># 閾値を変えて、白黒の分かれ方が変わることを見る</span>
+./target/release/sumi fixtures/libreoffice_table.pdf -o m.pdf --overwrite \
+    --mode monochrome --threshold 0.3</code></pre>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>sumi — PDF の色をグレースケール・白黒 2 値に変換する Rust 製ライブラリ兼 CLI。MIT ライセンス。</p>
+  </div>
+</footer>
+
+</body>
+</html>
