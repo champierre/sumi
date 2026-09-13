@@ -182,9 +182,22 @@ done
 
 ### 結論
 
-**`mutool recolor` は、Shading を 1 つでも含む PDF を、既定のスタックの環境で必ず落とす。**
-ファイル依存に見えたのは Shading の有無だっただけで、生成器も PDF の壊れ具合も関係ない。
-既定のスタックが 8 MB の環境（macOS、多くの Linux ディストリビューション）はすべて該当する。
+**`mutool recolor` は、Shading を 1 つでも含む PDF を、スタックが 8,455,008 バイトに
+満たない環境で必ず落とす。** ファイル依存に見えたのは Shading の有無だっただけで、
+生成器も PDF の壊れ具合も関係ない。
+
+**環境依存であって、版依存ではない。** 閾値はフレームの大きさ 8,455,008 バイト
+（約 8,257 KB）。これを下回る `ulimit -s` なら落ち、上回れば動く。
+
+| 環境 | `ulimit -s` | 結果 |
+|---|---|---|
+| macOS 14.8.7 / x86_64 / mutool 1.28.3 | 8176 KB | 落ちる |
+| macOS 26.5.2 / arm64 / mutool 1.28.3 | 8176 KB | 落ちる |
+| Omarchy 4.0.1（Arch）/ x86_64 / mutool 1.28.0 | 8,257 KB より大きい（未確認） | **落ちない** |
+
+Linux 機（`bench/results-linux.json` の計測環境）では 6 件とも完走している。
+`pdf-shade-recolor.c` は 1.28.0 と 1.28.3 で**同一**なので、版の違いではなく
+スタック上限の違い。この機の `ulimit -s` は未確認なので、機会があれば控えること。
 
 `master`（2026-09-12 時点）でも `pdf-shade-recolor.c` の当該行は 1.28.3 と同じで、**未修正**。
 
@@ -294,10 +307,19 @@ GitHub 検索は 0 件だが、これは探す場所が違うだけ。
 正確で、かつ相手をあげつらう形にならない。速度・メモリ・出力・テキストは対等な比較として
 並べてある。
 
-- README: 「mutool recolor との比較」（`## mutool recolor との比較`）
-- Pages: `docs/index.html` の `#mutool` セクション
-- 数値は `bench/results-macos.json` から生成している。手で書き写すとずれるので
+main では PR #1 が Linux での mutool 比較を先に入れており、「Ghostscript と mutool
+との比較」という 1 つのセクションに再構成されていた。**こちらの Mac の計測はその構造に
+差し込む形でマージした。** 章を分けない。
+
+- README: 「Ghostscript と mutool との比較」。Mac の表に mutool の列を追加し、
+  「mutool が Mac で落ちる件」を `###` として足した
+- Pages: `docs/index.html` の `#benchmark`。Mac の棒を 3 本にした
+- 数値は `bench/results-*.json` から生成している。手で書き写すとずれるので
   `bench/bench.py` を通すこと
+- **比率の出し方は main の流儀に合わせた。** 丸める前の中央値から計算する
+  （表示上の ms を割った値とは 0.1 ずれることがある）
+- Pages の棒は「控えめなほう」を出す。時間は 2 つの比の小さいほう、
+  メモリは大きいほう
 
 ### 掲載前に保留していた理由
 

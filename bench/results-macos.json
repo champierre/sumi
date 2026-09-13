@@ -16,25 +16,25 @@
       "input_bytes": 300675,
       "tools": {
         "sumi": {
-          "median_s": 0.0556704999980866,
-          "min_s": 0.055305083995335735,
-          "peak_rss_mb": 9.7890625,
+          "median_s": 0.05551541649765568,
+          "min_s": 0.05445754200627562,
+          "peak_rss_mb": 9.046875,
           "output_bytes": 843510,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.8056862710000132,
-          "min_s": 0.795724000010523,
-          "peak_rss_mb": 43.2265625,
-          "output_bytes": 511320,
+          "median_s": 0.8082094580022385,
+          "min_s": 0.799795750004705,
+          "peak_rss_mb": 43.2109375,
+          "output_bytes": 511321,
           "colored_pixels": 0,
           "text_similarity": 0.9738358690640848
         },
         "mutool": {
-          "median_s": 0.0962346875021467,
-          "min_s": 0.09537154099962208,
-          "peak_rss_mb": 17.4453125,
+          "median_s": 0.09720762500364799,
+          "min_s": 0.0956652079912601,
+          "peak_rss_mb": 17.4609375,
           "output_bytes": 834194,
           "colored_pixels": 0,
           "text_similarity": 1.0
@@ -48,25 +48,25 @@
       "input_bytes": 301309,
       "tools": {
         "sumi": {
-          "median_s": 0.03326095849479316,
-          "min_s": 0.03208824999455828,
-          "peak_rss_mb": 6.3203125,
+          "median_s": 0.032690062005713116,
+          "min_s": 0.032093000001623295,
+          "peak_rss_mb": 6.171875,
           "output_bytes": 303951,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.17803412499051774,
-          "min_s": 0.17490337499475572,
-          "peak_rss_mb": 27.984375,
+          "median_s": 0.17596864599909168,
+          "min_s": 0.1750455829896964,
+          "peak_rss_mb": 28.0390625,
           "output_bytes": 263011,
           "colored_pixels": 0,
           "text_similarity": 0.996822033898305
         },
         "mutool": {
-          "median_s": 0.05533002049924107,
-          "min_s": 0.05445716700342018,
-          "peak_rss_mb": 7.1015625,
+          "median_s": 0.05618108349881368,
+          "min_s": 0.05541787500260398,
+          "peak_rss_mb": 7.0546875,
           "output_bytes": 282911,
           "colored_pixels": 0,
           "text_similarity": 1.0
@@ -80,25 +80,25 @@
       "input_bytes": 336740,
       "tools": {
         "sumi": {
-          "median_s": 0.021061208499304485,
-          "min_s": 0.01981908400193788,
-          "peak_rss_mb": 9.8828125,
+          "median_s": 0.021236979504465126,
+          "min_s": 0.020335916997282766,
+          "peak_rss_mb": 10.1796875,
           "output_bytes": 311465,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 0.15391516700037755,
-          "min_s": 0.15261795900005382,
-          "peak_rss_mb": 31.125,
+          "median_s": 0.15277456300100312,
+          "min_s": 0.1517267500021262,
+          "peak_rss_mb": 30.859375,
           "output_bytes": 177070,
           "colored_pixels": 0,
           "text_similarity": 0.75
         },
         "mutool": {
-          "median_s": 0.18217637448833557,
-          "min_s": 0.18008591698890086,
-          "peak_rss_mb": 29.6328125,
+          "median_s": 0.1821731245072442,
+          "min_s": 0.17956929199863225,
+          "peak_rss_mb": 29.625,
           "output_bytes": 248980,
           "colored_pixels": 0,
           "text_similarity": 1.0
@@ -112,25 +112,25 @@
       "input_bytes": 1034435,
       "tools": {
         "sumi": {
-          "median_s": 0.06253581299824873,
-          "min_s": 0.06097979198966641,
-          "peak_rss_mb": 20.84375,
+          "median_s": 0.06372039550478803,
+          "min_s": 0.0622394170059124,
+          "peak_rss_mb": 20.8828125,
           "output_bytes": 981798,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 2.5621479369947338,
-          "min_s": 2.5332813749992056,
+          "median_s": 2.553341166996688,
+          "min_s": 2.5290804999967804,
           "peak_rss_mb": 86.453125,
-          "output_bytes": 1126585,
+          "output_bytes": 1126587,
           "colored_pixels": 0,
           "text_similarity": 0.75
         },
         "mutool": {
-          "median_s": 2.077579812503245,
-          "min_s": 2.057305708003696,
-          "peak_rss_mb": 441.328125,
+          "median_s": 2.071445291498094,
+          "min_s": 2.053780124988407,
+          "peak_rss_mb": 440.953125,
           "output_bytes": 883653,
           "colored_pixels": 0,
           "text_similarity": 1.0
@@ -144,25 +144,25 @@
       "input_bytes": 5902880,
       "tools": {
         "sumi": {
-          "median_s": 0.5280493954996928,
-          "min_s": 0.5266320420050761,
-          "peak_rss_mb": 34.8046875,
+          "median_s": 0.5316257079975912,
+          "min_s": 0.5269722910015844,
+          "peak_rss_mb": 34.5625,
           "output_bytes": 5900230,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 1.2293123540002853,
-          "min_s": 1.2175163339998107,
-          "peak_rss_mb": 38.9140625,
+          "median_s": 1.2352022914928966,
+          "min_s": 1.2156572090025293,
+          "peak_rss_mb": 38.5,
           "output_bytes": 4510981,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "mutool": {
-          "median_s": 0.9043650625026203,
-          "min_s": 0.9018809999979567,
-          "peak_rss_mb": 54.6953125,
+          "median_s": 0.9062930419895565,
+          "min_s": 0.9023463750054361,
+          "peak_rss_mb": 54.171875,
           "output_bytes": 5772013,
           "colored_pixels": 0,
           "text_similarity": 1.0
@@ -176,25 +176,25 @@
       "input_bytes": 6700847,
       "tools": {
         "sumi": {
-          "median_s": 1.3806540625009802,
-          "min_s": 1.3639176249998854,
-          "peak_rss_mb": 87.5859375,
+          "median_s": 1.3727034999974421,
+          "min_s": 1.3619685829908121,
+          "peak_rss_mb": 87.4609375,
           "output_bytes": 7109510,
           "colored_pixels": 0,
           "text_similarity": 1.0
         },
         "ghostscript": {
-          "median_s": 3.251082854498236,
-          "min_s": 3.242167167001753,
-          "peak_rss_mb": 35.828125,
-          "output_bytes": 7198359,
+          "median_s": 3.249115645994607,
+          "min_s": 3.238954125001328,
+          "peak_rss_mb": 36.1328125,
+          "output_bytes": 7198361,
           "colored_pixels": 0,
           "text_similarity": 0.5498406918525262
         },
         "mutool": {
-          "median_s": 1.9024730835080845,
-          "min_s": 1.8857521659956547,
-          "peak_rss_mb": 69.46875,
+          "median_s": 1.9246835419980926,
+          "min_s": 1.9019907500041882,
+          "peak_rss_mb": 69.4140625,
           "output_bytes": 7063980,
           "colored_pixels": 0,
           "text_similarity": 1.0

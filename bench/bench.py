@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Compare sumi and Ghostscript converting PDFs to grayscale.
+"""Compare sumi, Ghostscript and mutool converting PDFs to grayscale.
 
 For every PDF in bench/inputs/ each tool is run as a command line program, the same way an
 application would call it. Wall-clock time and peak memory come from /usr/bin/time; after
 timing, the outputs are checked with poppler (pdftoppm, pdftotext) for leftover color and for
 extractable text. Standard library only.
 
-mutool recolor needs a bigger stack than the default: one of its frames reserves 8.06 MB,
-more than the 8 MB main thread stack, so it dies with SIGSEGV on any PDF holding a shading. It
-is run under `ulimit -s 65520` here so that the timings cover every input; the exit code it
-gives with the default stack is recorded separately as "mutool_default_exit".
+One frame of mutool recolor reserves 8.06 MB, so on a machine whose stack limit is lower than
+that it dies with SIGSEGV on any PDF holding a shading (macOS, whose limit is 8176 KB, always
+does). mutool is therefore run with the stack raised, so the timings cover every input; the
+exit code it gives with the limit left alone is recorded separately as "mutool_default_exit".
 
 Usage: bench.py [--runs 10] [--warmup 1] [--sumi PATH] [--gs PATH] [--mutool PATH]
+A tool that is not installed is skipped.
 Writes bench/results-macos.json or bench/results-linux.json.
 """
 import argparse
@@ -21,6 +22,7 @@ import os
 import pathlib
 import platform
 import re
+import shutil
 import statistics
 import subprocess
 import sys
@@ -32,9 +34,9 @@ INPUTS = HERE / "inputs"
 OUTPUTS = HERE / "outputs"
 RESULTS = HERE / f"results-{'macos' if sys.platform == 'darwin' else sys.platform}.json"
 
-# Stack limit mutool runs under. 65520 KB is the macOS hard limit for the main thread; Linux
-# usually allows it too. If the system refuses it, the shell exits 90 and the run is recorded
-# as a failure rather than silently measuring a crash.
+# Stack limit mutool runs under; 65520 KB is the macOS hard limit for the main thread. Raising
+# it is best effort: a system that refuses runs mutool as it is, and mutool_default_exit still
+# records what the untouched limit does.
 STACK_KB = 65520
 
 
@@ -47,23 +49,25 @@ class ToolFailed(Exception):
 
 
 def tools(args):
-    return {
-        "sumi": lambda src, dst: [args.sumi, str(src), "-o", str(dst), "--overwrite"],
-        "ghostscript": lambda src, dst: [
+    """Command builders, keyed by tool name. A tool whose binary is missing is left out."""
+    all_tools = {
+        "sumi": (args.sumi, lambda src, dst: [args.sumi, str(src), "-o", str(dst), "--overwrite"]),
+        "ghostscript": (args.gs, lambda src, dst: [
             args.gs, "-q", "-dNOPAUSE", "-dBATCH", "-dSAFER",
             "-sDEVICE=pdfwrite",
             "-sColorConversionStrategy=Gray",
             "-dProcessColorModel=/DeviceGray",
             "-o", str(dst), str(src),
-        ],
+        ]),
         # sh execs mutool, so /usr/bin/time still measures mutool itself.
-        "mutool": lambda src, dst: [
+        "mutool": (args.mutool, lambda src, dst: [
             "/bin/sh", "-c",
-            f"ulimit -s {STACK_KB} || exit 90; "
+            f"ulimit -s {STACK_KB} 2>/dev/null || true\n"
             f'exec "$0" recolor -c gray -o "$1" "$2"',
             args.mutool, str(dst), str(src),
-        ],
+        ]),
     }
+    return {name: build for name, (binary, build) in all_tools.items() if shutil.which(binary)}
 
 
 def default_stack_exit(mutool, src, dst):
@@ -175,12 +179,18 @@ def main():
     if not inputs:
         sys.exit("no PDFs in bench/inputs (run fetch.py and make_batch.py first)")
 
+    versions = {
+        "sumi": lambda: version([args.sumi, "--version"]),
+        "ghostscript": lambda: "Ghostscript " + version([args.gs, "--version"]),
+        "mutool": lambda: version([args.mutool, "-v"]),
+    }
+    selected = tools(args)
+    if "sumi" not in selected:
+        sys.exit(f"sumi not found at {args.sumi} (run cargo build --release, or pass --sumi)")
     report = {
         "machine": machine(),
-        "sumi": version([args.sumi, "--version"]),
-        "ghostscript": "Ghostscript " + version([args.gs, "--version"]),
-        "mutool": version([args.mutool, "-v"]),
-        "mutool_stack_kb": STACK_KB,
+        **{name: versions[name]() for name in selected},
+        **({"mutool_stack_kb": STACK_KB} if "mutool" in selected else {}),
         "runs": args.runs,
         "results": [],
     }
@@ -188,8 +198,9 @@ def main():
 
     for src in inputs:
         entry = {"input": src.name, "pages": page_count(src), "input_bytes": src.stat().st_size, "tools": {}}
-        entry["mutool_default_exit"] = default_stack_exit(args.mutool, src, OUTPUTS / "probe.pdf")
-        for name, build in tools(args).items():
+        if "mutool" in selected:
+            entry["mutool_default_exit"] = default_stack_exit(args.mutool, src, OUTPUTS / "probe.pdf")
+        for name, build in selected.items():
             dst = OUTPUTS / f"{src.stem}.{name}.pdf"
             command = build(src, dst)
             try:
