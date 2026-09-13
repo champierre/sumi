@@ -508,7 +508,7 @@ Q</code></pre>
   <section class="section" id="benchmark" aria-labelledby="benchmark-title">
     <div class="wrap">
       <h2 id="benchmark-title">Ghostscript と mutool との比較</h2>
-      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と、MuPDF の <code>mutool recolor</code> と比べました。いずれもコマンドとして 10 回ずつ実行した中央値です。グラフの上のボタンで、計測した 2 台を切り替えられます。mutool は Linux でだけ計測したので、Mac のグラフには出てきません。PDF の名前から、計測に使った PDF を開けます。</p>
+      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と、MuPDF の <code>mutool recolor</code> と比べました。いずれもコマンドとして 10 回ずつ実行した中央値です。グラフの上のボタンで、計測した 2 台を切り替えられます。PDF の名前から、計測に使った PDF を開けます。</p>
       <p><code>mutool recolor</code> は sumi と同じく、ページを画像化せずに色指定だけを書き換えます。Ghostscript のように描き直さないぶん、sumi との差は小さくなります。ただし MuPDF も Ghostscript と同じ Artifex 製で、ライセンスは AGPL-3.0（または商用ライセンス）です。</p>
 
       <div class="bench-head">
@@ -759,7 +759,6 @@ Q</code></pre>
         <li><strong>大きな PDF では sumi のほうがメモリを使うことがあります</strong><span>sumi は PDF 全体をメモリに読み込むので、ファイルが大きいほど多く使います。6.7 MB の地図では、Ghostscript の 2.4 倍（Mac）と 2.2 倍（Linux）でした。mutool より少なかったのは Linux では 6 件すべて、Mac では 6 件中 5 件です。</span></li>
         <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは、どちらの環境でも 6 件とも元の PDF と一致しました。mutool もどちらの環境でも 6 件とも一致します。Ghostscript の出力では、請求書の「発行日」が一続きの文字列として取り出せず、検索できなくなりました。</span></li>
         <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi と mutool は JPEG 画像を可逆圧縮で保存し直すためです。NASA ファクトシートは sumi が 0.84 MB、mutool も 0.83〜0.84 MB、Ghostscript が 0.51 MB（Mac）と 0.24 MB（Linux）でした。</span></li>
-        <li><strong>Mac では mutool がグラデーションを含む PDF で落ちます</strong><span>8.06 MB の配列をスタックに置く関数があり、macOS のスタック（約 7.98 MB）に収まりません。計測に使った 6 件のうち 3 件が該当します。<code>( ulimit -s 65520 &amp;&amp; mutool recolor … )</code> とすれば動くので、上の数値はそうやって 6 件とも完走させたものです。Linux ではスタックの上限が大きく、起きませんでした。</span></li>
       </ul>
 
       <details class="method">
@@ -773,7 +772,6 @@ gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
    -o output.pdf input.pdf
 
 mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" type="button">コピー</button></div>
-          <p>Mac では、上記のままだと Shading（グラデーション）を含む PDF で <code>mutool recolor</code> がセグメンテーション違反で落ちます。<code>source/pdf/pdf-shade-recolor.c</code> の <code>fz_recolor_shade_type1</code> が 257 × 257 × 32 × 4 = 8,454,272 バイトの配列をスタックに置いており、<code>pdf_recolor_shade</code> の 1 フレームが 8,455,008 バイトと、macOS のスタック 8,372,224 バイトを超えるためです。確保は関数の入口で無条件なので、グラデーションの種類にはよりません。計測では mutool だけ <code>ulimit -s 65520</code> の下で実行しました。Linux（mutool 1.28.0）ではスタックの上限が大きく、既定のままで 6 件とも完走します。<code>pdf-shade-recolor.c</code> は 1.28.0 と 1.28.3 で同一なので、版ではなく環境の違いです。調査の記録は <a href="https://github.com/champierre/sumi/blob/main/docs/mutool-comparison-notes.md">docs/mutool-comparison-notes.md</a> にあります。</p>
           <p>変換後の PDF は poppler でレンダリングして色が残っていないことを確かめ、<code>pdftotext</code> で抽出したテキストを元の PDF と比べました。Ghostscript にも <code>mutool recolor</code> にもベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。入力の PDF は Mac と Linux で同じものを使いましたが、数値は環境によって変わります。</p>
           <p>入力 PDF の出典と、計測を再現するスクリプトは <a href="https://github.com/champierre/sumi#ghostscript-と-mutool-との比較">README</a> と <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a> にあります。</p>
         </div>

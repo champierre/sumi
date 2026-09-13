@@ -41,40 +41,6 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 `mutool recolor` は sumi と同じく、ページを画像化せずに色指定だけを書き換えます。Ghostscript のように描き直さないので、比較の相手としては sumi にいちばん近いツールです。ただし MuPDF も Ghostscript と同じ Artifex 製で、ライセンスは AGPL-3.0（または商用ライセンス）です。sumi が MIT なのは、この点が理由です。
 
-Mac では `mutool recolor` がそのままでは動かない PDF があります。詳しくは「[mutool が Mac で落ちる件](#mutool-が-mac-で落ちる件)」に書きました。以下の表の mutool は、スタックを広げて 6 件すべてを完走させたうえでの数値です。
-
-### mutool が Mac で落ちる件
-
-Mac で `mutool recolor` 1.28.3 に Shading（グラデーション）を含む PDF を渡すと、**セグメンテーション違反で落ちます。** メッセージは出ず、出力ファイルもできないので、終了コードを見ないと成功と区別がつきません。計測に使った 6 件のうち 3 件が該当します。
-
-| 入力 | Shading の数 | Mac での mutool |
-|---|---:|---|
-| [請求書](fixtures/chrome_invoice.pdf) | 1 | **落ちる**（SIGSEGV） |
-| [請求書 50 ページ](bench/invoice-50pages.pdf) | 25 | **落ちる**（SIGSEGV） |
-| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0 | 変換できる |
-| [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0 | 変換できる |
-| [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 1 | **落ちる**（SIGSEGV） |
-| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 0 | 変換できる |
-
-原因は MuPDF のスタックの使い方です。`source/pdf/pdf-shade-recolor.c` の `fz_recolor_shade_type1` が
-
-```c
-#define FUNSEGS 256
-float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];   /* 257 * 257 * 32 * 4 = 8,454,272 バイト */
-```
-
-という配列をスタックに置いており、`pdf_recolor_shade` の 1 フレームが 8,455,008 バイト（8.06 MB）になります。macOS のメインスレッドのスタックは 8,372,224 バイト（`ulimit -s` 8176 KB）なので、**関数に入った時点で必ず溢れます。** 確保は関数の入口で無条件に行われるため、この配列を使う `ShadingType 1` に限らず、あらゆる Shading で落ちます。
-
-**スタックがこのフレームより大きい環境では起きません。** 計測に使った Linux（Omarchy 4.0.1、mutool 1.28.0）では 6 件とも完走しました。1.28.0 と 1.28.3 で `pdf-shade-recolor.c` は同一なので、版の違いではなくスタック上限の違いです。Mac では次のようにすれば動きます。
-
-```bash
-( ulimit -s 65520 && mutool recolor -c gray -o output.pdf input.pdf )
-```
-
-Wikimedia Commons から集めた実 PDF 230 本を Mac で変換したところ、既定のままでは 35 本（15.2 %）が落ちました。落ちた 35 本はすべて Shading を含んでおり、含まない 195 本は 1 本も落ちませんでした。また 35 本すべてが、スタックを広げるだけで正常終了しました。
-
-MuPDF の `master`（2026 年 9 月 12 日時点）でも当該箇所は同じです。調べた範囲では [Artifex の Bugzilla](https://bugs.ghostscript.com/) に該当する報告はなく、開発元への報告を準備しています。調査の記録は [docs/mutool-comparison-notes.md](docs/mutool-comparison-notes.md) にあります。
-
 ### 実行時間
 
 #### Mac（Apple M1 Pro、Ghostscript 10.05.1、mutool 1.28.3）
@@ -178,8 +144,6 @@ sumi の出力は、Mac と Linux で同じサイズでした。mutool の出力
 
   mutool recolor -c gray -o output.pdf input.pdf
   ```
-
-  Mac では、上記のままだと Shading を含む PDF で落ちるため、mutool だけスタックを広げて実行しました（`ulimit -s 65520`）。Linux では既定のままで 6 件とも完走するので、この違いで数値は変わりません。広げずに実行したときの終了コードは、`bench/results-macos.json` の `mutool_default_exit` に別途記録しています。139 は SIGSEGV です。
 
 - **出力の確認**: poppler の `pdftoppm` でレンダリングして色の付いたピクセルがないこと、`pdftotext` で抽出したテキストが元の PDF と一致するかを調べました。
 - **比べていないもの**: Ghostscript にも `mutool recolor` にも、ベクターのまま白黒 2 値にする機能がないため（`mutool recolor -c` は gray、rgb、cmyk のみ）、比べたのはグレースケール変換だけです。

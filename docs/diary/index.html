@@ -157,6 +157,7 @@
       <a href="#validation">実世界検証</a>
       <a href="#ycck-title">見つかったバグ</a>
       <a href="#upstream">zune-jpeg への報告</a>
+      <a href="#mutool">mutool のクラッシュ</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
     </nav>
   </div>
@@ -171,8 +172,8 @@
     うまくいかなかったことと、その原因も残しています。
   </p>
   <p class="lede">
-    最初のコミットは 2026-09-11 15:53、いちばん新しいコミットは 2026-09-12 01:54。
-    日をまたいだ通しの作業で、合わせて 10 時間ほどです。
+    最初のコミットは 2026-09-11 15:53、いちばん新しいコミットは 2026-09-13 00:13。
+    日をまたいだ通しの作業です。
   </p>
 </div>
 
@@ -555,6 +556,175 @@ python3 validation/validate.py --mode monochrome</code></pre>
     <p>
       コーパスと結果は容量が大きいので git 管理外にしています。
       手順と指標の詳細は <code>validation/README.md</code> にまとめました。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="mutool" aria-labelledby="mutool-title">
+  <div class="wrap">
+    <h2 id="mutool-title">9月12日 昼〜9月13日 未明 — mutool との比較と、そこで落ちた話</h2>
+
+    <p>
+      比較の相手に <code>mutool recolor</code>（MuPDF）を加えました。
+      Ghostscript は PDF を解釈して描き直しますが、mutool は sumi と同じく
+      ページを画像化せずに色指定だけを書き換えます。方式が同じぶん、
+      比較相手としては Ghostscript よりも近いと考えたためです。
+    </p>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-09-12T13:04">2026-09-12 13:04</time>
+        <h3>mutool を計測に加える</h3>
+        <p>
+          <code>bench/bench.py</code> に mutool を 1 項目足しました。
+          手で測ると Python 経由の分だけ 200 ms ほど上乗せされてしまうので、
+          既存の <code>/usr/bin/time</code> とウォームアップの仕組みに乗せています。
+        </p>
+        <p class="hash">5648fcf</p>
+      </li>
+      <li>
+        <time datetime="2026-09-12T15:24">2026-09-12 15:24</time>
+        <h3>クラッシュの原因を特定</h3>
+        <p>
+          Mac で一部の PDF が変換できないことに気づき、<code>lldb</code> で原因まで辿りました。
+          下記のとおりです。
+        </p>
+        <p class="hash">c81f0c8 / 22b38e4</p>
+      </li>
+      <li>
+        <time datetime="2026-09-13T00:13">2026-09-13 00:13</time>
+        <h3>2 台分の比較を掲載</h3>
+        <p>
+          Mac と Linux の 2 台で、実行時間・メモリ・出力サイズ・テキスト保持を並べました。
+          mutool に対しても 6 件すべてで sumi のほうが速く、差は 1.2〜36.6 倍です。
+          ページ数の多い帳票ほど開きます。
+        </p>
+        <p class="hash">275189b</p>
+      </li>
+    </ol>
+
+    <h3>つまずき — mutool が無言で落ちる</h3>
+
+    <p>
+      Mac で <code>mutool recolor</code> 1.28.3 に、グラデーション（Shading）を含む PDF を渡すと
+      <strong>セグメンテーション違反で落ちます。</strong>
+      メッセージは出ず、出力ファイルもできないので、
+      終了コードを見ないと成功と区別がつきません。
+      計測に使った 6 件のうち 3 件が該当しました。
+    </p>
+
+    <div class="note">
+      <span class="label">つまずき: 終了コードを <code>$(...)</code> で潰して 0 件と数えた</span>
+      <p>
+        最初はクラッシュを 1 件も検出できませんでした。原因は 2 つあります。
+        シェルでは <code>echo "$(basename "$f"): rc=$?"</code> のように書くと、
+        <code>$?</code> が <code>basename</code> の結果に上書きされます。
+        Python の <code>subprocess</code> でも、シグナルによる終了は
+        <code>139</code> ではなく <strong>負の値</strong>で返るため、
+        <code>returncode == 139</code> では数えられません。
+        終了コードは先に変数へ控え、Python 側は <code>returncode &lt; 0</code> で判定します。
+      </p>
+    </div>
+
+    <p>
+      原因は MuPDF のスタックの使い方でした。再帰ではなく、
+      <strong>関数 1 つ分のフレームがスタック全体より大きい</strong>という形です。
+      <code>source/pdf/pdf-shade-recolor.c</code> の <code>fz_recolor_shade_type1</code> が、
+      次の配列をスタックに置いています。
+    </p>
+
+<pre><code>#define FUNSEGS 256
+float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];</code></pre>
+
+    <p>
+      <code>FZ_MAX_COLORS</code> は 32 なので
+      257 × 257 × 32 × 4 = 8,454,272 バイト。これが 1 フレームのほぼ全体を占めます。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>フレームの大きさと、macOS のスタック上限</caption>
+        <thead><tr><th>項目</th><th class="num">バイト</th></tr></thead>
+        <tbody>
+          <tr><td><code>pdf_recolor_shade</code> の 1 フレーム</td><td class="num">8,455,008</td></tr>
+          <tr><td>macOS のメインスレッドのスタック（<code>ulimit -s</code> 8176 KB）</td><td class="num">8,372,224</td></tr>
+          <tr><td>超過分</td><td class="num">82,784</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      82,784 バイト足りません。
+      <code>fz_recolor_shade_type1</code> は <code>pdf_recolor_shade</code> に
+      インライン展開されていて、<strong>確保は関数の入口で無条件に行われます。</strong>
+      シェーディングの種別を見る前に落ちるということです。
+      実際、落ちた 3 本はどれも <code>ShadingType 2</code>（軸）と <code>3</code>（放射）で、
+      この配列を使う <code>ShadingType 1</code>（関数ベース）は 1 本も含まれていませんでした。
+    </p>
+
+    <h3>Shading の有無で完全に分かれる</h3>
+
+    <p>
+      ファイル依存に見えたものの正体は、Shading を含むかどうかでした。
+      リポジトリ内の PDF 27 本と、Wikimedia Commons から集めた実 PDF 230 本の
+      2 通りで確かめています。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>リポジトリ内の PDF 27 本</caption>
+        <thead><tr><th>Shading</th><th class="num">本数</th><th class="num">既定スタック</th><th class="num"><code>ulimit -s 32768</code></th></tr></thead>
+        <tbody>
+          <tr><td>あり（1〜25 個）</td><td class="num">9</td><td class="num">全 9 本が 139</td><td class="num">全 9 本が 0</td></tr>
+          <tr><td>なし</td><td class="num">18</td><td class="num">全 18 本が 0</td><td class="num">全 18 本が 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>実 PDF 230 本（<code>rc=139</code> は SIGSEGV）</caption>
+        <thead><tr><th>結果</th><th class="num">既定スタック</th><th class="num"><code>ulimit -s 65520</code></th></tr></thead>
+        <tbody>
+          <tr><td>クラッシュ</td><td class="num">35（15.2%）</td><td class="num">0（0.0%）</td></tr>
+          <tr><td>出力ができた</td><td class="num">194（84.3%）</td><td class="num">229（99.6%）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      落ちた 35 本はすべて Shading を含み、含まない 195 本は 1 本も落ちませんでした。
+      さらに 35 本すべてが、スタックを広げるだけで正常終了しています。
+      <strong>例外はどちらの方向にもありません。</strong>
+      Mac では次のようにすれば動きます。
+    </p>
+
+<pre><code>( ulimit -s 65520 &amp;&amp; mutool recolor -c gray -o output.pdf input.pdf )</code></pre>
+
+    <p>
+      <strong>環境依存であって、版依存ではありません。</strong>
+      Intel（x86_64、macOS 14.8.7）と Apple Silicon（arm64、macOS 26.5.2）の
+      2 台で同じ結果になり、CPU 種別にも OS 版にもよりませんでした。
+      一方、計測に使った Linux（Omarchy 4.0.1、mutool 1.28.0）では 6 件とも完走します。
+      <code>pdf-shade-recolor.c</code> は 1.28.0 と 1.28.3 で同一なので、
+      違うのはスタックの上限だけです。
+      <code>master</code>（2026 年 9 月 12 日時点）でも当該箇所は同じでした。
+    </p>
+
+    <div class="note">
+      <span class="label">比較にどう載せるか</span>
+      <p>
+        当初は「完走率 84.3%」という数字を比較表に並べることも考えましたが、やめました。
+        差がほぼこの不具合 1 件に帰着するとわかったからです。
+        実装方式や設計の優劣ではなく、直れば消える数字を掲げることになります。
+        比較としては、速度・メモリ・出力・テキスト保持を対等に並べるほうが正確です。
+      </p>
+    </div>
+
+    <p>
+      調査の記録は
+      <a href="https://github.com/champierre/sumi/blob/main/docs/mutool-comparison-notes.md">docs/mutool-comparison-notes.md</a>
+      に残しています。
     </p>
   </div>
 </section>
