@@ -263,8 +263,8 @@
 
             <rect x="10" y="176" width="330" height="52" fill="#fff" stroke="#000"/>
             <text x="20" y="194" font-family="monospace" font-size="11">36–64 行</text>
-            <text x="120" y="194" fill="#2b2b2b">灰色 → 出力の調子</text>
-            <text x="20" y="214" font-family="monospace" font-size="11" fill="#575757">struct Tone</text>
+            <text x="120" y="194" fill="#2b2b2b">灰色 → 最終的な濃さ</text>
+            <text x="20" y="214" font-family="monospace" font-size="11" fill="#575757">struct Tone（グレーのまま / 白黒に）</text>
 
             <rect x="10" y="234" width="330" height="46" fill="#fff" stroke="#000"/>
             <text x="20" y="252" font-family="monospace" font-size="11">66–75 行</text>
@@ -356,9 +356,8 @@ use crate::Mode;</code></pre>
 
     <p>
       大事なのは後半です。<strong>この計算式は sumi が考えたものではなく、
-      PDF 仕様（ISO 32000-1 の 10.3）が定めているもの</strong>で、
+      <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=305">PDF 仕様（ISO 32000-1 の 10.3）</a>が定めているもの</strong>で、
       Acrobat も Ghostscript も同じ式を使う、と書いてあります。
-      出典が書いてあるので、疑ったら原典を当たれます。
     </p>
 
     <div class="rust">
@@ -812,7 +811,9 @@ pub(crate) struct Tone {
       <span class="label">Rust メモ：<code>struct</code></span>
       <p>
         <strong>関係するデータをまとめた型</strong>です。
-        ここでは「モード」と「閾値」の 2 つを <code>Tone</code>（調子）という名前で束ねています。
+        ここでは「モード」と「閾値」の 2 つを <code>Tone</code> という名前で束ねています。
+        tone は写真や印刷の用語で「濃淡の出し方」のこと。
+        灰色の値を<strong>グレーのまま出すか、閾値で白か黒に振り分けるか</strong>を決める役なので、この名前です。
         2 つはいつもセットで使うので、バラバラに持ち回るより間違いが減ります。
       </p>
     </div>
