@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sumi | カラーの PDF を、文字のまま白黒に</title>
-<meta name="description" content="sumi は PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンドです。ページを画像にしないので、テキストの検索やコピーはそのまま使えます。MIT ライセンス。">
-<meta property="og:title" content="sumi | カラーの PDF を、文字のまま白黒に">
-<meta property="og:description" content="PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンド。Ghostscript 不要、MIT ライセンス。">
+<title>sumi | Color PDFs to black and white, text stays text</title>
+<meta name="description" content="sumi turns color PDFs into grayscale or black-and-white PDFs by rewriting only the color operators. Pages are never rasterized, so text stays searchable and copyable. MIT licensed.">
+<meta property="og:title" content="sumi | Color PDFs to black and white, text stays text">
+<meta property="og:description" content="A command that rewrites only the color operators of a PDF to make grayscale or black-and-white PDFs. No Ghostscript needed, MIT licensed.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://champierre.github.io/sumi/">
+<meta property="og:url" content="https://champierre.github.io/sumi/en/">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://champierre.github.io/sumi/images/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="alternate" hreflang="ja" href="https://champierre.github.io/sumi/">
@@ -48,8 +49,7 @@
     color: var(--no);
     font-family: var(--gothic);
     font-size: 1.0625rem;
-    line-height: 1.9;
-    font-feature-settings: "palt" 0;
+    line-height: 1.65;
   }
 
   img { max-width: 100%; height: auto; display: block; }
@@ -83,7 +83,9 @@
   .site-nav { display: flex; gap: clamp(12px, 3vw, 28px); font-size: 0.9375rem; }
   .site-nav a { text-decoration: none; color: var(--ju); }
   .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+  .site-nav a { white-space: nowrap; }
   .site-header .site-nav { margin-left: auto; }
+  .lang-note { margin-left: 4px; padding: 0 4px; border: 1px solid var(--tan); font-size: 0.6875rem; vertical-align: 0.1em; }
   .lang-switch { flex: none; padding: 2px 10px; border: 1px solid var(--tan); font-size: 0.875rem; text-decoration: none; color: var(--ju); }
   .lang-switch:hover { color: var(--sho); border-color: var(--sho); }
 
@@ -100,8 +102,8 @@
     font-family: var(--mincho);
     font-weight: 800;
     font-size: clamp(1.85rem, 3.4vw, 3.2rem);
-    line-height: 1.38;
-    letter-spacing: 0.01em;
+    line-height: 1.15;
+    letter-spacing: 0;
     color: var(--sho);
     font-feature-settings: "palt" 1;
   }
@@ -227,7 +229,7 @@
     font-family: var(--mincho);
     font-weight: 800;
     font-size: clamp(1.7rem, 3vw, 2.3rem);
-    line-height: 1.45;
+    line-height: 1.25;
     color: var(--sho);
     font-feature-settings: "palt" 1;
   }
@@ -350,6 +352,10 @@
   .site-footer .brand { gap: 16px; }
   .footer-links { display: flex; flex-wrap: wrap; gap: 24px; }
 
+  /* The Japanese-only pages drop out of the header before the links run out of room. */
+  @media (max-width: 1100px) {
+    .site-nav a[hreflang="ja"] { display: none; }
+  }
   @media (max-width: 900px) {
     .hero .wrap, .split { grid-template-columns: minmax(0, 1fr); }
     .scope { grid-template-columns: minmax(0, 1fr); }
@@ -378,21 +384,21 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./" aria-label="sumi トップ">
+    <a class="brand" href="./" aria-label="sumi home">
       <span class="seal" aria-hidden="true">墨</span>
       <span class="brand-name">sumi</span>
     </a>
-    <nav class="site-nav" aria-label="ページ内">
-      <a href="#how">しくみ</a>
-      <a href="#benchmark">性能</a>
-      <a href="#scope">対応範囲</a>
-      <a href="#install">インストール</a>
-      <a href="./pdf/">PDF のしくみ</a>
-      <a href="./color-rs/">コードを読む</a>
-      <a href="./diary/">開発日誌</a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="#how">How it works</a>
+      <a href="#benchmark">Performance</a>
+      <a href="#scope">Coverage</a>
+      <a href="#install">Install</a>
+      <a href="../pdf/" hreflang="ja">PDF primer<span class="lang-note" aria-hidden="true">JA</span><span class="visually-hidden"> (in Japanese)</span></a>
+      <a href="../color-rs/" hreflang="ja">Code reading<span class="lang-note" aria-hidden="true">JA</span><span class="visually-hidden"> (in Japanese)</span></a>
+      <a href="../diary/" hreflang="ja">Diary<span class="lang-note" aria-hidden="true">JA</span><span class="visually-hidden"> (in Japanese)</span></a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
     </nav>
-    <a class="lang-switch" href="en/" hreflang="en" lang="en">English</a>
+    <a class="lang-switch" href="../" hreflang="ja" lang="ja">日本語</a>
   </div>
 </header>
 
@@ -400,36 +406,36 @@
   <section class="hero" aria-labelledby="hero-title">
     <div class="wrap">
       <div>
-        <h1 id="hero-title"><span>カラーの PDF を、</span><span>文字のまま</span><span>白黒に。</span></h1>
-        <p class="lede">sumi は PDF の色指定だけを書き換えて、グレースケールや白黒 2 値の PDF を作るコマンドです。ページを画像にしないので、テキストの検索やコピー、細い罫線はそのまま残ります。</p>
+        <h1 id="hero-title"><span>Color PDFs</span><span>to black and white.</span><span>Text stays text.</span></h1>
+        <p class="lede">sumi is a command that turns a PDF into grayscale or black and white by rewriting only its color operators. Pages are never turned into images, so searchable and copyable text and thin rules all stay intact.</p>
         <div class="actions">
-          <a class="button button-primary" href="#install">インストール</a>
-          <a class="button" href="https://github.com/champierre/sumi">GitHub でソースを見る</a>
+          <a class="button button-primary" href="#install">Install</a>
+          <a class="button" href="https://github.com/champierre/sumi">View the source on GitHub</a>
         </div>
         <ul class="facts">
-          <li>Ghostscript を使わない単体のコマンド。MIT ライセンス</li>
-          <li>macOS、Windows、Linux 用のビルド済みバイナリ</li>
-          <li>Rails などから外部コマンドとして呼び出せます</li>
+          <li>A standalone command with no Ghostscript dependency. MIT licensed</li>
+          <li>Prebuilt binaries for macOS, Windows and Linux</li>
+          <li>Call it as an external command from Rails and other apps</li>
         </ul>
       </div>
 
       <figure class="compare" id="compare">
         <div class="compare-stage">
-          <img class="after" src="images/invoice-gray.png" width="1240" height="1166" alt="sumi で変換した後の請求書。色が濃淡のグレーになっている">
-          <img class="before" src="images/invoice-color.png" width="1240" height="1166" alt="変換前の請求書。青い見出し、赤い社印と合計金額、グラデーションの帯がある">
-          <span class="compare-tag compare-tag-before" aria-hidden="true">変換前</span>
-          <span class="compare-tag compare-tag-after" aria-hidden="true">変換後</span>
-          <input class="compare-range visually-hidden" type="range" min="0" max="100" value="50" step="1" aria-label="変換前と変換後の境目の位置">
+          <img class="after" src="../images/invoice-gray.png" width="1240" height="1166" alt="The invoice after conversion with sumi. The colors have become shades of gray">
+          <img class="before" src="../images/invoice-color.png" width="1240" height="1166" alt="The invoice before conversion, with a blue heading, a red company seal and total, and a gradient band">
+          <span class="compare-tag compare-tag-before" aria-hidden="true">Before</span>
+          <span class="compare-tag compare-tag-after" aria-hidden="true">After</span>
+          <input class="compare-range visually-hidden" type="range" min="0" max="100" value="50" step="1" aria-label="Position of the divider between before and after">
           <div class="compare-line" aria-hidden="true"><span class="compare-knob"></span></div>
         </div>
         <div class="compare-bar">
-          <div class="modes" role="group" aria-label="変換モード">
-            <button type="button" data-mode="gray" aria-pressed="true">グレースケール</button>
-            <button type="button" data-mode="mono" aria-pressed="false">モノクロ</button>
+          <div class="modes" role="group" aria-label="Conversion mode">
+            <button type="button" data-mode="gray" aria-pressed="true">Grayscale</button>
+            <button type="button" data-mode="mono" aria-pressed="false">Monochrome</button>
           </div>
-          <span class="compare-hint">画像を左右にドラッグして比べられます</span>
+          <span class="compare-hint">Drag across the image to compare</span>
         </div>
-        <figcaption id="compare-caption">Chrome で作った請求書の PDF を sumi で変換し、そのまま表示しています。</figcaption>
+        <figcaption id="compare-caption">An invoice PDF made with Chrome, converted with sumi and shown as is.</figcaption>
       </figure>
     </div>
   </section>
@@ -437,14 +443,14 @@
   <section class="section" id="how" aria-labelledby="how-title">
     <div class="wrap split">
       <div>
-        <h2 id="how-title">画像にせず、色の命令だけを書き換える</h2>
-        <p>PDF のページは「この色で塗る」「ここに線を引く」「この文字を書く」という命令の並びでできています。sumi は色を指定する命令だけを見つけてグレーに置き換え、それ以外のバイトは元のままコピーします。</p>
-        <p>画像、グラデーション、注釈、フォームの中にある色も、同じ考え方で変換します。</p>
+        <h2 id="how-title">No rasterizing: only the color operators change</h2>
+        <p>A PDF page is a sequence of operators such as “fill with this color”, “draw a line here” and “show this text”. sumi finds only the operators that set colors, replaces them with gray, and copies every other byte as it is.</p>
+        <p>Colors inside images, gradients, annotations and forms are converted the same way.</p>
       </div>
       <div>
         <div class="diff">
           <div class="diff-col">
-            <p class="diff-head">変換前</p>
+            <p class="diff-head">Before</p>
 <pre><code>q
 3.125 0 0 3.125 0 0 cm
 <mark>.102 .3098 .749 RG .102 .3098 .749 rg</mark>
@@ -459,7 +465,7 @@ f
 Q</code></pre>
           </div>
           <div class="diff-col">
-            <p class="diff-head">変換後</p>
+            <p class="diff-head">After</p>
 <pre><code>q
 3.125 0 0 3.125 0 0 cm
 <mark>0.2958 G 0.2958 g</mark>
@@ -474,35 +480,35 @@ f
 Q</code></pre>
           </div>
         </div>
-        <p class="diff-note">上の請求書の、青い見出し帯を描く部分です。変わったのは色の指定だけで、図形の命令はそのままです。</p>
+        <p class="diff-note">The part of the invoice above that draws the blue heading band. Only the color operators changed; the path operators are untouched.</p>
 
-        <p class="formula">グレー = 0.30 × 赤 + 0.59 × 緑 + 0.11 × 青</p>
+        <p class="formula">gray = 0.30 × red + 0.59 × green + 0.11 × blue</p>
         <div class="table-scroll">
           <table class="tones">
             <thead>
-              <tr><th scope="col">元の色</th><th scope="col">RGB</th><th scope="col">グレースケール</th><th scope="col">モノクロ（閾値 0.5）</th></tr>
+              <tr><th scope="col">Original color</th><th scope="col">RGB</th><th scope="col">Grayscale</th><th scope="col">Monochrome (threshold 0.5)</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td><span class="chip" style="background: rgb(26, 79, 191)"></span>見出しの青</td>
+                <td><span class="chip" style="background: rgb(26, 79, 191)"></span>Heading blue</td>
                 <td class="num">.102 .310 .749</td>
                 <td class="num"><span class="chip" style="background: rgb(75, 75, 75)"></span>0.30</td>
                 <td class="num"><span class="chip" style="background: #000"></span>0</td>
               </tr>
               <tr>
-                <td><span class="chip" style="background: rgb(255, 0, 0)"></span>赤</td>
+                <td><span class="chip" style="background: rgb(255, 0, 0)"></span>Red</td>
                 <td class="num">1 0 0</td>
                 <td class="num"><span class="chip" style="background: rgb(77, 77, 77)"></span>0.30</td>
                 <td class="num"><span class="chip" style="background: #000"></span>0</td>
               </tr>
               <tr>
-                <td><span class="chip" style="background: rgb(0, 255, 0)"></span>緑</td>
+                <td><span class="chip" style="background: rgb(0, 255, 0)"></span>Green</td>
                 <td class="num">0 1 0</td>
                 <td class="num"><span class="chip" style="background: rgb(150, 150, 150)"></span>0.59</td>
                 <td class="num"><span class="chip" style="background: #fff"></span>1</td>
               </tr>
               <tr>
-                <td><span class="chip" style="background: rgb(255, 255, 0)"></span>黄</td>
+                <td><span class="chip" style="background: rgb(255, 255, 0)"></span>Yellow</td>
                 <td class="num">1 1 0</td>
                 <td class="num"><span class="chip" style="background: rgb(227, 227, 227)"></span>0.89</td>
                 <td class="num"><span class="chip" style="background: #fff"></span>1</td>
@@ -510,280 +516,280 @@ Q</code></pre>
             </tbody>
           </table>
         </div>
-        <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。<code>--gray-model colorimetric</code> を付けると、色を sRGB として輝度を求める式に切り替わり、原色が明るくなります（赤 0.50、緑 0.86、青 0.30）。Ghostscript の既定の変換に近い値です。</p>
+        <p class="diff-note">This is the conversion formula given by the PDF specification. Light colors such as yellow become white in monochrome. With <code>--gray-model colorimetric</code>, sumi instead reads colors as sRGB and uses their luminance, which makes primary colors lighter (red 0.50, green 0.86, blue 0.30), close to Ghostscript’s default conversion.</p>
       </div>
     </div>
   </section>
 
   <section class="section" id="benchmark" aria-labelledby="benchmark-title">
     <div class="wrap">
-      <h2 id="benchmark-title">Ghostscript と mutool との比較</h2>
-      <p>同じ PDF をグレースケールに変換する時間とメモリ使用量を、Ghostscript と、MuPDF の <code>mutool recolor</code> と比べました。いずれもコマンドとして 10 回ずつ実行した中央値です。グラフの上のボタンで、計測した 2 台を切り替えられます。PDF の名前から、計測に使った PDF を開けます。</p>
-      <p><code>mutool recolor</code> は sumi と同じく、ページを画像化せずに色指定だけを書き換えます。Ghostscript のように描き直さないぶん、sumi との差は小さくなります。ただし MuPDF も Ghostscript と同じ Artifex 製で、ライセンスは AGPL-3.0（または商用ライセンス）です。</p>
+      <h2 id="benchmark-title">Compared with Ghostscript and mutool</h2>
+      <p>We compared the time and memory needed to convert the same PDFs to grayscale with Ghostscript and with MuPDF’s <code>mutool recolor</code>. Each figure is the median of 10 runs as a command. The buttons above each chart switch between the two machines we measured on, and each PDF name links to the file we used.</p>
+      <p>Like sumi, <code>mutool recolor</code> rewrites only the color operators without rasterizing pages. Since it does not redraw the document the way Ghostscript does, the gap to sumi is smaller. Note that MuPDF, like Ghostscript, is made by Artifex and licensed under the AGPL-3.0 (or a commercial license).</p>
 
       <div class="bench-head">
-        <h3 class="bench-title">実行時間</h3>
-        <div class="modes" role="group" aria-label="計測した環境（実行時間）">
-          <button type="button" data-show-env="mac" aria-pressed="true">Mac（M1 Pro）</button>
-          <button type="button" data-show-env="linux" aria-pressed="false">Linux（Ryzen 7 6800H）</button>
+        <h3 class="bench-title">Run time</h3>
+        <div class="modes" role="group" aria-label="Machine (run time)">
+          <button type="button" data-show-env="mac" aria-pressed="true">Mac (M1 Pro)</button>
+          <button type="button" data-show-env="linux" aria-pressed="false">Linux (Ryzen 7 6800H)</button>
         </div>
       </div>
-      <p class="bench-lede">棒の長さは、PDF ごとにいちばん時間のかかったツールを基準にしています。右の数字は、sumi が何倍速かったか。差が小さいほうのツールと比べています。</p>
+      <p class="bench-lede">Bars are scaled to the slowest tool for each PDF. The number on the right is how many times faster sumi was, compared with the closer of the two other tools.</p>
       <ul class="bench" data-env="mac">
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">Invoice</a><span>2 pages, made with Chrome</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>21 ms</b></span><div class="bar-fill" style="--w: 11.66%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>182 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>153 ms</b></span><div class="bar-fill" style="--w: 83.86%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms、mutool 182 ms、Ghostscript 153 ms。sumi は Ghostscript の</span>7.2 倍<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms, mutool 182 ms, Ghostscript 153 ms. sumi was faster than Ghostscript by </span>7.2×<small>vs Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">Invoice</a><span>50 pages, made with Chrome</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>64 ms</b></span><div class="bar-fill" style="--w: 2.496%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>2,071 ms</b></span><div class="bar-fill" style="--w: 81.13%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>2,553 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 64 ms、mutool 2,071 ms、Ghostscript 2,553 ms。sumi は mutool の</span>32.5 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 64 ms, mutool 2,071 ms, Ghostscript 2,553 ms. sumi was faster than mutool by </span>32.5×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、Adobe PDF Library</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">Infographic</a><span>1 page, Adobe PDF Library</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>33 ms</b></span><div class="bar-fill" style="--w: 18.58%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>56 ms</b></span><div class="bar-fill" style="--w: 31.93%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>176 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 33 ms、mutool 56 ms、Ghostscript 176 ms。sumi は mutool の</span>1.7 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 33 ms, mutool 56 ms, Ghostscript 176 ms. sumi was faster than mutool by </span>1.7×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、写真あり</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA fact sheet</a><span>2 pages, with photos</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>56 ms</b></span><div class="bar-fill" style="--w: 6.869%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>97 ms</b></span><div class="bar-fill" style="--w: 12.03%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>808 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 56 ms、mutool 97 ms、Ghostscript 808 ms。sumi は mutool の</span>1.8 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 56 ms, mutool 97 ms, Ghostscript 808 ms. sumi was faster than mutool by </span>1.8×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">Poster</a><span>1 page, 5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>532 ms</b></span><div class="bar-fill" style="--w: 43.04%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>906 ms</b></span><div class="bar-fill" style="--w: 73.37%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>1,235 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 532 ms、mutool 906 ms、Ghostscript 1,235 ms。sumi は mutool の</span>1.7 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 532 ms, mutool 906 ms, Ghostscript 1,235 ms. sumi was faster than mutool by </span>1.7×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">Map</a><span>1 page, 6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>1,373 ms</b></span><div class="bar-fill" style="--w: 42.25%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>1,925 ms</b></span><div class="bar-fill" style="--w: 59.24%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>3,249 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 1,373 ms、mutool 1,925 ms、Ghostscript 3,249 ms。sumi は mutool の</span>1.4 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,373 ms, mutool 1,925 ms, Ghostscript 3,249 ms. sumi was faster than mutool by </span>1.4×<small>vs mutool</small></p>
         </li>
       </ul>
       <ul class="bench" data-env="linux" hidden>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">Invoice</a><span>2 pages, made with Chrome</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>21 ms</b></span><div class="bar-fill" style="--w: 10.7%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>194 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>150 ms</b></span><div class="bar-fill" style="--w: 77.42%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms、mutool 194 ms、Ghostscript 150 ms。sumi は Ghostscript の</span>7.2 倍<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 21 ms, mutool 194 ms, Ghostscript 150 ms. sumi was faster than Ghostscript by </span>7.2×<small>vs Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、Chrome で作成</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">Invoice</a><span>50 pages, made with Chrome</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>62 ms</b></span><div class="bar-fill" style="--w: 2.427%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>2,285 ms</b></span><div class="bar-fill" style="--w: 88.76%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>2,574 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 62 ms、mutool 2,285 ms、Ghostscript 2,574 ms。sumi は mutool の</span>36.6 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 62 ms, mutool 2,285 ms, Ghostscript 2,574 ms. sumi was faster than mutool by </span>36.6×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、Adobe PDF Library</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">Infographic</a><span>1 page, Adobe PDF Library</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>36 ms</b></span><div class="bar-fill" style="--w: 23.09%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>57 ms</b></span><div class="bar-fill" style="--w: 37.05%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>154 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 36 ms、mutool 57 ms、Ghostscript 154 ms。sumi は mutool の</span>1.6 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 36 ms, mutool 57 ms, Ghostscript 154 ms. sumi was faster than mutool by </span>1.6×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、写真あり</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA fact sheet</a><span>2 pages, with photos</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>59 ms</b></span><div class="bar-fill" style="--w: 9.431%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>92 ms</b></span><div class="bar-fill" style="--w: 14.77%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>621 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms、mutool 92 ms、Ghostscript 621 ms。sumi は mutool の</span>1.6 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 59 ms, mutool 92 ms, Ghostscript 621 ms. sumi was faster than mutool by </span>1.6×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">Poster</a><span>1 page, 5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>596 ms</b></span><div class="bar-fill" style="--w: 50.01%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>886 ms</b></span><div class="bar-fill" style="--w: 74.34%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>1,192 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 596 ms、mutool 886 ms、Ghostscript 1,192 ms。sumi は mutool の</span>1.5 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 596 ms, mutool 886 ms, Ghostscript 1,192 ms. sumi was faster than mutool by </span>1.5×<small>vs mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">Map</a><span>1 page, 6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>1,585 ms</b></span><div class="bar-fill" style="--w: 47.75%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>1,914 ms</b></span><div class="bar-fill" style="--w: 57.66%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>3,320 ms</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 1,585 ms、mutool 1,914 ms、Ghostscript 3,320 ms。sumi は mutool の</span>1.2 倍<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 1,585 ms, mutool 1,914 ms, Ghostscript 3,320 ms. sumi was faster than mutool by </span>1.2×<small>vs mutool</small></p>
         </li>
       </ul>
 
       <div class="bench-head">
-        <h3 class="bench-title">メモリ使用量</h3>
-        <div class="modes" role="group" aria-label="計測した環境（メモリ使用量）">
-          <button type="button" data-show-env="mac" aria-pressed="true">Mac（M1 Pro）</button>
-          <button type="button" data-show-env="linux" aria-pressed="false">Linux（Ryzen 7 6800H）</button>
+        <h3 class="bench-title">Memory usage</h3>
+        <div class="modes" role="group" aria-label="Machine (memory usage)">
+          <button type="button" data-show-env="mac" aria-pressed="true">Mac (M1 Pro)</button>
+          <button type="button" data-show-env="linux" aria-pressed="false">Linux (Ryzen 7 6800H)</button>
         </div>
       </div>
-      <p class="bench-lede">プロセスの最大常駐メモリです。棒の長さは、PDF ごとにいちばん多く使ったツールを基準にしています。右の数字は、sumi が何 % のメモリで済んだか。いちばん少なかったツールと比べています。</p>
+      <p class="bench-lede">Peak resident memory of the process. Bars are scaled to the tool that used the most for each PDF. The number on the right is sumi’s memory as a percentage of the other tool that used the least.</p>
       <ul class="bench" data-env="mac">
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、0.34 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">Invoice</a><span>2 pages, 0.34 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>10.2 MB</b></span><div class="bar-fill" style="--w: 32.99%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>29.6 MB</b></span><div class="bar-fill" style="--w: 96%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>30.9 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 10.2 MB、mutool 29.6 MB、Ghostscript 30.9 MB。sumi は mutool の</span>34%<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 10.2 MB, mutool 29.6 MB, Ghostscript 30.9 MB. sumi’s memory as a share of mutool’s: </span>34%<small>of mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、1.0 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">Invoice</a><span>50 pages, 1.0 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>20.9 MB</b></span><div class="bar-fill" style="--w: 4.736%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>441.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>86.5 MB</b></span><div class="bar-fill" style="--w: 19.61%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20.9 MB、mutool 441.0 MB、Ghostscript 86.5 MB。sumi は Ghostscript の</span>24%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20.9 MB, mutool 441.0 MB, Ghostscript 86.5 MB. sumi’s memory as a share of Ghostscript’s: </span>24%<small>of Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">Infographic</a><span>1 page, 0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>6.2 MB</b></span><div class="bar-fill" style="--w: 22.01%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>7.1 MB</b></span><div class="bar-fill" style="--w: 25.16%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>28.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB、mutool 7.1 MB、Ghostscript 28.0 MB。sumi は mutool の</span>87%<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 6.2 MB, mutool 7.1 MB, Ghostscript 28.0 MB. sumi’s memory as a share of mutool’s: </span>87%<small>of mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA fact sheet</a><span>2 pages, 0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>9.0 MB</b></span><div class="bar-fill" style="--w: 20.94%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>17.5 MB</b></span><div class="bar-fill" style="--w: 40.41%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>43.2 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 9.0 MB、mutool 17.5 MB、Ghostscript 43.2 MB。sumi は mutool の</span>52%<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 9.0 MB, mutool 17.5 MB, Ghostscript 43.2 MB. sumi’s memory as a share of mutool’s: </span>52%<small>of mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">Poster</a><span>1 page, 5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>34.6 MB</b></span><div class="bar-fill" style="--w: 63.8%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>54.2 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>38.5 MB</b></span><div class="bar-fill" style="--w: 71.07%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 34.6 MB、mutool 54.2 MB、Ghostscript 38.5 MB。sumi は Ghostscript の</span>90%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 34.6 MB, mutool 54.2 MB, Ghostscript 38.5 MB. sumi’s memory as a share of Ghostscript’s: </span>90%<small>of Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">Map</a><span>1 page, 6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>87.5 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>69.4 MB</b></span><div class="bar-fill" style="--w: 79.37%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>36.1 MB</b></span><div class="bar-fill" style="--w: 41.31%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 87.5 MB、mutool 69.4 MB、Ghostscript 36.1 MB。sumi は Ghostscript の</span>242%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 87.5 MB, mutool 69.4 MB, Ghostscript 36.1 MB. sumi’s memory as a share of Ghostscript’s: </span>242%<small>of Ghostscript</small></p>
         </li>
       </ul>
       <ul class="bench" data-env="linux" hidden>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">請求書</a><span>2 ページ、0.34 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/fixtures/chrome_invoice.pdf">Invoice</a><span>2 pages, 0.34 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>10.5 MB</b></span><div class="bar-fill" style="--w: 23.58%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>44.6 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>31.6 MB</b></span><div class="bar-fill" style="--w: 70.89%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 10.5 MB、mutool 44.6 MB、Ghostscript 31.6 MB。sumi は Ghostscript の</span>33%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 10.5 MB, mutool 44.6 MB, Ghostscript 31.6 MB. sumi’s memory as a share of Ghostscript’s: </span>33%<small>of Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">請求書</a><span>50 ページ、1.0 MB</span></p>
+          <p class="bench-name"><a href="https://github.com/champierre/sumi/blob/main/bench/invoice-50pages.pdf">Invoice</a><span>50 pages, 1.0 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>20.2 MB</b></span><div class="bar-fill" style="--w: 4.37%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>462.5 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>78.8 MB</b></span><div class="bar-fill" style="--w: 17.03%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 20.2 MB、mutool 462.5 MB、Ghostscript 78.8 MB。sumi は Ghostscript の</span>26%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 20.2 MB, mutool 462.5 MB, Ghostscript 78.8 MB. sumi’s memory as a share of Ghostscript’s: </span>26%<small>of Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">インフォグラフィック</a><span>1 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf">Infographic</a><span>1 page, 0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>6.8 MB</b></span><div class="bar-fill" style="--w: 23.46%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>21.3 MB</b></span><div class="bar-fill" style="--w: 73.37%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>29.0 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 6.8 MB、mutool 21.3 MB、Ghostscript 29.0 MB。sumi は mutool の</span>32%<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 6.8 MB, mutool 21.3 MB, Ghostscript 29.0 MB. sumi’s memory as a share of mutool’s: </span>32%<small>of mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA ファクトシート</a><span>2 ページ、0.30 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf">NASA fact sheet</a><span>2 pages, 0.30 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>8.6 MB</b></span><div class="bar-fill" style="--w: 24.39%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>31.1 MB</b></span><div class="bar-fill" style="--w: 87.96%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>35.4 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 8.6 MB、mutool 31.1 MB、Ghostscript 35.4 MB。sumi は mutool の</span>28%<small>mutool 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 8.6 MB, mutool 31.1 MB, Ghostscript 35.4 MB. sumi’s memory as a share of mutool’s: </span>28%<small>of mutool</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">ポスター</a><span>1 ページ、5.9 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf">Poster</a><span>1 page, 5.9 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>30.8 MB</b></span><div class="bar-fill" style="--w: 48.8%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>63.1 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>36.6 MB</b></span><div class="bar-fill" style="--w: 58.02%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 30.8 MB、mutool 63.1 MB、Ghostscript 36.6 MB。sumi は Ghostscript の</span>84%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 30.8 MB, mutool 63.1 MB, Ghostscript 36.6 MB. sumi’s memory as a share of Ghostscript’s: </span>84%<small>of Ghostscript</small></p>
         </li>
         <li class="bench-row">
-          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">地図</a><span>1 ページ、6.7 MB</span></p>
+          <p class="bench-name"><a href="https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf">Map</a><span>1 page, 6.7 MB</span></p>
           <div class="bench-bars" aria-hidden="true">
             <div class="bar"><span>sumi <b>72.7 MB</b></span><div class="bar-fill" style="--w: 82.76%"></div></div>
             <div class="bar bar-mu"><span>mutool <b>87.8 MB</b></span><div class="bar-fill" style="--w: 100%"></div></div>
             <div class="bar bar-gs"><span>Ghostscript <b>32.8 MB</b></span><div class="bar-fill" style="--w: 37.35%"></div></div>
           </div>
-          <p class="bench-ratio"><span class="visually-hidden">sumi 72.7 MB、mutool 87.8 MB、Ghostscript 32.8 MB。sumi は Ghostscript の</span>222%<small>Ghostscript 比</small></p>
+          <p class="bench-ratio"><span class="visually-hidden">sumi 72.7 MB, mutool 87.8 MB, Ghostscript 32.8 MB. sumi’s memory as a share of Ghostscript’s: </span>222%<small>of Ghostscript</small></p>
         </li>
       </ul>
 
       <ul class="bench-notes">
-        <li><strong>ページの多い帳票ほど差が開きます</strong><span>Ghostscript は PDF を解釈して描き直しますが、sumi は色の命令だけを書き換えます。50 ページの請求書では、Ghostscript より Mac で 40.1 倍・Linux で 41.2 倍、mutool より Mac で 32.5 倍・Linux で 36.6 倍速く済みました。</span></li>
-        <li><strong>mutool とはページ数で差がつきます</strong><span>mutool も色指定を書き換える方式なので、1 ページの PDF では 1.2〜1.7 倍の差です。ただし請求書を 2 ページから 50 ページにすると、mutool は 194 ms から 2,285 ms（11.8 倍）、sumi は 21 ms から 62 ms（3.0 倍）になりました（Linux）。メモリも mutool は 44.6 MB から 462.5 MB、sumi は 10.5 MB から 20.2 MB です。Mac でも同じ傾向で、mutool のメモリは 29.6 MB から 441.0 MB になります。</span></li>
-        <li><strong>大きな PDF では sumi のほうがメモリを使うことがあります</strong><span>sumi は PDF 全体をメモリに読み込むので、ファイルが大きいほど多く使います。6.7 MB の地図では、Ghostscript の 2.4 倍（Mac）と 2.2 倍（Linux）でした。mutool より少なかったのは Linux では 6 件すべて、Mac では 6 件中 5 件です。</span></li>
-        <li><strong>テキストは元のまま取り出せます</strong><span>sumi の出力から抽出したテキストは、どちらの環境でも 6 件とも元の PDF と一致しました。mutool もどちらの環境でも 6 件とも一致します。Ghostscript の出力では、請求書の「発行日」が一続きの文字列として取り出せず、検索できなくなりました。</span></li>
-        <li><strong>写真の多い PDF は Ghostscript のほうが小さくなります</strong><span>sumi と mutool は JPEG 画像を可逆圧縮で保存し直すためです。NASA ファクトシートは sumi が 0.84 MB、mutool も 0.83〜0.84 MB、Ghostscript が 0.51 MB（Mac）と 0.24 MB（Linux）でした。</span></li>
+        <li><strong>The more pages, the wider the gap</strong><span>Ghostscript interprets and redraws the PDF, while sumi only rewrites the color operators. On the 50-page invoice, sumi was 40.1× (Mac) and 41.2× (Linux) faster than Ghostscript, and 32.5× (Mac) and 36.6× (Linux) faster than mutool.</span></li>
+        <li><strong>Against mutool, page count makes the difference</strong><span>mutool also rewrites color operators, so on one-page PDFs the gap is 1.2–1.7×. Going from a 2-page to a 50-page invoice, however, took mutool from 194 ms to 2,285 ms (11.8×) and sumi from 21 ms to 62 ms (3.0×) on Linux. Memory went from 44.6 MB to 462.5 MB for mutool and from 10.5 MB to 20.2 MB for sumi. The Mac shows the same trend, with mutool going from 29.6 MB to 441.0 MB.</span></li>
+        <li><strong>On large PDFs, sumi can use more memory</strong><span>sumi loads the whole PDF into memory, so larger files need more. For the 6.7 MB map it used 2.4× (Mac) and 2.2× (Linux) as much as Ghostscript. It used less than mutool on all 6 PDFs on Linux and on 5 of 6 on the Mac.</span></li>
+        <li><strong>Text extracts exactly as before</strong><span>Text extracted from sumi’s output matched the original PDF for all 6 files on both machines, as it did for mutool. In Ghostscript’s output, the invoice’s “issue date” label (<span lang="ja">発行日</span>) no longer came out as one string, so it could not be found by search.</span></li>
+        <li><strong>Photo-heavy PDFs come out smaller with Ghostscript</strong><span>sumi and mutool store JPEG images again with lossless compression. The NASA fact sheet came out at 0.84 MB with sumi, 0.83–0.84 MB with mutool, and 0.51 MB (Mac) and 0.24 MB (Linux) with Ghostscript.</span></li>
       </ul>
 
       <details class="method">
-        <summary>計測方法</summary>
+        <summary>How we measured</summary>
         <div class="method-body">
-          <p>2 台で sumi 0.1.0 を Ghostscript および mutool と比べました。Mac は Apple M1 Pro（メモリ 16 GB）、macOS 26.5.2、Ghostscript 10.05.1、mutool 1.28.3 で、2026 年 9 月 13 日に mutool を加えて取り直しました。Linux は AMD Ryzen 7 6800H（GEEKOM A6、メモリ 32 GB）、Omarchy 4.0.1（Arch Linux ベース）、Ghostscript 10.07.1、mutool 1.28.0 で、2026 年 9 月 12 日の計測です。いずれもプロセスの起動を含めてコマンドとして実行し、PDF ごとに 1 回ウォームアップしてから 10 回実行しています。時間とメモリ（最大常駐メモリ）は <code>/usr/bin/time</code> で取得しました。</p>
+          <p>We compared sumi 0.1.0 with Ghostscript and mutool on two machines. The Mac is an Apple M1 Pro (16 GB of memory) running macOS 26.5.2, Ghostscript 10.05.1 and mutool 1.28.3, re-measured with mutool added on September 13, 2026. The Linux machine is an AMD Ryzen 7 6800H (GEEKOM A6, 32 GB of memory) running Omarchy 4.0.1 (based on Arch Linux), Ghostscript 10.07.1 and mutool 1.28.0, measured on September 12, 2026. Every tool was run as a command, including process startup, with one warm-up run and then 10 runs per PDF. Time and memory (peak resident memory) come from <code>/usr/bin/time</code>.</p>
           <div class="cmd"><pre><code>sumi input.pdf -o output.pdf --overwrite
 
 gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite \
    -sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray \
    -o output.pdf input.pdf
 
-mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" type="button">コピー</button></div>
-          <p>変換後の PDF は poppler でレンダリングして色が残っていないことを確かめ、<code>pdftotext</code> で抽出したテキストを元の PDF と比べました。Ghostscript にも <code>mutool recolor</code> にもベクターのまま白黒 2 値にする機能がないため、比べたのはグレースケール変換だけです。入力の PDF は Mac と Linux で同じものを使いましたが、数値は環境によって変わります。</p>
-          <p>入力 PDF の出典と、計測を再現するスクリプトは <a href="https://github.com/champierre/sumi#ghostscript-と-mutool-との比較">README</a> と <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a> にあります。</p>
+mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" type="button">Copy</button></div>
+          <p>We rendered each converted PDF with poppler to check that no color remained, and compared the text extracted with <code>pdftotext</code> against the original. Neither Ghostscript nor <code>mutool recolor</code> can produce black-and-white output while keeping vectors, so only grayscale conversion was compared. The same input PDFs were used on the Mac and on Linux, but the numbers depend on the environment.</p>
+          <p>The sources of the input PDFs and the scripts to reproduce the measurements are in the <a href="https://github.com/champierre/sumi/blob/main/README.en.md#comparison-with-ghostscript-and-mutool">README</a> and in <a href="https://github.com/champierre/sumi/tree/main/bench">bench/</a>.</p>
         </div>
       </details>
     </div>
@@ -791,28 +797,28 @@ mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" 
 
   <section class="section" id="scope" aria-labelledby="scope-title">
     <div class="wrap">
-      <h2 id="scope-title">変換できるもの、残るもの</h2>
-      <p>請求書や帳票でよく使われる要素は、一通り変換できます。変換できない部分は元の色のまま残し、警告を表示します。<code>--strict</code> を付けると、その場合はエラーで終了します。</p>
+      <h2 id="scope-title">What gets converted, and what stays</h2>
+      <p>sumi converts everything commonly found in invoices and other business documents. Anything it cannot convert keeps its original color and triggers a warning. With <code>--strict</code>, sumi exits with an error instead.</p>
       <div class="scope">
         <div>
-          <h3>変換できるもの</h3>
+          <h3>Converted</h3>
           <ul>
-            <li><strong>文字と図形の色</strong><span>RGB、CMYK、グレー、ICC プロファイル付きの色、スポットカラー</span></li>
-            <li><strong>画像</strong><span>PNG 由来の画像、パレット画像、JPEG、ページに直接埋め込まれた画像</span></li>
-            <li><strong>グラデーション</strong><span>直線状、円形、関数で定義されたもの</span></li>
-            <li><strong>部品として再利用される描画</strong><span>フォーム XObject、パターン、Type 3 フォント</span></li>
-            <li><strong>注釈とフォームフィールド</strong><span>表示用の外観、枠線や背景の色、入力欄の文字色</span></li>
+            <li><strong>Text and shape colors</strong><span>RGB, CMYK, gray, ICC-based colors and spot colors</span></li>
+            <li><strong>Images</strong><span>PNG-style images, palette images, JPEG, and images embedded directly in the page</span></li>
+            <li><strong>Gradients</strong><span>Axial, radial and function-based</span></li>
+            <li><strong>Reusable drawings</strong><span>Form XObjects, patterns and Type 3 fonts</span></li>
+            <li><strong>Annotations and form fields</strong><span>Appearance streams, border and background colors, and field text colors</span></li>
           </ul>
         </div>
         <div>
-          <h3>元のまま残るもの</h3>
+          <h3>Left as is</h3>
           <ul>
-            <li><strong>暗号化された PDF</strong><span>変換せずにエラーで終了します</span></li>
-            <li><strong>JPEG 2000、JBIG2 のカラー画像</strong><span>元の色のまま残し、警告を表示します</span></li>
-            <li><strong>頂点ごとに色を持つメッシュ状のグラデーション</strong><span>元の色のまま残し、警告を表示します</span></li>
-            <li><strong>CMYK の色味</strong><span>簡易な式で変換するため、色管理した表示よりシアンなどが明るくなります</span></li>
+            <li><strong>Encrypted PDFs</strong><span>sumi exits with an error without converting</span></li>
+            <li><strong>JPEG 2000 and JBIG2 color images</strong><span>Kept in their original colors, with a warning</span></li>
+            <li><strong>Mesh gradients with a color per vertex</strong><span>Kept in their original colors, with a warning</span></li>
+            <li><strong>CMYK tones</strong><span>A simple formula is used, so colors such as cyan come out lighter than in a color-managed view</span></li>
           </ul>
-          <p class="install-note">詳しくは <a href="https://github.com/champierre/sumi#制限事項">README の制限事項</a>を参照してください。</p>
+          <p class="install-note">See <a href="https://github.com/champierre/sumi/blob/main/README.en.md#limitations">Limitations in the README</a> for details.</p>
         </div>
       </div>
     </div>
@@ -820,87 +826,87 @@ mutool recolor -c gray -o output.pdf input.pdf</code></pre><button class="copy" 
 
   <section class="section" id="install" aria-labelledby="install-title">
     <div class="wrap">
-      <h2 id="install-title">インストール</h2>
-      <p>使っている環境を選んで、コマンドを実行してください。ファイルは <a href="https://github.com/champierre/sumi/releases/latest">GitHub Releases</a> からもダウンロードできます。</p>
+      <h2 id="install-title">Install</h2>
+      <p>Pick your platform and run the commands. The files are also available from <a href="https://github.com/champierre/sumi/releases/latest">GitHub Releases</a>.</p>
 
-      <div class="tabs" role="tablist" aria-label="インストール先の環境">
-        <button type="button" role="tab" id="tab-mac-arm" aria-controls="panel-mac-arm" aria-selected="true">macOS（Apple Silicon）</button>
-        <button type="button" role="tab" id="tab-mac-intel" aria-controls="panel-mac-intel" aria-selected="false" tabindex="-1">macOS（Intel）</button>
+      <div class="tabs" role="tablist" aria-label="Platform">
+        <button type="button" role="tab" id="tab-mac-arm" aria-controls="panel-mac-arm" aria-selected="true">macOS (Apple Silicon)</button>
+        <button type="button" role="tab" id="tab-mac-intel" aria-controls="panel-mac-intel" aria-selected="false" tabindex="-1">macOS (Intel)</button>
         <button type="button" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
-        <button type="button" role="tab" id="tab-linux-x64" aria-controls="panel-linux-x64" aria-selected="false" tabindex="-1">Linux（x86_64）</button>
-        <button type="button" role="tab" id="tab-linux-arm" aria-controls="panel-linux-arm" aria-selected="false" tabindex="-1">Linux（arm64）</button>
+        <button type="button" role="tab" id="tab-linux-x64" aria-controls="panel-linux-x64" aria-selected="false" tabindex="-1">Linux (x86_64)</button>
+        <button type="button" role="tab" id="tab-linux-arm" aria-controls="panel-linux-arm" aria-selected="false" tabindex="-1">Linux (arm64)</button>
       </div>
 
       <div class="panel" role="tabpanel" id="panel-mac-arm" aria-labelledby="tab-mac-arm">
         <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-aarch64-apple-darwin.tar.gz | tar xz
 sudo mkdir -p /usr/local/bin
 sudo mv sumi-aarch64-apple-darwin/sumi /usr/local/bin/
-sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+sumi --version</code></pre><button class="copy" type="button">Copy</button></div>
       </div>
       <div class="panel" role="tabpanel" id="panel-mac-intel" aria-labelledby="tab-mac-intel" hidden>
         <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-apple-darwin.tar.gz | tar xz
 sudo mkdir -p /usr/local/bin
 sudo mv sumi-x86_64-apple-darwin/sumi /usr/local/bin/
-sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
+sumi --version</code></pre><button class="copy" type="button">Copy</button></div>
       </div>
       <div class="panel" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" hidden>
         <div class="cmd"><pre><code>Invoke-WebRequest -Uri https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-pc-windows-msvc.zip -OutFile sumi.zip
 Expand-Archive sumi.zip -DestinationPath .
-.\sumi-x86_64-pc-windows-msvc\sumi.exe --version</code></pre><button class="copy" type="button">コピー</button></div>
-        <p>PowerShell で実行します。<code>sumi.exe</code> を PATH の通ったフォルダに移すと、どこからでも <code>sumi</code> で使えます。</p>
+.\sumi-x86_64-pc-windows-msvc\sumi.exe --version</code></pre><button class="copy" type="button">Copy</button></div>
+        <p>Run these in PowerShell. Move <code>sumi.exe</code> to a folder on your PATH to run <code>sumi</code> from anywhere.</p>
       </div>
       <div class="panel" role="tabpanel" id="panel-linux-x64" aria-labelledby="tab-linux-x64" hidden>
         <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-x86_64-unknown-linux-musl.tar.gz | tar xz
 sudo mv sumi-x86_64-unknown-linux-musl/sumi /usr/local/bin/
-sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
-        <p>静的リンクのバイナリなので、ディストリビューションを問わず動きます。</p>
+sumi --version</code></pre><button class="copy" type="button">Copy</button></div>
+        <p>The binary is statically linked, so it runs on any distribution.</p>
       </div>
       <div class="panel" role="tabpanel" id="panel-linux-arm" aria-labelledby="tab-linux-arm" hidden>
         <div class="cmd"><pre><code>curl -L https://github.com/champierre/sumi/releases/latest/download/sumi-aarch64-unknown-linux-musl.tar.gz | tar xz
 sudo mv sumi-aarch64-unknown-linux-musl/sumi /usr/local/bin/
-sumi --version</code></pre><button class="copy" type="button">コピー</button></div>
-        <p>静的リンクのバイナリなので、ディストリビューションを問わず動きます。</p>
+sumi --version</code></pre><button class="copy" type="button">Copy</button></div>
+        <p>The binary is statically linked, so it runs on any distribution.</p>
       </div>
 
-      <p class="install-note install-alt">Rust の開発環境があれば、ソースからもインストールできます。</p>
-      <div class="cmd"><pre><code>cargo install --git https://github.com/champierre/sumi sumi-cli</code></pre><button class="copy" type="button">コピー</button></div>
+      <p class="install-note install-alt">With a Rust toolchain, you can also install from source.</p>
+      <div class="cmd"><pre><code>cargo install --git https://github.com/champierre/sumi sumi-cli</code></pre><button class="copy" type="button">Copy</button></div>
 
-      <p class="install-note install-alt">Ruby のアプリケーションでは、ビルド済みの CLI を同梱した gem を <code>Gemfile</code> に書くだけで入ります。開発環境と本番で同じバージョンがそろいます。</p>
-      <div class="cmd"><pre><code>gem "sumi-ruby"</code></pre><button class="copy" type="button">コピー</button></div>
+      <p class="install-note install-alt">In a Ruby application, add the gem that bundles the prebuilt CLI to your <code>Gemfile</code>. Development and production then run the same version.</p>
+      <div class="cmd"><pre><code>gem "sumi-ruby"</code></pre><button class="copy" type="button">Copy</button></div>
     </div>
   </section>
 
   <section class="section" id="usage" aria-labelledby="usage-title">
     <div class="wrap split">
       <div>
-        <h2 id="usage-title">使い方</h2>
-        <p>入力ファイルと出力先を指定するだけで、グレースケールに変換します。</p>
-        <p>出力先に同じ名前のファイルがあると、上書きせずに終了します。変換に失敗しても、途中まで書いたファイルは残りません。</p>
-        <p>オプションと終了コードの一覧は <code>sumi --help</code> で確認できます。</p>
+        <h2 id="usage-title">Usage</h2>
+        <p>Give it an input file and an output path, and it converts to grayscale.</p>
+        <p>If the output file already exists, sumi exits without overwriting it. A failed conversion never leaves a partly written file behind.</p>
+        <p>Run <code>sumi --help</code> for the list of options and exit codes.</p>
       </div>
       <div class="usage">
         <div>
-          <h3>コマンドライン</h3>
-          <div class="cmd"><pre><code><span class="comment"># グレースケール</span>
+          <h3>Command line</h3>
+          <div class="cmd"><pre><code><span class="comment"># Grayscale</span>
 sumi invoice.pdf -o invoice-gray.pdf
 
-<span class="comment"># 白黒 2 値（閾値を変えるときは --threshold）</span>
+<span class="comment"># Black and white (change the threshold with --threshold)</span>
 sumi invoice.pdf -o invoice-mono.pdf --mode monochrome
 
-<span class="comment"># Ghostscript に近い明るさで RGB をグレーにする</span>
+<span class="comment"># Convert RGB to gray with brightness close to Ghostscript</span>
 sumi invoice.pdf -o invoice-gray.pdf --gray-model colorimetric
 
-<span class="comment"># 既存のファイルを上書きする</span>
+<span class="comment"># Overwrite an existing file</span>
 sumi invoice.pdf -o invoice-gray.pdf --overwrite
 
-<span class="comment"># 標準入出力で変換する</span>
+<span class="comment"># Convert through standard input and output</span>
 cat invoice.pdf | sumi - -o - &gt; invoice-gray.pdf
 
-<span class="comment"># 結果（ページ数や警告）を JSON で標準エラーに出す</span>
-sumi invoice.pdf -o invoice-gray.pdf --report json</code></pre><button class="copy" type="button">コピー</button></div>
+<span class="comment"># Print the result (page count, warnings) as JSON on standard error</span>
+sumi invoice.pdf -o invoice-gray.pdf --report json</code></pre><button class="copy" type="button">Copy</button></div>
         </div>
         <div>
-          <h3>Rails から呼び出す</h3>
+          <h3>Calling it from Rails</h3>
           <div class="cmd"><pre><code>require "open3"
 require "sumi/ruby"  <span class="comment"># gem "sumi-ruby"</span>
 
@@ -908,7 +914,7 @@ _stdout, stderr, status = Open3.capture3(
   Sumi::Ruby.executable, input_path.to_s, "-o", output_path.to_s,
   "--overwrite", "--timeout", "30"
 )
-raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class="copy" type="button">コピー</button></div>
+raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class="copy" type="button">Copy</button></div>
         </div>
       </div>
     </div>
@@ -922,9 +928,9 @@ raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class=
       <span class="brand-name">sumi</span>
     </a>
     <div class="footer-links">
-      <a href="./diary/">開発日誌</a>
+      <a href="../diary/" hreflang="ja">Development diary<span class="lang-note" aria-hidden="true">JA</span><span class="visually-hidden"> (in Japanese)</span></a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
-      <a href="https://github.com/champierre/sumi/releases">リリース</a>
+      <a href="https://github.com/champierre/sumi/releases">Releases</a>
       <a href="https://github.com/champierre/sumi/blob/main/LICENSE">MIT License</a>
       <span>© 2026 Junya Ishihara</span>
     </div>
@@ -985,21 +991,21 @@ raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class=
 
   // Grayscale / monochrome toggle.
   const captions = {
-    gray: "Chrome で作った請求書の PDF を sumi で変換し、そのまま表示しています。",
-    mono: "モノクロでは、濃さ 0.5 を境に黒と白に分けます。黄色の文字や薄い背景色は白になり、見えなくなります。"
+    gray: "An invoice PDF made with Chrome, converted with sumi and shown as is.",
+    mono: "Monochrome splits colors into black and white at a gray level of 0.5. Yellow text and light background colors turn white and disappear."
   };
   const alts = {
-    gray: "sumi でグレースケールに変換した後の請求書。色が濃淡のグレーになっている",
-    mono: "sumi でモノクロに変換した後の請求書。黒と白だけになり、薄い色の部分は消えている"
+    gray: "The invoice after grayscale conversion with sumi. The colors have become shades of gray",
+    mono: "The invoice after monochrome conversion with sumi. Only black and white remain, and light colors have disappeared"
   };
   const mono = new Image();
-  mono.src = "images/invoice-mono.png";
+  mono.src = "../images/invoice-mono.png";
   const modeButtons = document.querySelectorAll(".compare .modes button");
   modeButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const mode = button.dataset.mode;
       modeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-      after.src = mode === "mono" ? "images/invoice-mono.png" : "images/invoice-gray.png";
+      after.src = mode === "mono" ? "../images/invoice-mono.png" : "../images/invoice-gray.png";
       after.alt = alts[mode];
       caption.textContent = captions[mode];
     });
@@ -1050,11 +1056,11 @@ raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class=
       const text = block.querySelector("code").innerText;
       try {
         await navigator.clipboard.writeText(text);
-        button.textContent = "コピーしました";
+        button.textContent = "Copied";
       } catch {
-        button.textContent = "コピーできませんでした";
+        button.textContent = "Copy failed";
       }
-      setTimeout(() => { button.textContent = "コピー"; }, 2000);
+      setTimeout(() => { button.textContent = "Copy"; }, 2000);
     });
   });
 })();
