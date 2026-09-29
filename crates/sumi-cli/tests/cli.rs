@@ -153,3 +153,96 @@ fn reads_stdin_and_writes_stdout() {
     );
     assert!(result.stdout.starts_with(b"%PDF-"));
 }
+
+fn json_report(result: &Output) -> serde_json::Value {
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert_eq!(
+        stderr.lines().count(),
+        1,
+        "expected one line of JSON: {stderr}"
+    );
+    serde_json::from_str(&stderr).unwrap_or_else(|e| panic!("{e}: {stderr}"))
+}
+
+#[test]
+fn json_report_on_success() {
+    let dir = temp_dir("json_report_on_success");
+    let output = dir.join("out.pdf");
+    // --verbose and the warning would otherwise be printed as text; the JSON replaces both.
+    let result = sumi(&[
+        &fixture("ycck_jpeg.pdf"),
+        "-o",
+        output.to_str().unwrap(),
+        "--report",
+        "json",
+        "--verbose",
+        "--gray-model",
+        "colorimetric",
+    ]);
+    assert_eq!(result.status.code(), Some(0));
+    let report = json_report(&result);
+    assert_eq!(report["status"], "ok");
+    assert_eq!(report["exit_code"], 0);
+    assert_eq!(report["mode"], "grayscale");
+    assert_eq!(report["gray_model"], "colorimetric");
+    assert_eq!(report["report"]["pages"], 1);
+    assert_eq!(
+        report["report"]["warnings"][0]["message"],
+        "image not converted: YCCK (Adobe CMYK) JPEG image"
+    );
+    assert_eq!(report["report"]["warnings"][0]["count"], 1);
+    assert!(report["error"].is_null());
+}
+
+#[test]
+fn json_report_on_failure() {
+    let dir = temp_dir("json_report_on_failure");
+    let output = dir.join("out.pdf");
+    let out = output.to_str().unwrap();
+
+    let garbage = dir.join("garbage.pdf");
+    std::fs::write(&garbage, b"this is not a pdf").unwrap();
+    let result = sumi(&[garbage.to_str().unwrap(), "-o", out, "--report", "json"]);
+    assert_eq!(result.status.code(), Some(3));
+    let report = json_report(&result);
+    assert_eq!(report["status"], "error");
+    assert_eq!(report["exit_code"], 3);
+    assert!(report["report"].is_null());
+    assert_eq!(report["error"]["kind"], "invalid_pdf");
+
+    let result = sumi(&[
+        &fixture("ycck_jpeg.pdf"),
+        "-o",
+        out,
+        "--report",
+        "json",
+        "--strict",
+    ]);
+    assert_eq!(result.status.code(), Some(4));
+    let report = json_report(&result);
+    assert_eq!(report["error"]["kind"], "unsupported");
+    assert_eq!(
+        report["error"]["details"],
+        serde_json::json!(["image not converted: YCCK (Adobe CMYK) JPEG image"])
+    );
+    assert!(!output.exists());
+}
+
+#[test]
+fn json_report_on_timeout() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_sumi"))
+        .args(["-", "-o", "-", "--report", "json", "--timeout", "1"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // Hold standard input open (wait_with_output would close it), so sumi keeps waiting for
+    // input until the timeout fires.
+    let _stdin = child.stdin.take();
+    let result = child.wait_with_output().unwrap();
+    assert_eq!(result.status.code(), Some(6));
+    let report = json_report(&result);
+    assert_eq!(report["exit_code"], 6);
+    assert_eq!(report["error"]["kind"], "timeout");
+}
