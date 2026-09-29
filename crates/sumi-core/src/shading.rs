@@ -50,7 +50,12 @@ pub(crate) fn plan(
     };
     let function = Function::parse(doc, function, limit)?;
     let gray = |input: &[f64]| {
-        (tone.apply(space.to_gray(&function.eval(input)).unwrap_or(0.0)) * 255.0).round() as u8
+        (tone.apply(
+            space
+                .to_gray(&function.eval(input), settings.gray_model)
+                .unwrap_or(0.0),
+        ) * 255.0)
+            .round() as u8
     };
 
     let mut fn_dict = Dictionary::new();
@@ -111,7 +116,7 @@ pub(crate) fn plan(
         };
 
     let background = get_numbers(doc, dict, b"Background")
-        .and_then(|b| space.to_gray(&b))
+        .and_then(|b| space.to_gray(&b, settings.gray_model))
         .map(|g| Object::Array(vec![Object::Real(tone.apply(g) as f32)]));
 
     Ok(Some(Plan {
@@ -123,8 +128,8 @@ pub(crate) fn plan(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Mode;
     use crate::color::Tone;
+    use crate::{GrayModel, Mode};
 
     #[test]
     fn axial_rgb_shading_becomes_gray_ramp() {
@@ -146,6 +151,7 @@ mod tests {
                 mode: Mode::Grayscale,
                 threshold: 0.5,
             },
+            gray_model: GrayModel::Luma,
             dither: false,
             limits: Default::default(),
         };

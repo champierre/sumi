@@ -214,6 +214,7 @@ cat input.pdf | sumi - -o - > output.pdf
 |---|---|
 | `-o, --output <FILE>` | 出力先。`-` で標準出力 |
 | `--mode grayscale\|monochrome` | 変換方式（既定: `grayscale`） |
+| `--gray-model luma\|colorimetric` | RGB をグレーにする式（既定: `luma`）。「[変換式](#変換式)」を参照 |
 | `--threshold <0.0-1.0>` | モノクロ時の閾値（既定: `0.5`）。この値未満の濃さは黒になる |
 | `--dither` | モノクロ時、画像を閾値ではなく誤差拡散（Floyd–Steinberg）で 2 値化する |
 | `--strict` | 変換できない箇所があれば、元の色のまま出力せずにエラーにする |
@@ -306,7 +307,26 @@ Gray = 0.30 × R + 0.59 × G + 0.11 × B
 Gray = 1 − min(1, 0.30 × C + 0.59 × M + 0.11 × Y + K)
 ```
 
-モノクロでは `Gray < threshold` を黒、それ以外を白にします。
+`--gray-model colorimetric` を付けると、RGB は次の式で変換します。RGB の値を sRGB として読み、リニアな値に戻してから輝度を求め、sRGB の曲線でグレーの値に戻します。
+
+```text
+Y    = 0.2126 × lin(R) + 0.7152 × lin(G) + 0.0722 × lin(B)
+Gray = lin⁻¹(Y)          （lin は sRGB の値をリニアに戻す関数）
+```
+
+ガンマ補正済みの値にそのまま係数を掛ける `luma` では、原色、とくに青が暗くなります。`colorimetric` は Ghostscript が既定で行う ICC の変換に近い値になります。無彩色（R = G = B）の値はどちらの式でも変わりません。
+
+| 元の色 | `luma` | `colorimetric` | Ghostscript 10.02.1（既定） |
+|---|---:|---:|---:|
+| 赤 (1, 0, 0) | 0.300 | 0.498 | 0.506 |
+| 緑 (0, 1, 0) | 0.590 | 0.863 | 0.863 |
+| 青 (0, 0, 1) | 0.110 | 0.298 | 0.271 |
+| 黄 (1, 1, 0) | 0.890 | 0.968 | 0.973 |
+| (0.2, 0.4, 0.8) | 0.384 | 0.418 | 0.408 |
+
+Ghostscript は `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray` で変換しました。`-dUseFastColor=true`（ICC を使わない）にすると `luma` と同じ値になります。CMYK と Lab は `--gray-model` によらず上の式で変換します。
+
+モノクロでは `Gray < threshold` を黒、それ以外を白にします。`Gray` は `--gray-model` で選んだ式で求めます。
 
 ## 制限事項
 
@@ -323,11 +343,11 @@ Gray = 1 − min(1, 0.30 × C + 0.59 × M + 0.11 × Y + K)
 | 仕様 | 実装 | 理由 |
 |---|---|---|
 | PDF パーサ・xref・writer を自前実装 | [lopdf](https://crates.io/crates/lopdf)（MIT）を使用し、コンテンツストリームの字句解析と色変換だけを自前で実装 | incremental update、xref stream、object stream、壊れた xref の修復などを最初から扱えるため。xref stream と object stream は v0.3 予定だったが、この構成で最初から読める |
-| 変換式に 0.2126 / 0.7152 / 0.0722 を使用 | 0.30 / 0.59 / 0.11 | PDF の色値はガンマ補正済みの値で、Rec.709 の係数はリニア値向けのため。PDF 仕様の式に合わせた |
+| 変換式に 0.2126 / 0.7152 / 0.0722 を使用 | 既定は 0.30 / 0.59 / 0.11。`--gray-model colorimetric` で、sRGB をリニアに戻してから 0.2126 / 0.7152 / 0.0722 を掛ける | PDF の色値はガンマ補正済みの値で、Rec.709 の係数はリニア値向けのため。既定は PDF 仕様の式に合わせ、Ghostscript（ICC あり）に近い結果がほしいときのために `colorimetric` を用意した |
 | DeviceGray は変更しない | モノクロ時は `g` / `G` も 2 値化 | 仕様どおりだとモノクロに中間調が残るため |
 | `SumiError` のバリアント | `InvalidPdf(String)`、`EncryptedPdf`、`Unsupported(Vec<String>)`、`InvalidOptions`、`LimitExceeded`、`Io(io::Error)`、`Internal` | エラー内容を保持するため。`UnsupportedPdfVersion` はヘッダのバージョンがあてにならないので廃止 |
 | `convert(input, output, options)` | `convert(input, output, &options)`、`convert_bytes`、`monochrome` を追加 | Web サービスでメモリ上で変換できるように |
-| CLI オプション | `--dither` `--strict` `--timeout`、標準入出力（`-`）、終了コード 6 を追加 | |
+| CLI オプション | `--gray-model` `--dither` `--strict` `--timeout`、標準入出力（`-`）、終了コード 6 を追加 | |
 | 画像対応は v0.2 | v0.1 で対応 | 帳票の社印などが画像であることが多いため |
 
 ## 安全性
