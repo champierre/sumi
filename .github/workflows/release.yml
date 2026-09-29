@@ -1,7 +1,9 @@
 name: Release
 
-# Pushing a tag such as v0.1.0 builds the CLI for every platform and publishes a GitHub release.
-# Running the workflow manually only builds the archives (available as workflow artifacts).
+# Pushing a tag such as v0.1.0 builds the CLI for every platform, publishes a GitHub release and
+# publishes the sumi-ruby gems to RubyGems.org.
+# Running the workflow manually only builds the archives and the gems (available as workflow
+# artifacts).
 on:
   push:
     tags: ["v*"]
@@ -30,13 +32,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check that the tag matches the crate version
+      - name: Check that the tag matches the crate and gem versions
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
           version=$(grep -m1 '^version' Cargo.toml | cut -d '"' -f 2)
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
             echo "::error::tag $GITHUB_REF_NAME does not match Cargo.toml version $version"
+            exit 1
+          fi
+          gem_version=$(grep -m1 'VERSION =' ruby/lib/sumi/ruby/version.rb | cut -d '"' -f 2)
+          if [ "$gem_version" != "$version" ]; then
+            echo "::error::ruby/lib/sumi/ruby/version.rb ($gem_version) does not match Cargo.toml version $version"
             exit 1
           fi
 
@@ -90,3 +97,68 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+
+  gem:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ruby
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          working-directory: ruby
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Build gems
+        run: bundle exec rake "gem:release[../dist]"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gems
+          path: ruby/pkg/*.gem
+          if-no-files-found: error
+
+  # Uses trusted publishing: RubyGems.org must list this repository and release.yml as a
+  # trusted publisher of sumi-ruby.
+  publish-gem:
+    needs: [gem, release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: gems
+          path: pkg
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - uses: rubygems/configure-rubygems-credentials@v2.1.0
+
+      - name: Push gems
+        run: |
+          # Native gems first, so that no one gets only the platform-independent gem
+          # (sumi-ruby-VERSION.gem, the only file name without a platform after the version).
+          generic=$(ls pkg/*.gem | grep -E '^pkg/sumi-ruby-[^-]+\.gem$')
+          native=$(ls pkg/*.gem | grep -Ev '^pkg/sumi-ruby-[^-]+\.gem$')
+          for gem in $native $generic; do
+            output=$(gem push "$gem" 2>&1) && status=0 || status=$?
+            echo "$output"
+            # A rerun after a partial failure skips the gems that were already pushed.
+            if [ "$status" -ne 0 ] && ! grep -q "Repushing of gem versions is not allowed" <<< "$output"; then
+              exit 1
+            fi
+          done

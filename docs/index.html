@@ -856,6 +856,9 @@ sumi --version</code></pre><button class="copy" type="button">コピー</button>
 
       <p class="install-note install-alt">Rust の開発環境があれば、ソースからもインストールできます。</p>
       <div class="cmd"><pre><code>cargo install --git https://github.com/champierre/sumi sumi-cli</code></pre><button class="copy" type="button">コピー</button></div>
+
+      <p class="install-note install-alt">Ruby のアプリケーションでは、ビルド済みの CLI を同梱した gem を <code>Gemfile</code> に書くだけで入ります。開発環境と本番で同じバージョンがそろいます。</p>
+      <div class="cmd"><pre><code>gem "sumi-ruby"</code></pre><button class="copy" type="button">コピー</button></div>
     </div>
   </section>
 
@@ -891,9 +894,10 @@ sumi invoice.pdf -o invoice-gray.pdf --report json</code></pre><button class="co
         <div>
           <h3>Rails から呼び出す</h3>
           <div class="cmd"><pre><code>require "open3"
+require "sumi/ruby"  <span class="comment"># gem "sumi-ruby"</span>
 
 _stdout, stderr, status = Open3.capture3(
-  "sumi", input_path.to_s, "-o", output_path.to_s,
+  Sumi::Ruby.executable, input_path.to_s, "-o", output_path.to_s,
   "--overwrite", "--timeout", "30"
 )
 raise "sumi failed: #{stderr}" unless status.success?</code></pre><button class="copy" type="button">コピー</button></div>

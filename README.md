@@ -192,6 +192,21 @@ sudo mv sumi-aarch64-apple-darwin/sumi /usr/local/bin/
 
 Linux 版は静的リンク（musl）なので、ディストリビューションを問わず動きます。ブラウザでダウンロードした macOS 版がブロックされる場合は、`xattr -d com.apple.quarantine sumi` を実行してください。
 
+### Ruby（gem）
+
+Ruby のアプリケーションから使う場合は、ビルド済みの CLI を同梱した gem [sumi-ruby](ruby/README.md) を使えます。`bundle install` だけで入り、`Gemfile.lock` で開発環境・CI・本番の sumi のバージョンがそろいます。gem のバージョンは sumi のバージョンと同じです。
+
+```ruby
+# Gemfile
+gem "sumi-ruby"
+```
+
+```bash
+bundle exec sumi input.pdf -o output.pdf
+```
+
+Linux（x86_64・arm64、glibc と musl）、macOS（Apple Silicon・Intel）、Windows（x64）向けの gem があります。開発と本番でプラットフォームが違う場合は、`bundle lock --add-platform x86_64-linux-gnu` のように `Gemfile.lock` にプラットフォームを追加してください。詳しくは [ruby/README.md](ruby/README.md) を参照してください。
+
 ### ソースからビルド
 
 ```bash
@@ -297,11 +312,13 @@ sumi_core::grayscale("input.pdf", "output.pdf")?;
 ```ruby
 require "json"
 require "open3"
+require "sumi/ruby"
 
 class PdfGrayscaleConverter
   class ConversionError < StandardError; end
 
-  SUMI = ENV.fetch("SUMI_PATH", "sumi")
+  # sumi-ruby gem の実行ファイルを使う。gem を使わない場合は ENV.fetch("SUMI_PATH", "sumi") など
+  SUMI = Sumi::Ruby.executable
 
   # 変換の結果（ページ数、変換した件数、警告）を返す
   def self.call(input_path:, output_path:)
@@ -407,7 +424,11 @@ fixture の再生成方法は [fixtures/README.md](fixtures/README.md) を参照
 
 ## リリース
 
-`v0.1.0` のように `Cargo.toml` のバージョンと同じタグを push すると、GitHub Actions（`.github/workflows/release.yml`）が各プラットフォーム向けの CLI をビルドし、GitHub Releases に公開します。
+`v0.1.0` のように `Cargo.toml` のバージョンと同じタグを push すると、GitHub Actions（`.github/workflows/release.yml`）が各プラットフォーム向けの CLI をビルドし、GitHub Releases に公開します。続けて、同じ実行ファイルを同梱した gem（sumi-ruby）をビルドし、RubyGems.org に公開します。
+
+バージョンを上げるときは、`Cargo.toml` と `ruby/lib/sumi/ruby/version.rb` の両方を変えてください。食い違っているとリリースのワークフローが止まります。
+
+gem の公開には RubyGems.org の Trusted Publishing を使うので、API キーは要りません。最初に一度だけ、RubyGems.org で sumi-ruby の Trusted Publisher として、リポジトリ `champierre/sumi` とワークフロー `release.yml` を登録してください（gem を公開する前なら Pending Trusted Publisher として登録します）。
 
 ```bash
 git tag v0.1.0
