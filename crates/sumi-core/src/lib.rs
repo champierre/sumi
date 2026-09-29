@@ -34,7 +34,7 @@ use std::io::Write;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::Path;
 
-use lopdf::{Document, LoadOptions};
+use lopdf::{Document, LoadOptions, Object, SaveOptions};
 
 pub use error::{Result, SumiError};
 pub use options::{ConvertOptions, GrayModel, Limits, Mode};
@@ -145,8 +145,9 @@ fn convert_document(input: &[u8], settings: &Settings) -> Result<Converted> {
     let mut doc = converter.doc;
 
     doc.prune_objects();
-    // The output uses a classic cross-reference table; drop keys that only apply to the
-    // cross-reference streams and incremental updates of the input.
+    compress_streams(&mut doc);
+    // Drop keys that only apply to the cross-reference streams and incremental updates of the
+    // input; the writer sets the ones its own cross-reference stream needs.
     for key in [
         &b"Prev"[..],
         b"XRefStm",
@@ -159,9 +160,35 @@ fn convert_document(input: &[u8], settings: &Settings) -> Result<Converted> {
     ] {
         doc.trailer.remove(key);
     }
+    // Object streams pack the dictionaries (pages, fonts, annotations...) into compressed
+    // streams, and a cross-reference stream replaces the text table. Both need PDF 1.5; the
+    // writer raises the header version of older documents.
+    let options = SaveOptions {
+        use_object_streams: true,
+        use_xref_streams: true,
+        ..SaveOptions::default()
+    };
     let mut pdf = Vec::new();
-    doc.save_to(&mut pdf)?;
+    doc.save_with_options(&mut pdf, options)?;
     Ok(Converted { pdf, report })
+}
+
+/// Flate-compresses streams stored without a filter, keeping each one only if it gets smaller.
+///
+/// XMP metadata is left as it is so that tools scanning the file for it can still read it.
+/// Streams with `/DecodeParms` but no filter are skipped, as the parameters would then apply
+/// to the new filter.
+fn compress_streams(doc: &mut Document) {
+    for object in doc.objects.values_mut() {
+        if let Object::Stream(stream) = object
+            && stream.allows_compression
+            && stream.dict.get(b"DecodeParms").is_err()
+            && stream.dict.get(b"Type").and_then(Object::as_name).ok() != Some(&b"Metadata"[..])
+        {
+            // Only fails if writing into memory fails; the stream is then left as it is.
+            let _ = stream.compress();
+        }
+    }
 }
 
 /// Finds objects that are referenced and present in the file but could not be parsed.

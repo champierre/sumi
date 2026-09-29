@@ -39,6 +39,8 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 同じ PDF をグレースケールに変換し、Ghostscript および MuPDF の `mutool recolor` と、実行時間、メモリ使用量、出力を比べました。Mac（Apple M1 Pro）と Linux（AMD Ryzen 7 6800H）の 2 台で計測しています。表の入力名のリンクから、計測に使った PDF を開けます。
 
+sumi の出力サイズは、出力を object stream と xref stream で保存するようにしたあと（[#9](https://github.com/champierre/sumi/issues/9)）に取り直した値です。sumi の出力サイズは環境によらず同じです。実行時間とメモリ使用量は、この変更の前（0.1.0）に計測した値です。変更の前後を別の Mac（Intel）で比べると、50 ページの請求書では実行時間が約 3 割、メモリ使用量が約 6 割（19 MB → 31 MB）増えました。ほかの 5 件はほとんど変わりませんでした。
+
 `mutool recolor` は sumi と同じく、ページを画像化せずに色指定だけを書き換えます。Ghostscript のように描き直さないので、比較の相手としては sumi にいちばん近いツールです。ただし MuPDF も Ghostscript と同じ Artifex 製で、ライセンスは AGPL-3.0（または商用ライセンス）です。sumi が MIT なのは、この点が理由です。
 
 ### 実行時間
@@ -107,17 +109,19 @@ sumi samples/equal-pay.pdf -o samples/equal-pay-monochrome.pdf --mode monochrome
 
 | 入力 | 元の PDF | sumi | Ghostscript 10.05.1（Mac） | Ghostscript 10.07.1（Linux） | mutool 1.28.3（Mac） | mutool 1.28.0（Linux） |
 |---|---:|---:|---:|---:|---:|---:|
-| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.31 MB | 0.18 MB | 0.18 MB | 0.25 MB | 0.25 MB |
-| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.98 MB | 1.13 MB | 1.12 MB | 0.88 MB | 0.88 MB |
-| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.30 MB | 0.26 MB | 0.26 MB | 0.28 MB | 0.28 MB |
+| [請求書](fixtures/chrome_invoice.pdf) | 0.34 MB | 0.21 MB | 0.18 MB | 0.18 MB | 0.25 MB | 0.25 MB |
+| [請求書 50 ページ](bench/invoice-50pages.pdf) | 1.03 MB | 0.57 MB | 1.13 MB | 1.12 MB | 0.88 MB | 0.88 MB |
+| [インフォグラフィック](https://upload.wikimedia.org/wikipedia/commons/f/f8/Equal_Pay_Infographic.pdf) | 0.30 MB | 0.28 MB | 0.26 MB | 0.26 MB | 0.28 MB | 0.28 MB |
 | [NASA ファクトシート](https://upload.wikimedia.org/wikipedia/commons/7/79/0080_SLS_Fact_Sheet_10162019_PRINT_FINAL_%28656622902519%29.pdf) | 0.30 MB | 0.84 MB | 0.51 MB | 0.24 MB | 0.83 MB | 0.84 MB |
 | [ポスター](https://upload.wikimedia.org/wikipedia/commons/9/91/Best_Case_Scenarios_for_Copyright_-_poster.pdf) | 5.90 MB | 5.90 MB | 4.51 MB | 4.65 MB | 5.77 MB | 5.77 MB |
-| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.11 MB | 7.20 MB | 7.20 MB | 7.06 MB | 7.06 MB |
+| [地図](https://upload.wikimedia.org/wikipedia/commons/1/12/Political_map_of_Europe.pdf) | 6.70 MB | 7.10 MB | 7.20 MB | 7.20 MB | 7.06 MB | 7.06 MB |
 
 sumi の出力は、Mac と Linux で同じサイズでした。mutool の出力もほぼ同じで、差があったのは NASA ファクトシートだけです（Mac 834,194 バイト、Linux 839,491 バイト）。
 
+sumi は、ページやフォントなどの辞書をまとめて圧縮する object stream と、相互参照表を小さく書ける xref stream で保存します。辞書の多い請求書では、この効果が大きく出ます（object stream を使わない 0.1.0 では、請求書 0.31 MB、50 ページの請求書 0.98 MB でした）。
+
 - **出力サイズ（Ghostscript）**: 写真を含む NASA ファクトシートやポスターは、Ghostscript のほうが小さくなりました。sumi は JPEG 画像を可逆圧縮（Flate）で保存し直し、Ghostscript は画像を JPEG のまま再圧縮するためです。NASA ファクトシートは、Linux の Ghostscript 10.07.1 では 0.24 MB と、Mac の 10.05.1（0.51 MB）の半分以下になりました。
-- **出力サイズ（mutool）**: mutool は 6 件すべてで sumi より小さく、差は 0.5〜20.1%（Linux）、0.6〜20.1%（Mac）でした。ただし mutool も JPEG 画像を可逆圧縮で保存し直すので、写真の多い PDF では同じように大きくなります（NASA ファクトシートは sumi が 843,510 バイト、mutool が 839,491 バイトで、どちらも元の 0.30 MB から 0.84 MB に増えました）。差が大きいのは、写真を含まない請求書（20.1%）や 50 ページの請求書（10.0%）です。写真の多い PDF を小さくしたいなら、画像を JPEG のまま再圧縮する Ghostscript のほうが向いています。
+- **出力サイズ（mutool）**: 写真を含まない請求書では、sumi のほうが mutool より小さくなりました（請求書 17.6%、50 ページの請求書 35.9%）。ほかの 4 件は mutool のほうが 0.1〜2.2% 小さく、ほぼ同じです。mutool も JPEG 画像を可逆圧縮で保存し直すので、写真の多い PDF では同じように大きくなります（NASA ファクトシートは sumi が 840,273 バイト、mutool が 839,491 バイトで、どちらも元の 0.30 MB から 0.84 MB に増えました）。写真の多い PDF を小さくしたいなら、画像を JPEG のまま再圧縮する Ghostscript のほうが向いています。
 - **見た目**: どちらの環境でも 3 つの出力をレンダリングして比べたところ、見た目はほぼ同じで、どれにも色は残っていませんでした。sumi と mutool の描画結果の差は、sumi と Ghostscript の差と同程度で、文字の縁のアンチエイリアスがほとんどです。
 - **テキスト**: sumi の出力から抽出したテキストは、どちらの環境でも 6 件すべてで元の PDF と完全に一致しました。mutool もどちらの環境でも 6 件すべてで完全に一致しています。この指標では sumi と mutool に差がつきません。Ghostscript の出力では、請求書の文字の抽出順が変わり、「発行日」が一続きの文字列として見つからなくなりました（文字自体の欠落はありません。Mac、Linux とも）。Mac の Ghostscript 10.05.1 では、NASA ファクトシートの合字「fi」「fl」が「Þ」「ß」として抽出され、「first」で検索できなくなりました。Linux の 10.07.1 ではこの問題は起きず、段落 1 つの抽出順が変わっただけでした。
 
@@ -352,6 +356,8 @@ end
 | フォームフィールド | AcroForm と各フィールドの `/DA` |
 
 テキスト描画命令、フォント、パス、文字列、コメントなど色以外のバイト列は、元のままコピーします。
+
+出力は object stream と xref stream で保存します。どちらも PDF 1.5 の機能なので、入力が PDF 1.4 以前のときは、ヘッダーのバージョンを 1.5 に上げます。圧縮されていないストリームは Flate で圧縮します（XMP メタデータは、ほかのツールが読めるように圧縮しません）。
 
 ### 変換式
 

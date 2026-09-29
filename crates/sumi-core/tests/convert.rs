@@ -120,6 +120,50 @@ fn unchanged_content_is_not_rewritten() {
 }
 
 #[test]
+fn output_uses_object_and_cross_reference_streams() {
+    const XMP: &[u8] = b"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"></x:xmpmeta>";
+    let form_content = b"0 0 10 10 re f\n".repeat(20);
+    let input = pdf_with_page(b"1 0 0 rg /Fm0 Do", |doc, resources, page| {
+        // A form without color operators is left alone by the conversion, but it is stored
+        // uncompressed and gets compressed on output.
+        let form = doc.add_object(Stream::new(
+            dictionary! {"Type" => "XObject", "Subtype" => "Form", "BBox" => vec![0.into(), 0.into(), 10.into(), 10.into()]},
+            form_content.clone(),
+        ));
+        resources.set("XObject", dictionary! {"Fm0" => form});
+        let metadata = doc.add_object(Stream::new(
+            dictionary! {"Type" => "Metadata", "Subtype" => "XML"},
+            XMP.to_vec(),
+        ));
+        page.set("Metadata", metadata);
+    });
+    // Features of PDF 1.5 raise the version of an older document.
+    let input = [b"%PDF-1.4".as_slice(), &input[8..]].concat();
+
+    let converted = convert_bytes(&input, &gray()).unwrap();
+    let pdf = &converted.pdf;
+    assert!(pdf.starts_with(b"%PDF-1.5"));
+    let contains = |needle: &[u8]| pdf.windows(needle.len()).any(|w| w == needle);
+    assert!(contains(b"/ObjStm"));
+    assert!(contains(b"/XRef"));
+    assert!(!contains(b"\nxref"), "classic cross-reference table");
+    assert!(contains(XMP), "XMP metadata stays readable");
+
+    let doc = Document::load_mem(pdf).unwrap();
+    assert_eq!(page_content(pdf), "0.3 g /Fm0 Do");
+    let form = doc
+        .get_object(resource_id(&doc, b"XObject", b"Fm0"))
+        .unwrap()
+        .as_stream()
+        .unwrap();
+    assert_eq!(
+        form.dict.get(b"Filter").unwrap().as_name().unwrap(),
+        b"FlateDecode"
+    );
+    assert_eq!(form.decompressed_content().unwrap(), form_content);
+}
+
+#[test]
 fn icc_based_color_spaces_are_rewritten() {
     let input = pdf(
         b"/CS0 cs 0 0 1 sc 0 0 100 100 re f /CS0 CS 1 1 0 SCN S",
