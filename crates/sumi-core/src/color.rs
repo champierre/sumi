@@ -2,7 +2,7 @@
 //!
 //! The RGB and CMYK formulas are the ones the PDF specification gives for converting device
 //! colors to DeviceGray (ISO 32000-1, 10.3), which is also what Acrobat and Ghostscript use.
-//! [`GrayModel::Colorimetric`] を選んだときの RGB だけは、値を sRGB として輝度を求める。
+//! With [`GrayModel::Colorimetric`], RGB values are instead read as sRGB and mapped by luminance.
 
 use std::sync::OnceLock;
 
@@ -24,7 +24,7 @@ pub(crate) fn rgb_to_gray(r: f64, g: f64, b: f64, model: GrayModel) -> f64 {
     }
 }
 
-/// sRGB の値をリニアな値に戻す（IEC 61966-2-1）。
+/// Decodes an sRGB value to linear light (IEC 61966-2-1).
 fn srgb_to_linear(v: f64) -> f64 {
     let v = clamp01(v);
     if v <= 0.04045 {
@@ -34,7 +34,7 @@ fn srgb_to_linear(v: f64) -> f64 {
     }
 }
 
-/// リニアな値を sRGB の曲線で戻す。[`srgb_to_linear`] の逆関数。
+/// Encodes linear light with the sRGB curve; the inverse of [`srgb_to_linear`].
 fn linear_to_srgb(y: f64) -> f64 {
     let y = clamp01(y);
     if y <= 0.0031308 {
@@ -58,16 +58,16 @@ pub(crate) fn rgb8_to_gray(r: u8, g: u8, b: u8) -> u8 {
     ((77 * r as u32 + 151 * g as u32 + 28 * b as u32 + 128) >> 8) as u8
 }
 
-/// 8bit の画素を [`GrayModel::Colorimetric`] でグレーにするための変換表。
+/// Lookup tables for converting 8-bit samples with [`GrayModel::Colorimetric`].
 pub(crate) struct Srgb8 {
-    /// 8bit の値 → リニアな値（0〜65535）。
+    /// 8-bit value to linear light (0..=65535).
     linear: [u32; 256],
-    /// 輝度（0〜65535）→ 8bit のグレー。
+    /// Luminance (0..=65535) to 8-bit gray.
     encode: Box<[u8]>,
 }
 
 impl Srgb8 {
-    /// 輝度の係数。合計が 65536 になるように丸めてある。
+    /// Rec. 709 luminance weights, rounded so that they add up to 65536.
     const WEIGHTS: [u32; 3] = [13933, 46871, 4732];
 
     pub(crate) fn get() -> &'static Srgb8 {
@@ -82,13 +82,13 @@ impl Srgb8 {
         })
     }
 
-    /// [`rgb_to_gray`] の [`GrayModel::Colorimetric`] を 8bit の画素で計算する。
+    /// Integer version of [`rgb_to_gray`] with [`GrayModel::Colorimetric`].
     pub(crate) fn gray(&self, r: u8, g: u8, b: u8) -> u8 {
         let [wr, wg, wb] = Self::WEIGHTS;
         let y = wr * self.linear[r as usize]
             + wg * self.linear[g as usize]
             + wb * self.linear[b as usize];
-        // 最大でも 65536 × 65535 + 32768 なので u32 に収まる。
+        // At most 65536 * 65535 + 32768, which fits in a u32.
         self.encode[((y + 32768) >> 16) as usize]
     }
 }
@@ -156,18 +156,18 @@ mod tests {
     #[test]
     fn colorimetric_follows_srgb_luminance() {
         let gray = |r, g, b| rgb_to_gray(r, g, b, GrayModel::Colorimetric);
-        // Ghostscript の既定（ICC）の出力は赤 0.506、緑 0.863、青 0.271、(0.2,0.4,0.8) 0.408。
+        // Ghostscript with ICC (its default) gives 0.506, 0.863, 0.271 and 0.408.
         assert!((gray(1.0, 0.0, 0.0) - 0.498).abs() < 1e-3);
         assert!((gray(0.0, 1.0, 0.0) - 0.862).abs() < 1e-3);
         assert!((gray(0.0, 0.0, 1.0) - 0.298).abs() < 1e-3);
         assert!((gray(0.2, 0.4, 0.8) - 0.418).abs() < 1e-3);
         assert_eq!(gray(0.0, 0.0, 0.0), 0.0);
         assert!((gray(1.0, 1.0, 1.0) - 1.0).abs() < 1e-9);
-        // 無彩色の値は変わらない。
+        // Neutral grays are unchanged.
         for v in [0.01, 0.2, 0.5, 0.8] {
             assert!((gray(v, v, v) - v).abs() < 1e-9, "{v}");
         }
-        // 範囲外の値は丸める。
+        // Out-of-range values are clamped.
         assert_eq!(gray(-1.0, f64::NAN, -0.5), 0.0);
         assert!((gray(2.0, 2.0, 2.0) - 1.0).abs() < 1e-9);
     }

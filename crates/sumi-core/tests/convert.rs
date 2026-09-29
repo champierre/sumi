@@ -461,7 +461,7 @@ fn colorimetric() -> ConvertOptions {
 
 #[test]
 fn colorimetric_gray_model_converts_rgb_as_srgb_luminance() {
-    // CMYK と DeviceGray は変換方式によらず同じ値になる。
+    // CMYK and DeviceGray do not depend on the gray model.
     let input = pdf(
         b"1 0 0 rg 0 1 0 RG 0 0 1 rg 0.2 0.4 0.8 RG 0.5 0.5 0.5 rg 0 1 0 0 k 0.3 g /Im0 Do",
         |doc, resources| {
@@ -505,7 +505,7 @@ fn colorimetric_gray_model_converts_rgb_as_srgb_luminance() {
 
 #[test]
 fn monochrome_threshold_uses_the_gray_model() {
-    // 青は luma では 0.11、colorimetric では 0.298 になる。
+    // Blue is 0.11 with luma and 0.298 with colorimetric.
     let input = pdf(b"0 0 1 rg", |_, _| {});
     let mut options = ConvertOptions::monochrome(0.2);
     let content = page_content(&convert_bytes(&input, &options).unwrap().pdf);

@@ -34,15 +34,16 @@ impl fmt::Display for Mode {
     }
 }
 
-/// RGB の色をグレーに変換する方式。
+/// How RGB colors are mapped to gray.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GrayModel {
-    /// ガンマ補正済みの値にそのまま `0.30 × R + 0.59 × G + 0.11 × B` を掛ける。PDF 仕様の式。
+    /// `0.30 × R + 0.59 × G + 0.11 × B` applied to the gamma-encoded values, as given by the
+    /// PDF specification.
     #[default]
     Luma,
-    /// 値を sRGB として読み、リニアに戻して Rec. 709 の係数で輝度を求め、sRGB の曲線で
-    /// グレーの値に戻す。[`GrayModel::Luma`] より原色が明るくなり、Ghostscript が既定で行う
-    /// ICC の変換に近い。
+    /// The luminance of the color read as sRGB: the values are linearized, weighted with the
+    /// Rec. 709 coefficients and encoded back with the sRGB curve. Saturated colors come out
+    /// lighter than with [`GrayModel::Luma`], close to Ghostscript's default ICC conversion.
     Colorimetric,
 }
 
@@ -78,7 +79,7 @@ impl fmt::Display for GrayModel {
 #[non_exhaustive]
 pub struct ConvertOptions {
     pub mode: Mode,
-    /// RGB の色をグレーに変換する方式。
+    /// How RGB colors are mapped to gray.
     pub gray_model: GrayModel,
     /// Gray level in `0.0..=1.0` below which a color becomes black in monochrome mode.
     pub threshold: f32,
