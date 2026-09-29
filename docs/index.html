@@ -883,7 +883,10 @@ sumi invoice.pdf -o invoice-gray.pdf --gray-model colorimetric
 sumi invoice.pdf -o invoice-gray.pdf --overwrite
 
 <span class="comment"># 標準入出力で変換する</span>
-cat invoice.pdf | sumi - -o - &gt; invoice-gray.pdf</code></pre><button class="copy" type="button">コピー</button></div>
+cat invoice.pdf | sumi - -o - &gt; invoice-gray.pdf
+
+<span class="comment"># 結果（ページ数や警告）を JSON で標準エラーに出す</span>
+sumi invoice.pdf -o invoice-gray.pdf --report json</code></pre><button class="copy" type="button">コピー</button></div>
         </div>
         <div>
           <h3>Rails から呼び出す</h3>

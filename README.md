@@ -221,6 +221,7 @@ cat input.pdf | sumi - -o - > output.pdf
 | `--overwrite` | 出力ファイルが既にあれば上書きする |
 | `--timeout <SECONDS>` | 指定秒数を超えたら中断する |
 | `-v, --verbose` | 変換した件数を表示する |
+| `--report json` | 変換の結果を JSON で標準エラーに出す。「[JSON レポート](#json-レポート)」を参照 |
 
 変換できなかった箇所は、元の色のまま残して `sumi: warning: ...` を標準エラーに出します（`--strict` を付けるとエラー終了）。
 出力はいったん一時ファイルに書いてから rename するので、失敗時に壊れたファイルが残りません。
@@ -236,6 +237,40 @@ cat input.pdf | sumi - -o - > output.pdf
 | 4 | 未対応の PDF（暗号化 PDF、または `--strict` で変換できない箇所があった） |
 | 5 | 入出力エラー |
 | 6 | タイムアウト |
+
+### JSON レポート
+
+`--report json` を付けると、終了するときに結果を 1 行の JSON で標準エラーに出します。失敗したときも同じ形で出します。アプリケーションから呼び出して、ページ数や警告をプログラムで扱うときに使います。
+
+このとき、`sumi: warning: ...` の警告と `-v` の件数は文章では出しません（どちらも JSON に含まれます）。標準エラーには JSON の 1 行だけが出るので、そのまま読み込めます。標準出力は `-o -` で PDF を書くのに使うため、JSON には使いません。
+
+```json
+{"status":"ok","exit_code":0,"mode":"grayscale","gray_model":"luma","report":{"pages":2,"content_streams":3,"color_operators":74,"images":2,"shadings":1,"warnings":[]},"error":null}
+```
+
+失敗したとき（`--strict` で変換できない箇所があった場合）:
+
+```json
+{"status":"error","exit_code":4,"mode":"grayscale","gray_model":"luma","report":null,"error":{"kind":"unsupported","message":"unsupported PDF features: image not converted: YCCK (Adobe CMYK) JPEG image","details":["image not converted: YCCK (Adobe CMYK) JPEG image"]}}
+```
+
+| キー | 内容 |
+|---|---|
+| `status` | `ok` または `error` |
+| `exit_code` | 終了コード（上の表と同じ） |
+| `mode` | `grayscale` または `monochrome` |
+| `gray_model` | `luma` または `colorimetric` |
+| `report` | 変換の結果。変換する前に失敗したときは `null` |
+| `report.pages` | ページ数。sumi はページを増減しないので、変換の前後で同じです |
+| `report.content_streams` `report.color_operators` `report.images` `report.shadings` | 変換した件数（`-v` と同じ） |
+| `report.warnings` | 元の色のまま残した箇所。`message`（内容）と `count`（同じ警告が出た回数）の配列 |
+| `error` | 失敗の内容。成功したときは `null` |
+| `error.kind` | 失敗の種類。`invalid_arguments` `invalid_pdf` `encrypted_pdf` `unsupported` `io` `timeout` `limit_exceeded` `internal` のいずれか |
+| `error.message` | 失敗の説明。文言は変わることがあるので、処理を分けるときは `kind` を使ってください |
+| `error.details` | `unsupported` のとき、変換できなかった箇所の一覧。それ以外は空の配列 |
+
+- キーは常にすべて出ます。当てはまらないものは `null` か空の配列になります
+- 存在しないオプションなど、引数の書き方の誤りは JSON ではなく文章で出ます。引数を読む段階で失敗するため、`--report json` が指定されたかをまだ判断できないからです
 
 ## Rust API
 
@@ -260,6 +295,7 @@ sumi_core::grayscale("input.pdf", "output.pdf")?;
 ## Rails からの利用
 
 ```ruby
+require "json"
 require "open3"
 
 class PdfGrayscaleConverter
@@ -267,14 +303,16 @@ class PdfGrayscaleConverter
 
   SUMI = ENV.fetch("SUMI_PATH", "sumi")
 
+  # 変換の結果（ページ数、変換した件数、警告）を返す
   def self.call(input_path:, output_path:)
     # Tempfile のパスは作成済みなので --overwrite が必要
     _stdout, stderr, status = Open3.capture3(
-      SUMI, input_path.to_s, "-o", output_path.to_s, "--overwrite", "--timeout", "30"
+      SUMI, input_path.to_s, "-o", output_path.to_s, "--overwrite", "--timeout", "30", "--report", "json"
     )
-    raise ConversionError, stderr unless status.success?
+    result = JSON.parse(stderr)
+    raise ConversionError, "#{result.dig("error", "kind")}: #{result.dig("error", "message")}" unless status.success?
 
-    output_path
+    result["report"]
   end
 end
 ```
@@ -347,7 +385,7 @@ Ghostscript は `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray`
 | DeviceGray は変更しない | モノクロ時は `g` / `G` も 2 値化 | 仕様どおりだとモノクロに中間調が残るため |
 | `SumiError` のバリアント | `InvalidPdf(String)`、`EncryptedPdf`、`Unsupported(Vec<String>)`、`InvalidOptions`、`LimitExceeded`、`Io(io::Error)`、`Internal` | エラー内容を保持するため。`UnsupportedPdfVersion` はヘッダのバージョンがあてにならないので廃止 |
 | `convert(input, output, options)` | `convert(input, output, &options)`、`convert_bytes`、`monochrome` を追加 | Web サービスでメモリ上で変換できるように |
-| CLI オプション | `--gray-model` `--dither` `--strict` `--timeout`、標準入出力（`-`）、終了コード 6 を追加 | |
+| CLI オプション | `--gray-model` `--dither` `--strict` `--timeout` `--report`、標準入出力（`-`）、終了コード 6 を追加 | |
 | 画像対応は v0.2 | v0.1 で対応 | 帳票の社印などが画像であることが多いため |
 
 ## 安全性
