@@ -177,7 +177,7 @@
   </p>
   <p class="lede">
     最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-09-29 18:05 のものです。
-    新しい記事ほど上に並べています。
+    日付の新しいセクションほど上に並べ、セクションの中は起きた順に書いています。
   </p>
 </div>
 
@@ -223,26 +223,37 @@
 
     <ol class="log">
       <li>
-        <time datetime="2026-09-29T18:05">2026-09-29 18:05</time>
-        <h3>color.rs の解説を 0.2.0 のコードに合わせる</h3>
+        <time datetime="2026-09-29T13:49">2026-09-29 13:49</time>
+        <h3>グレーにする式を選べるようにする</h3>
         <p>
-          <code>--gray-model</code> を足したことで、color.rs は 129 行から 222 行に増えました。
-          「コードを読む」の記事に、sRGB の曲線と、表を引く整数版の節を書き足しています
-          （<a href="https://github.com/champierre/sumi/pull/17">#17</a>）。
-          書き直しの途中で、README の <code>colorimetric</code> の緑が 0.863 になっているのに気づきました。
-          0.86248 の丸め誤りで、正しくは 0.862 です。
+          <code>--gray-model colorimetric</code> を追加しました。
+          あわせて、ソースコードのコメントを英語に揃えています。
         </p>
-        <p class="hash">1c3f994</p>
+        <p class="hash">5af74d8 / 3ca9d33</p>
       </li>
       <li>
-        <time datetime="2026-09-29T16:00">2026-09-29 16:00</time>
-        <h3>README とトップページの英語版</h3>
+        <time datetime="2026-09-29T14:10">2026-09-29 14:10</time>
+        <h3>結果を JSON で出す</h3>
         <p>
-          <code>README.en.md</code> と <code>docs/en/</code> を追加しました。
-          PDF のしくみ、コードを読む、この日誌は日本語だけなので、
-          英語版からのリンクにはそれがわかる印を付けています。
+          <code>--report json</code> を付けると、結果を 1 行の JSON で標準エラーに出します。
         </p>
-        <p class="hash">6d1b6c3</p>
+        <p class="hash">13fe78a</p>
+      </li>
+      <li>
+        <time datetime="2026-09-29T14:37">2026-09-29 14:37</time>
+        <h3>gem（sumi-ruby）で配る</h3>
+        <p>
+          <code>bundle install</code> だけで sumi が入るようにしました。下記のとおりです。
+        </p>
+        <p class="hash">87ee0b5</p>
+      </li>
+      <li>
+        <time datetime="2026-09-29T15:06">2026-09-29 15:06</time>
+        <h3>出力を小さくする</h3>
+        <p>
+          写真を含まない請求書で、出力が 34〜42% 小さくなりました。下記のとおりです。
+        </p>
+        <p class="hash">abb509c</p>
       </li>
       <li>
         <time datetime="2026-09-29T15:41">2026-09-29 15:41</time>
@@ -256,158 +267,28 @@
         <p class="hash">cd52fda</p>
       </li>
       <li>
-        <time datetime="2026-09-29T15:06">2026-09-29 15:06</time>
-        <h3>出力を小さくする</h3>
+        <time datetime="2026-09-29T16:00">2026-09-29 16:00</time>
+        <h3>README とトップページの英語版</h3>
         <p>
-          写真を含まない請求書で、出力が 34〜42% 小さくなりました。下記のとおりです。
+          <code>README.en.md</code> と <code>docs/en/</code> を追加しました。
+          PDF のしくみ、コードを読む、この日誌は日本語だけなので、
+          英語版からのリンクにはそれがわかる印を付けています。
         </p>
-        <p class="hash">abb509c</p>
+        <p class="hash">6d1b6c3</p>
       </li>
       <li>
-        <time datetime="2026-09-29T14:37">2026-09-29 14:37</time>
-        <h3>gem（sumi-ruby）で配る</h3>
+        <time datetime="2026-09-29T18:05">2026-09-29 18:05</time>
+        <h3>color.rs の解説を 0.2.0 のコードに合わせる</h3>
         <p>
-          <code>bundle install</code> だけで sumi が入るようにしました。下記のとおりです。
+          <code>--gray-model</code> を足したことで、color.rs は 129 行から 222 行に増えました。
+          「コードを読む」の記事に、sRGB の曲線と、表を引く整数版の節を書き足しています
+          （<a href="https://github.com/champierre/sumi/pull/17">#17</a>）。
+          書き直しの途中で、README の <code>colorimetric</code> の緑が 0.863 になっているのに気づきました。
+          0.86248 の丸め誤りで、正しくは 0.862 です。
         </p>
-        <p class="hash">87ee0b5</p>
-      </li>
-      <li>
-        <time datetime="2026-09-29T14:10">2026-09-29 14:10</time>
-        <h3>結果を JSON で出す</h3>
-        <p>
-          <code>--report json</code> を付けると、結果を 1 行の JSON で標準エラーに出します。
-        </p>
-        <p class="hash">13fe78a</p>
-      </li>
-      <li>
-        <time datetime="2026-09-29T13:49">2026-09-29 13:49</time>
-        <h3>グレーにする式を選べるようにする</h3>
-        <p>
-          <code>--gray-model colorimetric</code> を追加しました。
-          あわせて、ソースコードのコメントを英語に揃えています。
-        </p>
-        <p class="hash">5af74d8 / 3ca9d33</p>
+        <p class="hash">1c3f994</p>
       </li>
     </ol>
-
-    <h3>出力を小さくする — object stream と xref stream</h3>
-
-    <p>
-      0.1.0 は、ページやフォントなどの辞書を 1 つずつ、圧縮しないまま書き出していました。
-      相互参照表も従来のテキスト形式です。写真を含まない PDF でも mutool より大きくなるのは、
-      中身ではなく保存のしかたの差でした。
-    </p>
-    <p>
-      lopdf の <code>SaveOptions</code> を使い、辞書を object stream にまとめて圧縮し、
-      相互参照表を xref stream で書くようにしました。どちらも PDF 1.5 の機能なので、
-      1.4 以前の入力はヘッダーのバージョンを 1.5 に上げます。
-      圧縮されていないストリームも Flate で圧縮します（XMP メタデータは除く）。
-    </p>
-
-    <div class="scroll">
-      <table>
-        <caption>出力サイズ</caption>
-        <thead><tr><th>入力</th><th class="num">0.1.0</th><th class="num">0.2.0</th><th class="num">減った割合</th><th class="num">mutool</th></tr></thead>
-        <tbody>
-          <tr><td>請求書（Chrome）</td><td class="num">0.31 MB</td><td class="num">0.21 MB</td><td class="num">34%</td><td class="num">0.25 MB</td></tr>
-          <tr><td>請求書 50 ページ</td><td class="num">0.98 MB</td><td class="num">0.57 MB</td><td class="num">42%</td><td class="num">0.88 MB</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>
-      どちらも mutool より小さくなりました。描画結果は poppler・MuPDF・Ghostscript の
-      いずれでも変更前と一致しています。
-    </p>
-
-    <div class="note">
-      <span class="label">採らなかった案: 圧縮レベルを 9 に上げる</span>
-      <p>
-        サイズは 1% ほどしか減らず、大きな PDF では 2〜4 倍遅くなりました。
-        既定の圧縮レベル（6）のままにしています。
-      </p>
-    </div>
-
-    <div class="note">
-      <span class="label">引き換えに遅くなった</span>
-      <p>
-        変更の前後を Intel の Mac で比べると、50 ページの請求書では実行時間が約 3 割、
-        メモリ使用量が約 6 割（19 MB → 31 MB）増えました。ほかの 5 件はほとんど変わりません。
-        README の実行時間とメモリの表は 0.1.0 で測ったままで、取り直したのはサイズだけです。
-        README にもそう書いています。
-      </p>
-    </div>
-
-    <h3>gem で配る — sumi-ruby</h3>
-
-    <p>
-      Rails アプリケーションで sumi を使うには、これまで環境ごとに手作業が要りました。
-      本番の Dockerfile では GitHub Releases から <code>curl</code> で取ってきて
-      アーキテクチャごとに SHA256 を確かめ、開発者はそれぞれ取ってきて <code>PATH</code> に置きます。
-      バージョンを上げるたびにその全部を直し、それでも環境ごとにずれやすい状態でした。
-    </p>
-    <p>
-      そこで <a href="https://github.com/flavorjones/tailwindcss-ruby">tailwindcss-ruby</a> と同じ形で、
-      プラットフォームごとにビルド済みの実行ファイルを同梱した gem を作りました。
-      <code>Gemfile.lock</code> でバージョンが固定されるので、開発環境・CI・本番で同じ sumi が動きます。
-    </p>
-
-    <ul>
-      <li><strong>名前</strong> — <code>sumi</code> は RubyGems で使われていたので <code>sumi-ruby</code> にしました。バージョンは sumi と同じにし、リリースのときに食い違っていれば止めます</li>
-      <li><strong>Linux</strong> — musl の静的リンク版を、gnu と musl の両方の gem に入れます。glibc の環境でも Alpine でも同じ実行ファイルが動きます</li>
-      <li><strong>公開</strong> — リリースのワークフローが、CLI のアーカイブから gem を組み立て、Trusted Publishing で RubyGems.org に出します</li>
-    </ul>
-
-    <p>
-      0.2.0 では、7 つのプラットフォーム（Linux 4、macOS 2、Windows 1）の gem と、
-      実行ファイルを含まない <code>ruby</code> 版の、あわせて 8 つを公開しました。
-    </p>
-
-    <div class="note">
-      <span class="label">気をつけること: 実行ファイルのない gem が入ることがある</span>
-      <p>
-        Bundler は <code>Gemfile.lock</code> の <code>PLATFORMS</code> にあるプラットフォームの gem を選びます。
-        ここに <code>ruby</code> しかないと実行ファイルを含まない gem が入り、実行したときに初めてエラーになります。
-        Mac で開発して Linux で動かすような場合は、
-        <code>bundle lock --add-platform</code> で使うプラットフォームを足しておく必要があり、
-        gem の README に書きました。
-      </p>
-    </div>
-
-    <h3>結果を JSON で受け取る — <code>--report json</code></h3>
-
-    <p>
-      これまでの <code>-v</code> の出力は人が読むための文章で、警告も
-      <code>sumi: warning: ...</code> という文字列で出るだけでした。
-      呼び出す側がページ数や警告を使うには文章を解析するしかなく、文言を変えれば壊れます。
-      <code>--report json</code> を付けると、終わるときに結果を 1 行の JSON で標準エラーに出します。
-      失敗したときも同じ形です。
-    </p>
-
-<pre><code>{"status":"error","exit_code":4,"mode":"grayscale","gray_model":"luma","report":null,
- "error":{"kind":"unsupported","message":"unsupported PDF features: image not converted: YCCK (Adobe CMYK) JPEG image",
-          "details":["image not converted: YCCK (Adobe CMYK) JPEG image"]}}</code></pre>
-
-    <p>
-      上は、<a href="#ycck-title">白黒反転のバグ</a>のあとで未対応にした YCCK の JPEG を、
-      <code>--strict</code> 付きで変換したときの出力です（読みやすいように改行しています）。
-    </p>
-
-    <ul>
-      <li><strong>出力先は標準エラー</strong> — 標準出力は <code>-o -</code> で PDF を書くのに使うためです。このとき警告と <code>-v</code> の件数は文章で出さず、標準エラーには JSON の 1 行だけが出ます</li>
-      <li><strong>キーは常にすべて出す</strong> — 当てはまらないものは <code>null</code> か空の配列にします</li>
-      <li><strong>処理を分けるのは <code>error.kind</code> で</strong> — <code>message</code> の文言は変わることがあります</li>
-      <li><strong>依存を増やさない</strong> — JSON は手で組み立てています。serde_json はテストでだけ使います</li>
-    </ul>
-
-    <div class="note">
-      <span class="label">できなかったこと: 引数の誤りは JSON にならない</span>
-      <p>
-        存在しないオプションなど、引数の書き方の誤りは文章のまま出ます。
-        引数を読む段階で失敗するので、<code>--report json</code> が指定されたかどうかを
-        まだ判断できないためです。
-      </p>
-    </div>
 
     <h3>青が暗くなりすぎる — <code>--gray-model colorimetric</code></h3>
 
@@ -458,6 +339,125 @@
       輝度から 8 bit への表の 2 つを引くだけにして、画素ごとの計算を増やしていません。
       無彩色（R = G = B）の値は、どちらの式でも変わりません。
     </p>
+
+    <h3>結果を JSON で受け取る — <code>--report json</code></h3>
+
+    <p>
+      これまでの <code>-v</code> の出力は人が読むための文章で、警告も
+      <code>sumi: warning: ...</code> という文字列で出るだけでした。
+      呼び出す側がページ数や警告を使うには文章を解析するしかなく、文言を変えれば壊れます。
+      <code>--report json</code> を付けると、終わるときに結果を 1 行の JSON で標準エラーに出します。
+      失敗したときも同じ形です。
+    </p>
+
+<pre><code>{"status":"error","exit_code":4,"mode":"grayscale","gray_model":"luma","report":null,
+ "error":{"kind":"unsupported","message":"unsupported PDF features: image not converted: YCCK (Adobe CMYK) JPEG image",
+          "details":["image not converted: YCCK (Adobe CMYK) JPEG image"]}}</code></pre>
+
+    <p>
+      上は、<a href="#ycck-title">白黒反転のバグ</a>のあとで未対応にした YCCK の JPEG を、
+      <code>--strict</code> 付きで変換したときの出力です（読みやすいように改行しています）。
+    </p>
+
+    <ul>
+      <li><strong>出力先は標準エラー</strong> — 標準出力は <code>-o -</code> で PDF を書くのに使うためです。このとき警告と <code>-v</code> の件数は文章で出さず、標準エラーには JSON の 1 行だけが出ます</li>
+      <li><strong>キーは常にすべて出す</strong> — 当てはまらないものは <code>null</code> か空の配列にします</li>
+      <li><strong>処理を分けるのは <code>error.kind</code> で</strong> — <code>message</code> の文言は変わることがあります</li>
+      <li><strong>依存を増やさない</strong> — JSON は手で組み立てています。serde_json はテストでだけ使います</li>
+    </ul>
+
+    <div class="note">
+      <span class="label">できなかったこと: 引数の誤りは JSON にならない</span>
+      <p>
+        存在しないオプションなど、引数の書き方の誤りは文章のまま出ます。
+        引数を読む段階で失敗するので、<code>--report json</code> が指定されたかどうかを
+        まだ判断できないためです。
+      </p>
+    </div>
+
+    <h3>gem で配る — sumi-ruby</h3>
+
+    <p>
+      Rails アプリケーションで sumi を使うには、これまで環境ごとに手作業が要りました。
+      本番の Dockerfile では GitHub Releases から <code>curl</code> で取ってきて
+      アーキテクチャごとに SHA256 を確かめ、開発者はそれぞれ取ってきて <code>PATH</code> に置きます。
+      バージョンを上げるたびにその全部を直し、それでも環境ごとにずれやすい状態でした。
+    </p>
+    <p>
+      そこで <a href="https://github.com/flavorjones/tailwindcss-ruby">tailwindcss-ruby</a> と同じ形で、
+      プラットフォームごとにビルド済みの実行ファイルを同梱した gem を作りました。
+      <code>Gemfile.lock</code> でバージョンが固定されるので、開発環境・CI・本番で同じ sumi が動きます。
+    </p>
+
+    <ul>
+      <li><strong>名前</strong> — <code>sumi</code> は RubyGems で使われていたので <code>sumi-ruby</code> にしました。バージョンは sumi と同じにし、リリースのときに食い違っていれば止めます</li>
+      <li><strong>Linux</strong> — musl の静的リンク版を、gnu と musl の両方の gem に入れます。glibc の環境でも Alpine でも同じ実行ファイルが動きます</li>
+      <li><strong>公開</strong> — リリースのワークフローが、CLI のアーカイブから gem を組み立て、Trusted Publishing で RubyGems.org に出します</li>
+    </ul>
+
+    <p>
+      0.2.0 では、7 つのプラットフォーム（Linux 4、macOS 2、Windows 1）の gem と、
+      実行ファイルを含まない <code>ruby</code> 版の、あわせて 8 つを公開しました。
+    </p>
+
+    <div class="note">
+      <span class="label">気をつけること: 実行ファイルのない gem が入ることがある</span>
+      <p>
+        Bundler は <code>Gemfile.lock</code> の <code>PLATFORMS</code> にあるプラットフォームの gem を選びます。
+        ここに <code>ruby</code> しかないと実行ファイルを含まない gem が入り、実行したときに初めてエラーになります。
+        Mac で開発して Linux で動かすような場合は、
+        <code>bundle lock --add-platform</code> で使うプラットフォームを足しておく必要があり、
+        gem の README に書きました。
+      </p>
+    </div>
+
+    <h3>出力を小さくする — object stream と xref stream</h3>
+
+    <p>
+      0.1.0 は、ページやフォントなどの辞書を 1 つずつ、圧縮しないまま書き出していました。
+      相互参照表も従来のテキスト形式です。写真を含まない PDF でも mutool より大きくなるのは、
+      中身ではなく保存のしかたの差でした。
+    </p>
+    <p>
+      lopdf の <code>SaveOptions</code> を使い、辞書を object stream にまとめて圧縮し、
+      相互参照表を xref stream で書くようにしました。どちらも PDF 1.5 の機能なので、
+      1.4 以前の入力はヘッダーのバージョンを 1.5 に上げます。
+      圧縮されていないストリームも Flate で圧縮します（XMP メタデータは除く）。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>出力サイズ</caption>
+        <thead><tr><th>入力</th><th class="num">0.1.0</th><th class="num">0.2.0</th><th class="num">減った割合</th><th class="num">mutool</th></tr></thead>
+        <tbody>
+          <tr><td>請求書（Chrome）</td><td class="num">0.31 MB</td><td class="num">0.21 MB</td><td class="num">34%</td><td class="num">0.25 MB</td></tr>
+          <tr><td>請求書 50 ページ</td><td class="num">0.98 MB</td><td class="num">0.57 MB</td><td class="num">42%</td><td class="num">0.88 MB</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      どちらも mutool より小さくなりました。描画結果は poppler・MuPDF・Ghostscript の
+      いずれでも変更前と一致しています。
+    </p>
+
+    <div class="note">
+      <span class="label">採らなかった案: 圧縮レベルを 9 に上げる</span>
+      <p>
+        サイズは 1% ほどしか減らず、大きな PDF では 2〜4 倍遅くなりました。
+        既定の圧縮レベル（6）のままにしています。
+      </p>
+    </div>
+
+    <div class="note">
+      <span class="label">引き換えに遅くなった</span>
+      <p>
+        変更の前後を Intel の Mac で比べると、50 ページの請求書では実行時間が約 3 割、
+        メモリ使用量が約 6 割（19 MB → 31 MB）増えました。ほかの 5 件はほとんど変わりません。
+        README の実行時間とメモリの表は 0.1.0 で測ったままで、取り直したのはサイズだけです。
+        README にもそう書いています。
+      </p>
+    </div>
   </div>
 </section>
 
@@ -473,14 +473,26 @@
 
     <ol class="log">
       <li>
-        <time datetime="2026-09-28T15:29">2026-09-28 15:29</time>
-        <h3>color.rs の解説の Tone の説明を直す</h3>
+        <time datetime="2026-09-13T21:09">2026-09-13 21:09</time>
+        <h3>mutool のクラッシュの話を README からこの日誌へ移す</h3>
         <p>
-          「出力の調子」という直訳ではわかりにくかったので、
-          Tone はグレーのまま出すか白黒に振り分けるかを決める役だ、と書き直しました。
-          PDF 仕様（ISO 32000-1）の 10.3 節へのリンクも付けています。
+          README とトップページでは、比較として速度・メモリ・出力・テキスト保持を対等に並べるだけにし、
+          クラッシュの経緯とつまずきは<a href="#mutool">この日誌</a>に書きました。
+          あわせて、トップページに残っていた「mutool は Linux でだけ計測した」という一文を消しています。
+          Mac のグラフにも mutool の棒があり、事実と食い違っていたためです。
         </p>
-        <p class="hash">4e2b8ad</p>
+        <p class="hash">59b509a</p>
+      </li>
+      <li>
+        <time datetime="2026-09-13T21:37">2026-09-13 21:37</time>
+        <h3>PDF のしくみ</h3>
+        <p>
+          <a href="../pdf/">441 バイトの最小の PDF</a> を自分で組み立てるところから始めて、
+          オブジェクト、ページツリー、コンテンツストリーム、xref と辿り、
+          最後に sumi が実際に何を書き換えているかを見る記事です。
+          <code>1 0 0 rg</code> が <code>0.3 g</code> になる変換例も、fixtures を変換して確かめています。
+        </p>
+        <p class="hash">4dd6411</p>
       </li>
       <li>
         <time datetime="2026-09-13T22:04">2026-09-13 22:04</time>
@@ -495,26 +507,14 @@
         <p class="hash">0d1c623</p>
       </li>
       <li>
-        <time datetime="2026-09-13T21:37">2026-09-13 21:37</time>
-        <h3>PDF のしくみ</h3>
+        <time datetime="2026-09-28T15:29">2026-09-28 15:29</time>
+        <h3>color.rs の解説の Tone の説明を直す</h3>
         <p>
-          <a href="../pdf/">441 バイトの最小の PDF</a> を自分で組み立てるところから始めて、
-          オブジェクト、ページツリー、コンテンツストリーム、xref と辿り、
-          最後に sumi が実際に何を書き換えているかを見る記事です。
-          <code>1 0 0 rg</code> が <code>0.3 g</code> になる変換例も、fixtures を変換して確かめています。
+          「出力の調子」という直訳ではわかりにくかったので、
+          Tone はグレーのまま出すか白黒に振り分けるかを決める役だ、と書き直しました。
+          PDF 仕様（ISO 32000-1）の 10.3 節へのリンクも付けています。
         </p>
-        <p class="hash">4dd6411</p>
-      </li>
-      <li>
-        <time datetime="2026-09-13T21:09">2026-09-13 21:09</time>
-        <h3>mutool のクラッシュの話を README からこの日誌へ移す</h3>
-        <p>
-          README とトップページでは、比較として速度・メモリ・出力・テキスト保持を対等に並べるだけにし、
-          クラッシュの経緯とつまずきは<a href="#mutool">この日誌</a>に書きました。
-          あわせて、トップページに残っていた「mutool は Linux でだけ計測した」という一文を消しています。
-          Mac のグラフにも mutool の棒があり、事実と食い違っていたためです。
-        </p>
-        <p class="hash">59b509a</p>
+        <p class="hash">4e2b8ad</p>
       </li>
     </ol>
 
@@ -542,14 +542,14 @@
 
     <ol class="log">
       <li>
-        <time datetime="2026-09-13T00:13">2026-09-13 00:13</time>
-        <h3>2 台分の比較を掲載</h3>
+        <time datetime="2026-09-12T13:04">2026-09-12 13:04</time>
+        <h3>mutool を計測に加える</h3>
         <p>
-          Mac と Linux の 2 台で、実行時間・メモリ・出力サイズ・テキスト保持を並べました。
-          mutool に対しても 6 件すべてで sumi のほうが速く、差は 1.2〜36.6 倍です。
-          ページ数の多い帳票ほど開きます。
+          <code>bench/bench.py</code> に mutool を 1 項目足しました。
+          手で測ると Python 経由の分だけ 200 ms ほど上乗せされてしまうので、
+          既存の <code>/usr/bin/time</code> とウォームアップの仕組みに乗せています。
         </p>
-        <p class="hash">275189b</p>
+        <p class="hash">5648fcf</p>
       </li>
       <li>
         <time datetime="2026-09-12T15:24">2026-09-12 15:24</time>
@@ -561,14 +561,14 @@
         <p class="hash">c81f0c8 / 22b38e4</p>
       </li>
       <li>
-        <time datetime="2026-09-12T13:04">2026-09-12 13:04</time>
-        <h3>mutool を計測に加える</h3>
+        <time datetime="2026-09-13T00:13">2026-09-13 00:13</time>
+        <h3>2 台分の比較を掲載</h3>
         <p>
-          <code>bench/bench.py</code> に mutool を 1 項目足しました。
-          手で測ると Python 経由の分だけ 200 ms ほど上乗せされてしまうので、
-          既存の <code>/usr/bin/time</code> とウォームアップの仕組みに乗せています。
+          Mac と Linux の 2 台で、実行時間・メモリ・出力サイズ・テキスト保持を並べました。
+          mutool に対しても 6 件すべてで sumi のほうが速く、差は 1.2〜36.6 倍です。
+          ページ数の多い帳票ほど開きます。
         </p>
-        <p class="hash">5648fcf</p>
+        <p class="hash">275189b</p>
       </li>
     </ol>
 
@@ -994,15 +994,6 @@ python3 validation/validate.py --mode monochrome</code></pre>
 
     <ol class="log">
       <li>
-        <time datetime="2026-09-11T23:05">2026-09-11 23:05</time>
-        <h3>Linux でも計測して 2 台分を掲載</h3>
-        <p>
-          Mac（Apple M1 Pro）に加えて Linux（AMD Ryzen 7 6800H）でも計測し、
-          搭載メモリも記録しました。1 台の数字だけで速いと言わないためです。
-        </p>
-        <p class="hash">4da0d1c / ab3371d</p>
-      </li>
-      <li>
         <time datetime="2026-09-11T22:16">2026-09-11 22:16</time>
         <h3>実行時間とメモリを計測</h3>
         <p>
@@ -1011,6 +1002,15 @@ python3 validation/validate.py --mode monochrome</code></pre>
           誰でも同じ条件で追試できるようにしています。
         </p>
         <p class="hash">0a9ec6b / f680218 / b4bf2da</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T23:05">2026-09-11 23:05</time>
+        <h3>Linux でも計測して 2 台分を掲載</h3>
+        <p>
+          Mac（Apple M1 Pro）に加えて Linux（AMD Ryzen 7 6800H）でも計測し、
+          搭載メモリも記録しました。1 台の数字だけで速いと言わないためです。
+        </p>
+        <p class="hash">4da0d1c / ab3371d</p>
       </li>
     </ol>
 
@@ -1038,22 +1038,16 @@ python3 validation/validate.py --mode monochrome</code></pre>
 
     <ol class="log">
       <li>
-        <time datetime="2026-09-11T16:18">2026-09-11 16:18</time>
-        <h3>変換例の追加と clippy 対応</h3>
+        <time datetime="2026-09-11T15:53">2026-09-11 15:53</time>
+        <h3>ライブラリと CLI を実装</h3>
         <p>
-          Wikimedia Commons のパブリックドメイン PDF を変換した例を README に載せました。
-          新しい Rust の clippy が指摘した箇所もあわせて直しています。
+          38 ファイル 8,427 行。ページを画像化せず、コンテンツストリームの色演算子だけを
+          書き換える方針を採りました。PDF のパーサは自前実装をやめて
+          <code>lopdf</code> を使い、字句解析と色変換だけを自前で持っています。
+          incremental update、xref stream、object stream、壊れた xref の修復を
+          最初から扱えるようにするためです。
         </p>
-        <p class="hash">b8c5e2e / 6a944dd</p>
-      </li>
-      <li>
-        <time datetime="2026-09-11T16:15">2026-09-11 16:15</time>
-        <h3>ランディングページを公開</h3>
-        <p>
-          GitHub Pages に載せるページを追加し、デプロイのワークフローも用意しました。
-          ページの色は墨の五彩だけに絞り、色が付いているのは変換前の書類だけ、という作りにしています。
-        </p>
-        <p class="hash">1be9238 / 916a583</p>
+        <p class="hash">7f4b545</p>
       </li>
       <li>
         <time datetime="2026-09-11T16:11">2026-09-11 16:11</time>
@@ -1066,16 +1060,22 @@ python3 validation/validate.py --mode monochrome</code></pre>
         <p class="hash">f895ad5</p>
       </li>
       <li>
-        <time datetime="2026-09-11T15:53">2026-09-11 15:53</time>
-        <h3>ライブラリと CLI を実装</h3>
+        <time datetime="2026-09-11T16:15">2026-09-11 16:15</time>
+        <h3>ランディングページを公開</h3>
         <p>
-          38 ファイル 8,427 行。ページを画像化せず、コンテンツストリームの色演算子だけを
-          書き換える方針を採りました。PDF のパーサは自前実装をやめて
-          <code>lopdf</code> を使い、字句解析と色変換だけを自前で持っています。
-          incremental update、xref stream、object stream、壊れた xref の修復を
-          最初から扱えるようにするためです。
+          GitHub Pages に載せるページを追加し、デプロイのワークフローも用意しました。
+          ページの色は墨の五彩だけに絞り、色が付いているのは変換前の書類だけ、という作りにしています。
         </p>
-        <p class="hash">7f4b545</p>
+        <p class="hash">1be9238 / 916a583</p>
+      </li>
+      <li>
+        <time datetime="2026-09-11T16:18">2026-09-11 16:18</time>
+        <h3>変換例の追加と clippy 対応</h3>
+        <p>
+          Wikimedia Commons のパブリックドメイン PDF を変換した例を README に載せました。
+          新しい Rust の clippy が指摘した箇所もあわせて直しています。
+        </p>
+        <p class="hash">b8c5e2e / 6a944dd</p>
       </li>
     </ol>
   </div>
