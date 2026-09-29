@@ -1,0 +1,107 @@
+# frozen_string_literal: true
+
+require "fileutils"
+require "rake/clean"
+require "rake/testtask"
+require "rubygems/package"
+require "tmpdir"
+require_relative "lib/sumi/ruby/platforms"
+
+Rake::TestTask.new(:test) do |t|
+  t.libs << "lib" << "test"
+  t.test_files = FileList["test/**/*_test.rb"]
+end
+
+task default: :test
+
+PKG_DIR = File.expand_path("pkg", __dir__)
+CLEAN.include("pkg", "tmp", "exe/*/")
+CLOBBER.include("LICENSE")
+
+file "LICENSE" => "../LICENSE" do
+  FileUtils.cp("../LICENSE", "LICENSE")
+end
+
+def gemspec
+  Gem::Specification.load(File.expand_path("sumi-ruby.gemspec", __dir__)).dup
+end
+
+def build_gem(spec)
+  FileUtils.mkdir_p(PKG_DIR)
+  file = Gem::Package.build(spec)
+  FileUtils.mv(file, PKG_DIR)
+  puts "built pkg/#{file}"
+end
+
+def build_native_gem(platform, binary)
+  unless Sumi::Ruby::PLATFORMS.key?(platform)
+    abort "unknown platform #{platform} (expected one of #{Sumi::Ruby::PLATFORMS.keys.join(", ")})"
+  end
+  abort "#{binary} does not exist" unless File.file?(binary)
+
+  name = platform.include?("mingw") ? "sumi.exe" : "sumi"
+  dest = File.join("exe", platform, name)
+  FileUtils.rm_rf(File.dirname(dest))
+  FileUtils.mkdir_p(File.dirname(dest))
+  FileUtils.cp(binary, dest)
+  FileUtils.chmod(0o755, dest)
+
+  spec = gemspec
+  spec.platform = Gem::Platform.new(platform)
+  spec.files += [dest]
+  # The gnu/musl distinction in platform names needs RubyGems 3.3.22.
+  spec.required_rubygems_version = ">= 3.3.22" if platform.include?("linux")
+  build_gem(spec)
+end
+
+# Extracts the executable from a release archive such as dist/sumi-x86_64-apple-darwin.tar.gz.
+def extract_release_binary(dist, target, into)
+  archive = Dir[File.join(dist, "sumi-#{target}.{tar.gz,zip}")].first
+  abort "no release archive for #{target} in #{dist}" unless archive
+  if archive.end_with?(".zip")
+    system("unzip", "-q", "-o", archive, "-d", into, exception: true)
+  else
+    system("tar", "-xzf", archive, "-C", into, exception: true)
+  end
+  Dir[File.join(into, "sumi-#{target}", "sumi{,.exe}")].first ||
+    abort("#{archive} does not contain the sumi executable")
+end
+
+def local_platform
+  Sumi::Ruby::PLATFORMS.keys.find { |p| Gem::Platform.match_gem?(Gem::Platform.new(p), "sumi-ruby") } ||
+    abort("no native gem is defined for #{Gem::Platform.local}")
+end
+
+namespace :gem do
+  desc "Build the platform-independent gem, which has no executable"
+  task ruby: "LICENSE" do
+    build_gem(gemspec)
+  end
+
+  desc "Build a native gem from an executable: rake gem:native[arm64-darwin,path/to/sumi]"
+  task :native, [:platform, :binary] => "LICENSE" do |_, args|
+    abort "usage: rake gem:native[PLATFORM,BINARY]" unless args[:platform] && args[:binary]
+    build_native_gem(args[:platform], File.expand_path(args[:binary]))
+  end
+
+  desc "Build a native gem for this machine from `cargo build --release`"
+  task local: "LICENSE" do
+    Dir.chdir("..") { system("cargo", "build", "--release", "--locked", "-p", "sumi-cli", exception: true) }
+    platform = local_platform
+    binary = File.expand_path(platform.include?("mingw") ? "../target/release/sumi.exe" : "../target/release/sumi")
+    build_native_gem(platform, binary)
+  end
+
+  desc "Build every gem from the release archives in DIST: rake gem:release[../dist]"
+  task :release, [:dist] => "LICENSE" do |_, args|
+    dist = File.expand_path(args[:dist] || "../dist")
+    build_gem(gemspec)
+    Dir.mktmpdir do |tmp|
+      Sumi::Ruby::PLATFORMS.each do |platform, target|
+        dir = File.join(tmp, platform)
+        FileUtils.mkdir_p(dir)
+        build_native_gem(platform, extract_release_binary(dist, target, dir))
+      end
+    end
+  end
+end

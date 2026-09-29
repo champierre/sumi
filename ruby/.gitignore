@@ -1,0 +1,6 @@
+/Gemfile.lock
+/pkg/
+/tmp/
+# Copied or extracted when gems are built.
+/LICENSE
+/exe/*/

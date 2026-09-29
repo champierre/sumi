@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Runs the sumi executable bundled with the sumi-ruby gem, passing all arguments through.
+
+require "sumi/ruby"
+
+begin
+  executable = Sumi::Ruby.executable
+rescue Sumi::Ruby::Error => e
+  warn "sumi-ruby: #{e.message}"
+  exit 1
+end
+
+exec(executable, *ARGV)
