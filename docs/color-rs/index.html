@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>color.rs を読む | sumi</title>
-<meta name="description" content="sumi のコードリーディング第 1 回。129 行の color.rs を、Rust を知らない前提で 1 行ずつ読み解きます。型、関数、struct、match、テストまで、実際に動かした値とともに解説します。">
+<meta name="description" content="sumi のコードリーディング第 1 回。222 行の color.rs を、Rust を知らない前提で 1 行ずつ読み解きます。型、関数、struct、match、テストまで、実際に動かした値とともに解説します。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -181,7 +181,7 @@
       <a href="../">トップ</a>
       <a href="../pdf/">PDF のしくみ</a>
       <a href="#whole">全体を眺める</a>
-      <a href="#rgb">中心の 3 行</a>
+      <a href="#rgb">中心の関数</a>
       <a href="#tone">Tone</a>
       <a href="#tests">テスト</a>
       <a href="../diary/">開発日誌</a>
@@ -196,8 +196,8 @@
   <p class="kicker">コードリーディング 第 1 回</p>
   <h1><code style="font:inherit;background:none;border:0;padding:0;">color.rs</code> を読む</h1>
   <p class="lede">
-    sumi のソースは 5,503 行ありますが、その中心にあるのは
-    <strong>129 行のファイル 1 つ</strong>です。ここから読み始めます。
+    sumi のソースは 6,236 行ありますが、その中心にあるのは
+    <strong>222 行のファイル 1 つ</strong>です。ここから読み始めます。
   </p>
   <p class="lede">
     Rust は知らない前提で進めます。文法は出てきたところで、
@@ -210,7 +210,18 @@
     <p>
       <a href="../pdf/">前回</a>見た <code>1 0 0 rg</code> → <code>0.3 g</code> という書き換えの、
       <strong>「0.3」を計算している場所</strong>です。
-      白黒化という仕事の核心が、たった 3 行の掛け算だと分かります。
+      白黒化という仕事の核心が、たった 1 行の掛け算だと分かります。
+    </p>
+  </div>
+
+  <div class="note">
+    <span class="label">v0.2.0 のコードに合わせて更新しました</span>
+    <p>
+      v0.2.0 で、RGB をグレーにする式を <code>--gray-model</code> で選べるようになりました。
+      そのぶん <code>color.rs</code> は 129 行から 222 行に増えています。
+      増えたのは<a href="#srgb">「もう 1 つの式 — sRGB の曲線」</a>と
+      <a href="#srgb8">「表を引く整数版 — <code>Srgb8</code>」</a>の 2 か所です。
+      ほかの節も、コードと行番号を現在のものに直しています。
     </p>
   </div>
 
@@ -220,14 +231,16 @@
       <li><a href="#whole">まず全体を眺める</a></li>
       <li><a href="#head">ファイルの冒頭 — コメントと <code>use</code></a></li>
       <li><a href="#clamp">最初の関数 <code>clamp01</code></a></li>
-      <li><a href="#rgb">中心の 3 行 — <code>rgb_to_gray</code></a></li>
+      <li><a href="#rgb">中心の関数 — <code>rgb_to_gray</code></a></li>
+      <li><a href="#srgb">もう 1 つの式 — sRGB の曲線</a></li>
       <li><a href="#cmyk">印刷の色 — <code>cmyk_to_gray</code></a></li>
       <li><a href="#lab">割り切った近似 — <code>lab_to_gray</code></a></li>
       <li><a href="#int">速さのための整数版</a></li>
       <li><a href="#tone"><code>Tone</code> — 初めての struct</a></li>
+      <li><a href="#srgb8">表を引く整数版 — <code>Srgb8</code></a></li>
       <li><a href="#format">最後の関数 <code>format_number</code></a></li>
       <li><a href="#tests">テストを読む</a></li>
-      <li><a href="#map">この 129 行はどこから呼ばれるか</a></li>
+      <li><a href="#map">この 222 行はどこから呼ばれるか</a></li>
     </ol>
   </div>
 </div>
@@ -237,54 +250,57 @@
     <h2 id="whole-title">1. まず全体を眺める</h2>
 
     <p>
-      細部に入る前に、129 行に何が入っているかを把握します。
-      中身は <strong>7 つの関数と 1 つのデータ型</strong>、それにテストだけです。
+      細部に入る前に、222 行に何が入っているかを把握します。
+      中身は <strong>9 つの関数と 2 つのデータ型</strong>、それにテストだけです。
     </p>
 
     <figure class="wide">
       <div class="fig">
-        <svg viewBox="0 0 720 290" role="img" aria-labelledby="fig1-title">
+        <svg viewBox="0 0 720 326" role="img" aria-labelledby="fig1-title">
           <title id="fig1-title">color.rs の構成</title>
           <g font-family="sans-serif" font-size="12">
             <rect x="10" y="10" width="330" height="26" fill="#ebebeb" stroke="#9b9b9b"/>
-            <text x="20" y="28" font-family="monospace" font-size="11">1–6 行</text>
+            <text x="20" y="28" font-family="monospace" font-size="11">1–9 行</text>
             <text x="120" y="28" fill="#575757">説明のコメントと use</text>
 
-            <rect x="10" y="42" width="330" height="70" fill="#fff" stroke="#000" stroke-width="2"/>
-            <text x="20" y="60" font-family="monospace" font-size="11">8–23 行</text>
+            <rect x="10" y="42" width="330" height="88" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="20" y="60" font-family="monospace" font-size="11">11–54 行</text>
             <text x="120" y="60" font-weight="700">色 → 灰色の計算（小数）</text>
             <text x="20" y="80" font-family="monospace" font-size="11" fill="#575757">clamp01 / rgb_to_gray</text>
-            <text x="20" y="98" font-family="monospace" font-size="11" fill="#575757">cmyk_to_gray / lab_to_gray</text>
+            <text x="20" y="98" font-family="monospace" font-size="11" fill="#575757">srgb_to_linear / linear_to_srgb</text>
+            <text x="20" y="116" font-family="monospace" font-size="11" fill="#575757">cmyk_to_gray / lab_to_gray</text>
 
-            <rect x="10" y="118" width="330" height="52" fill="#fff" stroke="#000"/>
-            <text x="20" y="136" font-family="monospace" font-size="11">25–34 行</text>
-            <text x="120" y="136" fill="#2b2b2b">同じ計算の整数版（画像用）</text>
-            <text x="20" y="156" font-family="monospace" font-size="11" fill="#575757">rgb8_to_gray / cmyk8_to_gray</text>
+            <rect x="10" y="136" width="330" height="70" fill="#fff" stroke="#000"/>
+            <text x="20" y="154" font-family="monospace" font-size="11">56–100 行</text>
+            <text x="120" y="154" fill="#2b2b2b">同じ計算の整数版（画像用）</text>
+            <text x="20" y="174" font-family="monospace" font-size="11" fill="#575757">rgb8_to_gray / cmyk8_to_gray</text>
+            <text x="20" y="194" font-family="monospace" font-size="11" fill="#575757">struct Srgb8（sRGB の計算の表）</text>
 
-            <rect x="10" y="176" width="330" height="52" fill="#fff" stroke="#000"/>
-            <text x="20" y="194" font-family="monospace" font-size="11">36–64 行</text>
-            <text x="120" y="194" fill="#2b2b2b">灰色 → 最終的な濃さ</text>
-            <text x="20" y="214" font-family="monospace" font-size="11" fill="#575757">struct Tone（グレーのまま / 白黒に）</text>
+            <rect x="10" y="212" width="330" height="52" fill="#fff" stroke="#000"/>
+            <text x="20" y="230" font-family="monospace" font-size="11">102–130 行</text>
+            <text x="120" y="230" fill="#2b2b2b">灰色 → 最終的な濃さ</text>
+            <text x="20" y="250" font-family="monospace" font-size="11" fill="#575757">struct Tone（グレーのまま / 白黒に）</text>
 
-            <rect x="10" y="234" width="330" height="46" fill="#fff" stroke="#000"/>
-            <text x="20" y="252" font-family="monospace" font-size="11">66–75 行</text>
-            <text x="120" y="252" fill="#2b2b2b">数を文字列にする</text>
-            <text x="20" y="270" font-family="monospace" font-size="11" fill="#575757">format_number</text>
+            <rect x="10" y="270" width="330" height="46" fill="#fff" stroke="#000"/>
+            <text x="20" y="288" font-family="monospace" font-size="11">132–141 行</text>
+            <text x="120" y="288" fill="#2b2b2b">数を文字列にする</text>
+            <text x="20" y="306" font-family="monospace" font-size="11" fill="#575757">format_number</text>
 
-            <rect x="370" y="42" width="340" height="238" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
-            <text x="380" y="60" font-family="monospace" font-size="11">77–129 行</text>
-            <text x="380" y="80" fill="#2b2b2b" font-weight="700">テスト（全体の 4 割）</text>
+            <rect x="370" y="42" width="340" height="274" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
+            <text x="380" y="60" font-family="monospace" font-size="11">143–222 行</text>
+            <text x="380" y="80" fill="#2b2b2b" font-weight="700">テスト（全体の 3 割強）</text>
             <text x="380" y="104" fill="#575757" font-size="11">・仕様どおりの値になるか</text>
-            <text x="380" y="124" fill="#575757" font-size="11">・整数版と小数版が一致するか</text>
-            <text x="380" y="144" fill="#575757" font-size="11">・閾値の境界が正しいか</text>
-            <text x="380" y="164" fill="#575757" font-size="11">・数の書式が正しいか</text>
-            <text x="380" y="196" fill="#575757" font-size="11">129 行のうち 53 行がテストです。</text>
-            <text x="380" y="216" fill="#575757" font-size="11">「この計算が正しい」と言い切るための</text>
-            <text x="380" y="236" fill="#575757" font-size="11">根拠がファイル内に同居しています。</text>
+            <text x="380" y="124" fill="#575757" font-size="11">・sRGB の計算が正しいか</text>
+            <text x="380" y="144" fill="#575757" font-size="11">・整数版と小数版が一致するか</text>
+            <text x="380" y="164" fill="#575757" font-size="11">・閾値の境界が正しいか</text>
+            <text x="380" y="184" fill="#575757" font-size="11">・数の書式が正しいか</text>
+            <text x="380" y="220" fill="#575757" font-size="11">222 行のうち 80 行がテストです。</text>
+            <text x="380" y="240" fill="#575757" font-size="11">「この計算が正しい」と言い切るための</text>
+            <text x="380" y="260" fill="#575757" font-size="11">根拠がファイル内に同居しています。</text>
           </g>
         </svg>
       </div>
-      <figcaption>129 行の内訳。実質のコードは 76 行で、残りはテストです。</figcaption>
+      <figcaption>222 行の内訳。実質のコードは 142 行で、残りはテストです。</figcaption>
     </figure>
 
     <p>
@@ -327,7 +343,7 @@
             <text x="640" y="60" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff">"0.3"</text>
             <text x="640" y="77" text-anchor="middle" font-size="10" fill="#fff">PDF に書く文字列</text>
 
-            <text x="6" y="110" font-size="11" fill="#575757">この 4 段が、PDF の中の「1 0 0 rg」を「0.3 g」に変える計算のすべてです。</text>
+            <text x="6" y="110" font-size="11" fill="#575757">この 4 段が、PDF の中の「1 0 0 rg」を「0.3 g」に変える計算のすべてです（既定の式の場合）。</text>
           </g>
         </svg>
       </div>
@@ -344,11 +360,14 @@
 //!
 //! The RGB and CMYK formulas are the ones the PDF specification gives for converting device
 //! colors to DeviceGray (ISO 32000-1, 10.3), which is also what Acrobat and Ghostscript use.
+//! With [`GrayModel::Colorimetric`], RGB values are instead read as sRGB and mapped by luminance.
 
-use crate::Mode;</code></pre>
+use std::sync::OnceLock;
+
+use crate::{GrayModel, Mode};</code></pre>
 
     <p>
-      1〜4 行目はコメントです。
+      1〜5 行目はコメントです。
       「コンテンツストリーム・画像・グラデーションで共通して使う色の計算」だと書いてあります。
       <a href="../pdf/#stream">前回</a>見たコンテンツストリームだけでなく、
       画像の画素やグラデーションも、最終的にここへ来ます。
@@ -358,6 +377,13 @@ use crate::Mode;</code></pre>
       大事なのは後半です。<strong>この計算式は sumi が考えたものではなく、
       <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=305">PDF 仕様（ISO 32000-1 の 10.3）</a>が定めているもの</strong>で、
       Acrobat も Ghostscript も同じ式を使う、と書いてあります。
+    </p>
+
+    <p>
+      5 行目は v0.2.0 で足された一文です。
+      「<code>GrayModel::Colorimetric</code> を選んだときは、RGB を sRGB として読み、輝度で灰色にする」。
+      つまり RGB には<strong>式が 2 つあり、どちらを使うかを選べる</strong>ということです。
+      この 2 つ目の式は<a href="#srgb">5 節</a>で読みます。
     </p>
 
     <div class="rust">
@@ -371,13 +397,22 @@ use crate::Mode;</code></pre>
     </div>
 
     <div class="rust">
-      <span class="label">Rust メモ： <code>use crate::Mode;</code></span>
+      <span class="label">Rust メモ： <code>use</code></span>
       <p>
-        ほかのファイルにあるものを、このファイルで使えるようにする宣言です。
+        ほかの場所にあるものを、このファイルで使えるようにする宣言です。
         <code>crate</code> は「このライブラリ全体」を指す言葉で、
-        <code>crate::Mode</code> は「このライブラリの <code>Mode</code> というもの」。
-        実体は <code>options.rs</code> にあり、grayscale か monochrome かを表します。
-        これを書いておくと、以降 <code>Mode</code> と短く書けます。
+        <code>use crate::{GrayModel, Mode};</code> は
+        「このライブラリの <code>GrayModel</code> と <code>Mode</code> を使う」。
+        <code>{ }</code> で囲むと、1 行でまとめて取り込めます。
+        どちらも実体は <code>options.rs</code> にあり、
+        <code>Mode</code> は grayscale か monochrome か、
+        <code>GrayModel</code> は RGB をどちらの式で灰色にするかを表します。
+      </p>
+      <p>
+        もう 1 行の <code>use std::sync::OnceLock;</code> の <code>std</code> は、
+        Rust に最初から付いてくる<strong>標準ライブラリ</strong>です。
+        <code>OnceLock</code> は「最初に 1 回だけ作って、あとは使い回す」ための道具で、
+        <a href="#srgb8">10 節</a>で出てきます。
       </p>
     </div>
   </div>
@@ -417,8 +452,9 @@ use crate::Mode;</code></pre>
         <code>pub(crate)</code> は<strong>公開範囲</strong>の指定です。
         <code>pub</code> なら誰からでも、何も書かなければ同じファイル内だけ、
         <code>pub(crate)</code> は<strong>このライブラリの中からだけ</strong>使えます。
-        <code>color.rs</code> の関数はすべて <code>pub(crate)</code> で、
+        <code>color.rs</code> の関数はほとんどが <code>pub(crate)</code> で、
         sumi を使う外部の人には見えません。内部の部品だからです。
+        （何も付いていない関数も 2 つあり、<a href="#srgb">5 節</a>で出てきます。）
       </p>
       <p>
         そして <code>return</code> がありません。Rust では
@@ -458,18 +494,50 @@ use crate::Mode;</code></pre>
 
 <section class="section" id="rgb" aria-labelledby="rgb-title">
   <div class="wrap">
-    <h2 id="rgb-title">4. 中心の 3 行 — <code>rgb_to_gray</code></h2>
+    <h2 id="rgb-title">4. 中心の関数 — <code>rgb_to_gray</code></h2>
 
     <p>ここが sumi の心臓部です。</p>
 
-<pre><code>pub(crate) fn rgb_to_gray(r: f64, g: f64, b: f64) -> f64 {
-    <span class="hl">clamp01(0.30 * r + 0.59 * g + 0.11 * b)</span>
+<pre><code>pub(crate) fn rgb_to_gray(r: f64, g: f64, b: f64, model: GrayModel) -> f64 {
+    match model {
+        GrayModel::Luma => <span class="hl">clamp01(0.30 * r + 0.59 * g + 0.11 * b)</span>,
+        GrayModel::Colorimetric => {
+            let y = 0.2126 * srgb_to_linear(r)
+                + 0.7152 * srgb_to_linear(g)
+                + 0.0722 * srgb_to_linear(b);
+            linear_to_srgb(y)
+        }
+    }
 }</code></pre>
 
     <p>
-      赤・緑・青の 3 つを受け取り、それぞれに重みを掛けて足し、
-      <code>clamp01</code> に通して返す。<strong>これだけです。</strong>
-      5,503 行のライブラリの中心が、この 1 行の掛け算です。
+      赤・緑・青の 3 つと、<strong>どちらの式を使うか（<code>model</code>）</strong>を受け取ります。
+      <code>match model</code> で、<code>Luma</code> なら上の 1 行、
+      <code>Colorimetric</code> なら下の 4 行に分かれます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>match</code> と <code>GrayModel::Luma</code></span>
+      <p>
+        <code>match</code> は<strong>値によって処理を振り分ける</strong>書き方です。
+        <code>GrayModel</code> は <code>Luma</code> か <code>Colorimetric</code> の
+        <strong>どちらか一方</strong>を表す型（enum）で、
+        <code>GrayModel::Luma</code> は「<code>GrayModel</code> の <code>Luma</code> のほう」という意味です。
+        <code>=&gt;</code> の右が、その場合の処理です。
+      </p>
+      <p>
+        便利なのは、<strong>Rust が「全部の場合を書いたか」を検査する</strong>こと。
+        もし将来 <code>GrayModel</code> に 3 つ目の式を足したら、
+        ここを直すまで<strong>コンパイルが通りません</strong>。
+        対応漏れが実行時ではなくビルド時に見つかります。
+      </p>
+    </div>
+
+    <p>
+      既定で使われるのは上の <code>Luma</code> です（<code>--gray-model</code> を付けない場合）。
+      赤・緑・青それぞれに重みを掛けて足し、<code>clamp01</code> に通して返す。
+      <strong>これだけです。</strong>
+      6,236 行のライブラリの中心が、この 1 行の掛け算です。
     </p>
 
     <p>
@@ -516,9 +584,15 @@ use crate::Mode;</code></pre>
 
     <p>
       冒頭のコメントにあったとおり、この係数は PDF 仕様が定めたものです。
-      勝手な値ではないので、Acrobat や Ghostscript で変換した結果と一致します。
-      <a href="../#benchmark">トップページの比較</a>で
-      「見た目はほぼ同じ」という結果が出ているのは、そもそも同じ式だからです。
+      勝手な値ではないので、同じ式を使うツールとは結果が一致します。
+      たとえば Ghostscript も、色管理（ICC）を使わない設定
+      （<code>-dUseFastColor=true</code>）では、sumi とまったく同じ値を出します。
+    </p>
+
+    <p>
+      ただし Ghostscript の<strong>既定</strong>は ICC を使う変換で、
+      原色、とくに青がこの式より明るく出ます。
+      それに近づけたいときに使うのが、もう 1 つの式 <code>Colorimetric</code> です。
     </p>
 
     <div class="note">
@@ -533,9 +607,171 @@ use crate::Mode;</code></pre>
   </div>
 </section>
 
+<section class="section" id="srgb" aria-labelledby="srgb-title">
+  <div class="wrap">
+    <h2 id="srgb-title">5. もう 1 つの式 — sRGB の曲線</h2>
+
+    <p>
+      <code>rgb_to_gray</code> の下半分、<code>Colorimetric</code> のほうを読みます。
+      <code>--gray-model colorimetric</code> を付けたときに使われる式です。
+    </p>
+
+    <p>
+      出発点は、<strong>PDF に書かれた RGB の値は「光の量」そのものではない</strong>ということです。
+      画面や写真の RGB は、人間の目に合わせて明るさを曲げて記録されています（ガンマ補正）。
+      たとえば <code>0.5</code> は、光の量でいうと半分ではなく約 21% です。
+    </p>
+
+    <p>
+      4 節の <code>Luma</code> は、この曲がった値にそのまま重みを掛けます。
+      <code>Colorimetric</code> は 3 段階で計算します。
+      <strong>曲がりを戻して光の量にし（リニア）、光の量として明るさ（輝度）を求め、
+      最後にもう一度曲げて灰色の値に戻す。</strong>
+    </p>
+
+<pre><code>/// Decodes an sRGB value to linear light (IEC 61966-2-1).
+fn srgb_to_linear(v: f64) -> f64 {
+    let v = clamp01(v);
+    if v &lt;= 0.04045 {
+        v / 12.92
+    } else {
+        ((v + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+/// Encodes linear light with the sRGB curve; the inverse of [`srgb_to_linear`].
+fn linear_to_srgb(y: f64) -> f64 {
+    let y = clamp01(y);
+    if y &lt;= 0.0031308 {
+        12.92 * y
+    } else {
+        clamp01(1.055 * y.powf(1.0 / 2.4) - 0.055)
+    }
+}</code></pre>
+
+    <p>
+      どちらも、画面の色の標準である sRGB の規格（IEC 61966-2-1）の式をそのまま書いたものです。
+      <code>srgb_to_linear</code> は、ごく暗い部分（0.04045 以下）だけ直線で、
+      それより明るい部分は 2.4 乗の曲線で光の量に戻します。
+      <code>linear_to_srgb</code> はその<strong>逆</strong>で、1/2.4 乗で曲げ直します。
+      境目の <code>0.0031308</code> は <code>0.04045 ÷ 12.92</code> で、2 つの関数の境目がぴったり対応しています。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 150" role="img" aria-labelledby="fig-srgb-title">
+          <title id="fig-srgb-title">青 (0, 0, 1) を Colorimetric で灰色にする流れ</title>
+          <defs>
+            <marker id="ar-srgb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <text x="6" y="18" font-weight="700">0 0 1 rg（青）を Colorimetric で灰色にする</text>
+
+            <rect x="6" y="40" width="100" height="46" fill="#0000ff"/>
+            <text x="56" y="60" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff">B = 1.0</text>
+            <text x="56" y="77" text-anchor="middle" font-size="10" fill="#fff">PDF の値</text>
+
+            <path d="M112 63 H196" stroke="#000" stroke-width="1.5" marker-end="url(#ar-srgb)"/>
+            <text x="154" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">srgb_to_linear</text>
+
+            <rect x="202" y="40" width="100" height="46" fill="#fff" stroke="#000"/>
+            <text x="252" y="60" text-anchor="middle" font-family="monospace" font-size="11">1.0</text>
+            <text x="252" y="77" text-anchor="middle" font-size="10" fill="#575757">光の量</text>
+
+            <path d="M308 63 H360" stroke="#000" stroke-width="1.5" marker-end="url(#ar-srgb)"/>
+            <text x="334" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">× 0.0722</text>
+
+            <rect x="366" y="40" width="100" height="46" fill="#fff" stroke="#000"/>
+            <text x="416" y="60" text-anchor="middle" font-family="monospace" font-size="11">0.0722</text>
+            <text x="416" y="77" text-anchor="middle" font-size="10" fill="#575757">輝度</text>
+
+            <path d="M472 63 H556" stroke="#000" stroke-width="1.5" marker-end="url(#ar-srgb)"/>
+            <text x="514" y="54" text-anchor="middle" font-family="monospace" font-size="9" fill="#575757">linear_to_srgb</text>
+
+            <rect x="562" y="40" width="152" height="46" fill="#4c4c4c"/>
+            <text x="638" y="60" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff">0.298</text>
+            <text x="638" y="77" text-anchor="middle" font-size="10" fill="#fff">灰色の値</text>
+
+            <text x="6" y="116" font-size="11" fill="#575757">既定の Luma では 0.11 × 1.0 = 0.11 で、ほぼ黒になります。</text>
+            <text x="6" y="136" font-size="11" fill="#575757">輝度の段階では 0.0722 と小さくても、曲げ直すと 0.298 まで明るく戻ります。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>赤と緑は 0 なので、光の量に戻しても 0 のままです。</figcaption>
+    </figure>
+
+    <p>2 つの式で、代表的な色がどう変わるかを比べました。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>Luma と Colorimetric の比較（Ghostscript は既定の ICC を使う変換）</caption>
+        <thead><tr><th>元の色</th><th class="num">Luma（既定）</th><th class="num">Colorimetric</th><th class="num">Ghostscript</th></tr></thead>
+        <tbody>
+          <tr><td>赤 (1, 0, 0)</td><td class="num">0.300</td><td class="num">0.498</td><td class="num">0.506</td></tr>
+          <tr><td>緑 (0, 1, 0)</td><td class="num">0.590</td><td class="num">0.862</td><td class="num">0.863</td></tr>
+          <tr><td>青 (0, 0, 1)</td><td class="num">0.110</td><td class="num">0.298</td><td class="num">0.271</td></tr>
+          <tr><td>黄 (1, 1, 0)</td><td class="num">0.890</td><td class="num">0.968</td><td class="num">0.973</td></tr>
+          <tr><td>灰 (0.5, 0.5, 0.5)</td><td class="num">0.500</td><td class="num">0.500</td><td class="num">0.498</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      原色が明るくなり、Ghostscript の既定の変換に近づきます。
+      そして最後の行のとおり、<strong>灰色は 2 つの式で変わりません。</strong>
+      R・G・B が同じ値なら、3 つとも同じ光の量に戻り、
+      重みの合計はちょうど 1（<code>0.2126 + 0.7152 + 0.0722 = 1</code>）なので輝度も同じ値になります。
+      それを逆関数で曲げ直すので、元の値に戻るわけです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>let</code></span>
+      <p>
+        <code>let y = ...;</code> は<strong>変数を作る</strong>宣言です。
+        <code>rgb_to_gray</code> の下半分では、途中の「輝度」に <code>y</code> という名前を付けて読みやすくしています。
+        Rust の変数は<strong>既定で書き換えられません</strong>。
+        あとから変えたいときは <code>let mut</code> と書きます。
+        うっかり書き換える事故が起きにくい仕組みです。
+      </p>
+      <p>
+        <code>let v = clamp01(v);</code> のように、<strong>同じ名前でもう一度 <code>let</code> する</strong>こともできます。
+        書き換えではなく、「範囲に収めた <code>v</code>」を新しく作り直しています。
+        これ以降、範囲外の <code>v</code> はもう使えません。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>pub(crate)</code> が付いていない関数と <code>powf</code></span>
+      <p>
+        この 2 つの関数には <code>pub(crate)</code> がありません。
+        3 節で見たとおり、何も付けなければ<strong>このファイルの中だけ</strong>で使えます。
+        外からは <code>rgb_to_gray</code> を呼べば済むので、部品は隠してあります。
+      </p>
+      <p>
+        <code>x.powf(2.4)</code> は「x の 2.4 乗」です。
+        先に <code>clamp01</code> を通しているのは、負の数を小数乗すると NaN になるからです。
+        3 節の関門が、ここでも効いています。
+      </p>
+    </div>
+
+    <div class="note">
+      <span class="label">どちらの式が正しいのか</span>
+      <p>
+        どちらも正しく、目的が違います。
+        <code>Luma</code> は <strong>PDF 仕様が定める式</strong>で、同じ式を使うツールと結果がそろいます。
+        <code>Colorimetric</code> は<strong>見た目の明るさ</strong>に合わせた式で、
+        青い文字や色の付いた背景が暗くなりすぎません。
+        既定が <code>Luma</code> なのは、これまでの出力を変えないためです。
+      </p>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="cmyk" aria-labelledby="cmyk-title">
   <div class="wrap">
-    <h2 id="cmyk-title">5. 印刷の色 — <code>cmyk_to_gray</code></h2>
+    <h2 id="cmyk-title">6. 印刷の色 — <code>cmyk_to_gray</code></h2>
 
 <pre><code>pub(crate) fn cmyk_to_gray(c: f64, m: f64, y: f64, k: f64) -> f64 {
     clamp01(1.0 - (0.30 * c + 0.59 * m + 0.11 * y + k).min(1.0))
@@ -609,7 +845,7 @@ use crate::Mode;</code></pre>
 
 <section class="section" id="lab" aria-labelledby="lab-title">
   <div class="wrap">
-    <h2 id="lab-title">6. 割り切った近似 — <code>lab_to_gray</code></h2>
+    <h2 id="lab-title">7. 割り切った近似 — <code>lab_to_gray</code></h2>
 
 <pre><code>/// Approximates the lightness of a CIE L*a*b* color.
 pub(crate) fn lab_to_gray(l: f64) -> f64 {
@@ -663,7 +899,7 @@ pub(crate) fn lab_to_gray(l: f64) -> f64 {
 
 <section class="section" id="int" aria-labelledby="int-title">
   <div class="wrap">
-    <h2 id="int-title">7. 速さのための整数版</h2>
+    <h2 id="int-title">8. 速さのための整数版</h2>
 
     <p>
       ここまでと同じ計算が、もう一度別の形で書かれています。
@@ -775,27 +1011,24 @@ pub(crate) fn rgb8_to_gray(r: u8, g: u8, b: u8) -> u8 {
     255 - ink.min(255) as u8
 }</code></pre>
 
-    <div class="rust">
-      <span class="label">Rust メモ：<code>let</code></span>
-      <p>
-        <code>let ink = ...;</code> は<strong>変数を作る</strong>宣言です。
-        式が複雑になったので、途中の「インク総量」に名前を付けて読みやすくしています。
-        Rust の変数は<strong>既定で書き換えられません</strong>。
-        あとから変えたいときは <code>let mut</code> と書きます。
-        うっかり書き換える事故が起きにくい仕組みです。
-      </p>
-    </div>
-
     <p>
+      式が長いので、途中の「インク総量」に <code>let</code> で <code>ink</code> という名前を付けています。
       シアン 100%（255,0,0,0）を入れると <code>ink = 77</code>、
       <code>255 - 77 = 178</code>。小数版の <code>0.70 × 255 = 178.5</code> とほぼ一致します。
+    </p>
+
+    <p>
+      では <code>Colorimetric</code> のほうの整数版はどうなっているのか。
+      こちらは 2.4 乗の計算を毎回するわけにいかないので、<strong>計算結果の表</strong>を用意して引いています。
+      表は struct という仕組みでまとめてあるので、次の <code>Tone</code> で struct を見てから、
+      <a href="#srgb8">10 節</a>で読みます。
     </p>
   </div>
 </section>
 
 <section class="section" id="tone" aria-labelledby="tone-title">
   <div class="wrap">
-    <h2 id="tone-title">8. <code>Tone</code> — 初めての struct</h2>
+    <h2 id="tone-title">9. <code>Tone</code> — 初めての struct</h2>
 
     <p>
       ここまでは関数だけでしたが、次はデータ型が出てきます。
@@ -866,16 +1099,12 @@ pub(crate) struct Tone {
     </div>
 
     <div class="rust">
-      <span class="label">Rust メモ：<code>match</code></span>
+      <span class="label">Rust メモ：もう一度 <code>match</code></span>
       <p>
-        <strong>値によって処理を振り分ける</strong>書き方です。
-        <code>match self.mode</code> で、grayscale なら上、monochrome なら下、と分かれます。
-      </p>
-      <p>
-        便利なのは、<strong>Rust が「全部の場合を書いたか」を検査する</strong>こと。
-        もし将来 <code>Mode</code> に 3 つ目（たとえばセピア）を足したら、
+        <a href="#rgb">4 節</a>の <code>rgb_to_gray</code> で見た <code>match</code> と同じ形です。
+        今度は <code>match self.mode</code> で、grayscale なら上、monochrome なら下、と分かれます。
+        こちらも、将来 <code>Mode</code> に 3 つ目（たとえばセピア）を足したら、
         ここを直すまで<strong>コンパイルが通りません</strong>。
-        対応漏れが実行時ではなくビルド時に見つかります。
       </p>
     </div>
 
@@ -970,9 +1199,183 @@ if gray + Self::EPSILON &lt; self.threshold { 0.0 } else { 1.0 }</code></pre>
   </div>
 </section>
 
+<section class="section" id="srgb8" aria-labelledby="srgb8-title">
+  <div class="wrap">
+    <h2 id="srgb8-title">10. 表を引く整数版 — <code>Srgb8</code></h2>
+
+    <p>
+      <a href="#int">8 節</a>で後回しにした、<code>Colorimetric</code> 用の整数版です。
+      <a href="#srgb">5 節</a>の式を画素ごとに計算すると、1 画素につき 2.4 乗の計算が 3 回と、
+      1/2.4 乗が 1 回。数百万画素の写真では重すぎます。
+      そこで、<strong>答えを先に全部計算して表にしておき、画素ごとには表を引くだけ</strong>にしています。
+    </p>
+
+<pre><code>/// Lookup tables for converting 8-bit samples with [`GrayModel::Colorimetric`].
+pub(crate) struct Srgb8 {
+    /// 8-bit value to linear light (0..=65535).
+    linear: [u32; 256],
+    /// Luminance (0..=65535) to 8-bit gray.
+    encode: Box&lt;[u8]&gt;,
+}
+
+impl Srgb8 {
+    /// Rec. 709 luminance weights, rounded so that they add up to 65536.
+    const WEIGHTS: [u32; 3] = [13933, 46871, 4732];
+
+    pub(crate) fn get() -> &amp;'static Srgb8 {
+        static TABLES: OnceLock&lt;Srgb8&gt; = OnceLock::new();
+        TABLES.get_or_init(|| Srgb8 {
+            linear: std::array::from_fn(|v| {
+                (srgb_to_linear(v as f64 / 255.0) * 65535.0).round() as u32
+            }),
+            encode: (0..=65535u32)
+                .map(|y| (linear_to_srgb(y as f64 / 65535.0) * 255.0).round() as u8)
+                .collect(),
+        })
+    }
+
+    /// Integer version of [`rgb_to_gray`] with [`GrayModel::Colorimetric`].
+    pub(crate) fn gray(&amp;self, r: u8, g: u8, b: u8) -> u8 {
+        let [wr, wg, wb] = Self::WEIGHTS;
+        let y = wr * self.linear[r as usize]
+            + wg * self.linear[g as usize]
+            + wb * self.linear[b as usize];
+        // At most 65536 * 65535 + 32768, which fits in a u32.
+        <span class="hl">self.encode[((y + 32768) &gt;&gt; 16) as usize]</span>
+    }
+}</code></pre>
+
+    <p>
+      <code>Tone</code> と同じ struct ですが、中身は設定ではなく<strong>2 枚の表</strong>です。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>Srgb8 が持つ 2 枚の表</caption>
+        <thead><tr><th>表</th><th>引く値 → 得る値</th><th class="num">大きさ</th><th>5 節の関数</th></tr></thead>
+        <tbody>
+          <tr><td><code>linear</code></td><td>画素の値（0〜255）→ 光の量（0〜65535）</td><td class="num">256 個</td><td><code>srgb_to_linear</code></td></tr>
+          <tr><td><code>encode</code></td><td>輝度（0〜65535）→ 灰色の値（0〜255）</td><td class="num">65,536 個（64 KB）</td><td><code>linear_to_srgb</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      光の量を 0〜1 の小数ではなく <strong>0〜65535 の整数</strong>で持っているのが工夫です。
+      こうすると、<code>gray</code> の中はすべて整数の計算で済みます。
+      画素の値で <code>linear</code> を 3 回引き、重みを掛けて足し、その結果で <code>encode</code> を引く。
+      2.4 乗の計算は、表を作るときの 1 回きりです。
+    </p>
+
+    <h3>8 節と同じ手口 — 65536 と <code>+ 32768</code></h3>
+
+    <p>
+      <code>WEIGHTS</code> の 13933、46871、4732 は、
+      <a href="#int">8 節</a>の 77、151、28 と同じ作り方です。
+      今度は <strong>Rec. 709 の重みを 65536 倍</strong>しています。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>Colorimetric の重みと整数の重みの対応</caption>
+        <thead><tr><th>成分</th><th class="num">小数の重み</th><th class="num">× 65536</th><th class="num">整数の重み</th></tr></thead>
+        <tbody>
+          <tr><td>赤</td><td class="num">0.2126</td><td class="num">13,932.95</td><td class="num">13,933</td></tr>
+          <tr><td>緑</td><td class="num">0.7152</td><td class="num">46,871.30</td><td class="num">46,871</td></tr>
+          <tr><td>青</td><td class="num">0.0722</td><td class="num">4,731.70</td><td class="num">4,732</td></tr>
+          <tr><td><strong>合計</strong></td><td class="num"><strong>1.0000</strong></td><td class="num">65,536.00</td><td class="num"><strong>65,536</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      合計がちょうど 65536 になるように丸めてあり、
+      足したあと <code>&gt;&gt; 16</code>（65536 で割る）で元の尺度に戻します。
+      その前の <code>+ 32768</code> は 65536 の半分で、<strong>8 節の <code>+ 128</code> と同じ四捨五入</strong>です。
+      256 が 65536 に変わっただけで、考え方はまったく同じです。
+    </p>
+
+    <p>
+      コメントの「最大でも 65536 × 65535 + 32768 なので u32 に収まる」も確かめておきます。
+      <code>u32</code> の上限は 4,294,967,295。
+      最大値は 65,536 × 65,535 + 32,768 = 4,294,934,528 で、<strong>あと 32,767 というぎりぎり</strong>で収まります。
+      重みの合計を 65536 にそろえたから言えることです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>static</code> と <code>OnceLock</code></span>
+      <p>
+        <code>get()</code> の中の <code>static TABLES</code> は、<strong>プログラム全体で 1 つだけの置き場所</strong>です。
+        <code>OnceLock</code> に入れておくと、<code>get_or_init</code> が
+        <strong>最初に呼ばれたときだけ表を作り、2 回目からは作った表を返します。</strong>
+        画像が何枚あっても表は 1 回しか作りません。
+        複数のスレッドから同時に呼ばれても、作るのは 1 回です。
+      </p>
+      <p>
+        戻り値の型 <code>&amp;'static Srgb8</code> は「プログラムが終わるまで有効な <code>Srgb8</code> への参照」。
+        <code>&amp;</code> は<strong>複製せずに借りる</strong>という意味で、
+        <code>gray(&amp;self, ...)</code> の <code>&amp;self</code> も同じです。
+        <code>Tone</code> は小さいので <code>self</code> で複製して受け取りましたが、
+        64 KB の表は複製せずに借りて使います。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>|v| ...</code>（クロージャ）と表の作り方</span>
+      <p>
+        <code>|v| 式</code> は<strong>その場で作る小さな関数</strong>（クロージャ）です。
+        <code>std::array::from_fn(|v| ...)</code> は、番号 <code>v</code> = 0, 1, …, 255 ごとに式を計算して、
+        256 個の配列を作ります。
+        <code>(0..=65535u32).map(|y| ...).collect()</code> は、
+        0 から 65535 まで（<code>..=</code> は終わりを含む）の各 <code>y</code> で計算し、
+        <strong>集めて 1 つの表にする</strong>書き方です。
+      </p>
+      <p>
+        <code>[u32; 256]</code> は長さ 256 の配列、
+        <code>Box&lt;[u8]&gt;</code> は長さが実行時に決まる配列を、大きなデータ用の置き場所（ヒープ）に置いたものです。
+        <code>let [wr, wg, wb] = Self::WEIGHTS;</code> は、3 つの重みを<strong>まとめて取り出して</strong>名前を付けています。
+      </p>
+    </div>
+
+    <h3>表を引いても答えは同じか</h3>
+
+    <p>表を使った整数版と、5 節の小数の式を比べました。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>Srgb8 と小数版の一致（実測）</caption>
+        <thead><tr><th>入力</th><th class="num">Srgb8</th><th class="num">小数版 × 255</th><th class="num">差</th></tr></thead>
+        <tbody>
+          <tr><td>赤 (255,0,0)</td><td class="num">127</td><td class="num">127.102</td><td class="num">0.102</td></tr>
+          <tr><td>緑 (0,255,0)</td><td class="num">220</td><td class="num">219.933</td><td class="num">0.067</td></tr>
+          <tr><td>青 (0,0,255)</td><td class="num">76</td><td class="num">75.963</td><td class="num">0.037</td></tr>
+          <tr><td>約 64 万色（各成分を 3 刻み）</td><td class="num">—</td><td class="num">—</td><td class="num">最大 0.529</td></tr>
+          <tr><td>灰色 全 256 階調</td><td class="num">—</td><td class="num">—</td><td class="num">0（完全に一致）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      差は最大でも 0.53 段階で、灰色は 256 階調すべてで元の値のままです。
+      速さも、1,200 万画素の RGB 画像で <code>Luma</code> の整数版とほぼ同じでした
+      （どちらも 0.6 秒前後。Intel Mac で計測）。
+      <strong>表を引くだけにしたことで、式が複雑になっても速さを落とさずに済んでいます。</strong>
+    </p>
+
+    <p>使う側の <code>image.rs</code> では、画素のループに入る前に 1 回だけ表を取り出しています。</p>
+
+<pre><code>GrayModel::Colorimetric => {
+    let srgb = Srgb8::get();
+    for (d, p) in pixels {
+        *d = srgb.gray(p[0], p[1], p[2]);
+    }
+}</code></pre>
+  </div>
+</section>
+
 <section class="section" id="format" aria-labelledby="format-title">
   <div class="wrap">
-    <h2 id="format-title">9. 最後の関数 <code>format_number</code></h2>
+    <h2 id="format-title">11. 最後の関数 <code>format_number</code></h2>
 
     <p>
       計算が終わったら、PDF に書き込むために<strong>文字列</strong>にします。
@@ -1044,10 +1447,10 @@ if gray + Self::EPSILON &lt; self.threshold { 0.0 } else { 1.0 }</code></pre>
 
 <section class="section" id="tests" aria-labelledby="tests-title">
   <div class="wrap">
-    <h2 id="tests-title">10. テストを読む</h2>
+    <h2 id="tests-title">12. テストを読む</h2>
 
     <p>
-      129 行のうち 53 行、<strong>4 割がテスト</strong>です。
+      222 行のうち 80 行、<strong>3 割強がテスト</strong>です。
       テストは「このコードが何を約束しているか」の一覧なので、
       仕様書としても読めます。
     </p>
@@ -1068,7 +1471,7 @@ if gray + Self::EPSILON &lt; self.threshold { 0.0 } else { 1.0 }</code></pre>
 
     <h3>テスト 1 — 仕様どおりの値になるか</h3>
 
-<pre><code>assert!((rgb_to_gray(1.0, 0.0, 0.0) - 0.30).abs() &lt; 1e-9);
+<pre><code>assert!((rgb_to_gray(1.0, 0.0, 0.0, GrayModel::Luma) - 0.30).abs() &lt; 1e-9);
 assert_eq!(cmyk_to_gray(0.0, 0.0, 0.0, 1.0), 0.0);
 assert!((cmyk_to_gray(1.0, 0.0, 0.0, 0.0) - 0.70).abs() &lt; 1e-9);</code></pre>
 
@@ -1084,15 +1487,50 @@ assert!((cmyk_to_gray(1.0, 0.0, 0.0, 0.0) - 0.70).abs() &lt; 1e-9);</code></pre>
       EPSILON のところで見た誤差の話と同じ理由です。
     </p>
 
-    <h3>テスト 2 — 整数版と小数版が食い違わないか</h3>
+    <h3>テスト 2 — sRGB の計算が正しいか</h3>
+
+<pre><code>let gray = |r, g, b| rgb_to_gray(r, g, b, GrayModel::Colorimetric);
+// Ghostscript with ICC (its default) gives 0.506, 0.863, 0.271 and 0.408.
+assert!((gray(1.0, 0.0, 0.0) - 0.498).abs() &lt; 1e-3);
+assert!((gray(0.0, 0.0, 1.0) - 0.298).abs() &lt; 1e-3);
+...
+// Neutral grays are unchanged.
+for v in [0.01, 0.2, 0.5, 0.8] {
+    assert!((gray(v, v, v) - v).abs() &lt; 1e-9, "{v}");
+}
+// Out-of-range values are clamped.
+assert_eq!(gray(-1.0, f64::NAN, -0.5), 0.0);</code></pre>
+
+    <p>
+      <a href="#srgb">5 節</a>の表の値がそのまま並んでいます。
+      コメントには Ghostscript の値も書いてあり、
+      「なぜこの値を期待するのか」がテストを読むだけで分かります。
+    </p>
+
+    <p>
+      後半の 2 つが大事です。
+      <strong>灰色は変わらない</strong>（5 節で見た性質）ことと、
+      <strong>範囲外の値や NaN を入れても 0〜1 に収まる</strong>（3 節の <code>clamp01</code> の約束）こと。
+      新しい式を足しても、これまでの約束が崩れていないことを確かめています。
+    </p>
+
+    <h3>テスト 3 — 整数版と小数版が食い違わないか</h3>
 
 <pre><code>for &amp;(r, g, b) in &amp;[(255u8, 0u8, 0u8), (0, 255, 0), ..., (12, 200, 99)] {
-    let expected = rgb_to_gray(r as f64 / 255.0, ...) * 255.0;
-    assert!((rgb8_to_gray(r, g, b) as f64 - expected).abs() &lt;= 1.0, "{r} {g} {b}");
+    let float = |model| {
+        rgb_to_gray(r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0, model) * 255.0
+    };
+    assert!((rgb8_to_gray(r, g, b) as f64 - float(GrayModel::Luma)).abs() &lt;= 1.0, "{r} {g} {b}");
+    assert!((Srgb8::get().gray(r, g, b) as f64 - float(GrayModel::Colorimetric)).abs() &lt;= 0.5, "{r} {g} {b}");
+}
+for v in 0..=255u8 {
+    assert_eq!(Srgb8::get().gray(v, v, v), v);
 }</code></pre>
 
     <p>
-      <strong>2 つの実装が同じ答えを出すこと</strong>を、差 1 以内という基準で確かめています。
+      <strong>2 つの実装が同じ答えを出すこと</strong>を確かめています。
+      <code>Luma</code> の整数版は差 1 以内、<code>Srgb8</code> は差 0.5 以内、
+      そして <code>Srgb8</code> では灰色 256 階調がすべて元のままであること。
       同じ計算を 2 通りで書いたら、必ずこういうテストが要ります。
       片方だけ直して食い違う、という事故を防ぐためです。
     </p>
@@ -1102,11 +1540,11 @@ assert!((cmyk_to_gray(1.0, 0.0, 0.0, 0.0) - 0.70).abs() &lt; 1e-9);</code></pre>
       どの色で失敗したかがすぐ分かります。細かいですが、親切な書き方です。
     </p>
 
-    <h3>テスト 3 — 例の <code>0.5 0.5 0.5</code></h3>
+    <h3>テスト 4 — 例の <code>0.5 0.5 0.5</code></h3>
 
 <pre><code>assert_eq!(tone.apply(0.3), 0.0);
 assert_eq!(tone.apply(0.7), 1.0);
-<span class="hl">assert_eq!(tone.apply(rgb_to_gray(0.5, 0.5, 0.5)), 1.0);</span></code></pre>
+<span class="hl">assert_eq!(tone.apply(rgb_to_gray(0.5, 0.5, 0.5, GrayModel::Luma)), 1.0);</span></code></pre>
 
     <p>
       3 行目が、EPSILON を守るためのテストです。
@@ -1119,16 +1557,17 @@ assert_eq!(tone.apply(0.7), 1.0);
 
 <pre><code>cargo test -p sumi-core --lib color
 
-<span class="dim">running 4 tests
-test color::tests::monochrome_threshold ... ok
+<span class="dim">running 5 tests
 test color::tests::device_conversions_follow_pdf_spec ... ok
-test color::tests::integer_conversions_match_float ... ok
+test color::tests::colorimetric_follows_srgb_luminance ... ok
+test color::tests::monochrome_threshold ... ok
 test color::tests::number_formatting ... ok
+test color::tests::integer_conversions_match_float ... ok
 
-test result: ok. 4 passed; 0 failed</span></code></pre>
+test result: ok. 5 passed; 0 failed</span></code></pre>
 
     <p>
-      4 つとも通ります。手元で試すときは、
+      5 つとも通ります。手元で試すときは、
       わざと <code>0.30</code> を <code>0.40</code> に書き換えて
       <strong>テストが落ちるのを見てみる</strong>と、
       何が守られているかが体感できます。
@@ -1138,7 +1577,7 @@ test result: ok. 4 passed; 0 failed</span></code></pre>
 
 <section class="section" id="map" aria-labelledby="map-title">
   <div class="wrap">
-    <h2 id="map-title">11. この 129 行はどこから呼ばれるか</h2>
+    <h2 id="map-title">13. この 222 行はどこから呼ばれるか</h2>
 
     <p>
       <code>color.rs</code> は誰も呼び出しません。<strong>呼ばれるだけの、いちばん下の層</strong>です。
@@ -1179,7 +1618,7 @@ test result: ok. 4 passed; 0 failed</span></code></pre>
 
             <rect x="230" y="130" width="260" height="52" fill="#000"/>
             <text x="360" y="152" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">color.rs</text>
-            <text x="360" y="170" text-anchor="middle" font-size="10" fill="#fff">129 行・何にも依存しない</text>
+            <text x="360" y="170" text-anchor="middle" font-size="10" fill="#fff">222 行・ほかの処理を呼ばない</text>
 
             <text x="40" y="212" font-size="11" fill="#575757">矢印は「使う」向き。color.rs から外へ出る矢印はありません。</text>
             <text x="40" y="232" font-size="11" fill="#575757">だから単体で読めるし、単体でテストできます。</text>
@@ -1194,20 +1633,21 @@ test result: ok. 4 passed; 0 failed</span></code></pre>
         <caption>実際の呼び出し箇所</caption>
         <thead><tr><th>呼ぶ側</th><th>使うもの</th><th>場面</th></tr></thead>
         <tbody>
-          <tr><td><code>colorspace.rs:101</code></td><td><code>rgb_to_gray</code></td><td>RGB の色空間</td></tr>
-          <tr><td><code>colorspace.rs:102</code></td><td><code>cmyk_to_gray</code></td><td>CMYK の色空間</td></tr>
-          <tr><td><code>colorspace.rs:103</code></td><td><code>lab_to_gray</code></td><td>Lab の色空間</td></tr>
-          <tr><td><code>colorspace.rs:116</code></td><td><code>clamp01</code></td><td>特色のインク量から</td></tr>
-          <tr><td><code>image.rs:213</code></td><td><code>rgb8_to_gray</code></td><td>画像の画素ループ</td></tr>
-          <tr><td><code>image.rs:218</code></td><td><code>cmyk8_to_gray</code></td><td>同上（CMYK 画像）</td></tr>
-          <tr><td><code>content.rs:197</code></td><td><code>format_number</code></td><td><code>0.3 g</code> を組み立てる</td></tr>
-          <tr><td><code>options.rs:95</code></td><td><code>Tone</code></td><td>設定として保持</td></tr>
+          <tr><td><code>colorspace.rs:102</code></td><td><code>rgb_to_gray</code></td><td>RGB の色空間（<code>model</code> を渡す）</td></tr>
+          <tr><td><code>colorspace.rs:103</code></td><td><code>cmyk_to_gray</code></td><td>CMYK の色空間</td></tr>
+          <tr><td><code>colorspace.rs:104</code></td><td><code>lab_to_gray</code></td><td>Lab の色空間</td></tr>
+          <tr><td><code>colorspace.rs:117</code></td><td><code>clamp01</code></td><td>特色のインク量から</td></tr>
+          <tr><td><code>image.rs:219</code></td><td><code>rgb8_to_gray</code></td><td>画像の画素ループ（Luma）</td></tr>
+          <tr><td><code>image.rs:223</code></td><td><code>Srgb8</code></td><td>画像の画素ループ（Colorimetric）</td></tr>
+          <tr><td><code>image.rs:232</code></td><td><code>cmyk8_to_gray</code></td><td>同上（CMYK 画像）</td></tr>
+          <tr><td><code>content.rs:198</code></td><td><code>format_number</code></td><td><code>0.3 g</code> を組み立てる</td></tr>
+          <tr><td><code>options.rs:134</code></td><td><code>Tone</code></td><td>設定として保持</td></tr>
         </tbody>
       </table>
     </div>
 
     <p>
-      たとえば <code>content.rs</code> の 197 行目は、こうなっています。
+      たとえば <code>content.rs</code> の 198 行目は、こうなっています。
     </p>
 
 <pre><code>let text = format!("{} {}", format_number(gray), if stroke { "G" } else { "g" });</code></pre>
@@ -1224,11 +1664,12 @@ test result: ok. 4 passed; 0 failed</span></code></pre>
         <strong>白黒化の核心は、重み付き平均 1 行。</strong>残りはすべて、
         その周りを固める仕事です ——
         範囲からはみ出さないようにする（<code>clamp01</code>）、
-        速くする（整数版）、モードを反映する（<code>Tone</code>）、
+        見た目の明るさに合わせたもう 1 つの式を用意する（sRGB の曲線）、
+        速くする（整数版と <code>Srgb8</code> の表）、モードを反映する（<code>Tone</code>）、
         PDF が読める文字列にする（<code>format_number</code>）。
       </p>
       <p>
-        そして 4 割がテストです。
+        そして 3 割強がテストです。
         <strong>「正しいと信じる」のではなく「正しいと確かめられる」</strong>形になっています。
       </p>
     </div>
@@ -1255,7 +1696,11 @@ cargo build --release
 
 <span class="dim"># 閾値を変えて、白黒の分かれ方が変わることを見る</span>
 ./target/release/sumi fixtures/libreoffice_table.pdf -o m.pdf --overwrite \
-    --mode monochrome --threshold 0.3</code></pre>
+    --mode monochrome --threshold 0.3
+
+<span class="dim"># もう 1 つの式に切り替えて、色の付いた部分が明るくなることを見る</span>
+./target/release/sumi fixtures/libreoffice_table.pdf -o c.pdf --overwrite \
+    --gray-model colorimetric</code></pre>
   </div>
 </section>
 

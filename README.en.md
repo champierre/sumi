@@ -382,7 +382,7 @@ Gray = lin⁻¹(Y)          (lin converts an sRGB value to linear light)
 | Original color | `luma` | `colorimetric` | Ghostscript 10.02.1 (default) |
 |---|---:|---:|---:|
 | Red (1, 0, 0) | 0.300 | 0.498 | 0.506 |
-| Green (0, 1, 0) | 0.590 | 0.863 | 0.863 |
+| Green (0, 1, 0) | 0.590 | 0.862 | 0.863 |
 | Blue (0, 0, 1) | 0.110 | 0.298 | 0.271 |
 | Yellow (1, 1, 0) | 0.890 | 0.968 | 0.973 |
 | (0.2, 0.4, 0.8) | 0.384 | 0.418 | 0.408 |
