@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use clap::{Parser, ValueEnum};
-use sumi_core::{ConvertOptions, Mode, SumiError};
+use sumi_core::{ConvertOptions, GrayModel, Mode, SumiError};
 
 /// Convert the colors of a PDF to grayscale or monochrome, keeping text and vector graphics.
 #[derive(Debug, Parser)]
@@ -20,6 +20,10 @@ struct Args {
     /// Conversion mode
     #[arg(long, value_enum, default_value_t = ModeArg::Grayscale)]
     mode: ModeArg,
+
+    /// How RGB colors are mapped to gray (colorimetric: sRGB luminance, close to Ghostscript)
+    #[arg(long, value_enum, default_value_t = GrayModelArg::Luma)]
+    gray_model: GrayModelArg,
 
     /// Gray level (0.0-1.0) below which colors become black in monochrome mode
     #[arg(long, default_value_t = 0.5, value_parser = parse_threshold)]
@@ -59,6 +63,12 @@ const EXIT_CODES: &str = "Exit codes:
 enum ModeArg {
     Grayscale,
     Monochrome,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum GrayModelArg {
+    Luma,
+    Colorimetric,
 }
 
 fn parse_threshold(s: &str) -> Result<f32, String> {
@@ -153,6 +163,10 @@ fn run(args: &Args) -> Result<(), Failure> {
     options.mode = match args.mode {
         ModeArg::Grayscale => Mode::Grayscale,
         ModeArg::Monochrome => Mode::Monochrome,
+    };
+    options.gray_model = match args.gray_model {
+        GrayModelArg::Luma => GrayModel::Luma,
+        GrayModelArg::Colorimetric => GrayModel::Colorimetric,
     };
     options.threshold = args.threshold;
     options.dither = args.dither;

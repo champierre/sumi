@@ -8,7 +8,8 @@ use std::io::Cursor;
 
 use lopdf::{Dictionary, Document, Object, ObjectId, Stream, StringFormat};
 
-use crate::color::{cmyk8_to_gray, rgb8_to_gray};
+use crate::GrayModel;
+use crate::color::{Srgb8, cmyk8_to_gray, rgb8_to_gray};
 use crate::colorspace::ColorSpace;
 use crate::content::Env;
 use crate::error::Problem;
@@ -41,6 +42,7 @@ fn convert(
     settings: &Settings,
 ) -> Result<Option<Converted>, Problem> {
     let tone = settings.tone;
+    let model = settings.gray_model;
     let limits = &settings.limits;
     if get_bool(doc, dict, b"ImageMask") == Some(true) {
         return Ok(None);
@@ -88,7 +90,7 @@ fn convert(
         }
         ColorSpace::Indexed { .. } => {
             let grays = space
-                .palette_grays()
+                .palette_grays(model)
                 .ok_or_else(|| Problem::invalid("malformed palette"))?;
             let lookup = grays
                 .iter()
@@ -154,7 +156,7 @@ fn convert(
         Cow::Owned(samples)
     };
 
-    let gray = to_gray8(&space, bits, &decode, width, height, &samples);
+    let gray = to_gray8(&space, model, bits, &decode, width, height, &samples);
     let soft_mask = match get(doc, dict, b"Mask") {
         Some(Object::Array(_)) if dict.get(b"SMask").is_err() => get_numbers(doc, dict, b"Mask")
             .filter(|ranges| ranges.len() >= 2 * n)
@@ -189,6 +191,7 @@ fn sample(row: &[u8], index: usize, bits: u32) -> u32 {
 
 fn to_gray8(
     space: &ColorSpace,
+    model: GrayModel,
     bits: u32,
     decode: &[[f64; 2]],
     width: usize,
@@ -209,8 +212,19 @@ fn to_gray8(
             match space {
                 ColorSpace::Gray => dst.copy_from_slice(&src[..width]),
                 ColorSpace::Rgb => {
-                    for (d, p) in dst.iter_mut().zip(src.as_chunks::<3>().0) {
-                        *d = rgb8_to_gray(p[0], p[1], p[2]);
+                    let pixels = dst.iter_mut().zip(src.as_chunks::<3>().0);
+                    match model {
+                        GrayModel::Luma => {
+                            for (d, p) in pixels {
+                                *d = rgb8_to_gray(p[0], p[1], p[2]);
+                            }
+                        }
+                        GrayModel::Colorimetric => {
+                            let srgb = Srgb8::get();
+                            for (d, p) in pixels {
+                                *d = srgb.gray(p[0], p[1], p[2]);
+                            }
+                        }
                     }
                 }
                 _ => {
@@ -229,7 +243,7 @@ fn to_gray8(
 
     if n == 1 && bits <= 8 {
         let lut: Vec<u8> = (0..=max as u32)
-            .map(|s| to_byte(space.to_gray(&[value(s, decode[0])])))
+            .map(|s| to_byte(space.to_gray(&[value(s, decode[0])], model)))
             .collect();
         for (src, dst) in rows {
             for (x, d) in dst.iter_mut().enumerate() {
@@ -245,7 +259,7 @@ fn to_gray8(
             for (c, comp) in comps.iter_mut().enumerate() {
                 *comp = value(sample(src, x * n + c, bits), decode[c]);
             }
-            *d = to_byte(space.to_gray(&comps));
+            *d = to_byte(space.to_gray(&comps, model));
         }
     }
     out
@@ -425,7 +439,7 @@ pub(crate) fn convert_xobject(
                         None,
                         settings.limits.max_stream_bytes,
                     );
-                    space.to_gray(&m)
+                    space.to_gray(&m, settings.gray_model)
                 })
                 .map(|g| (*smask_id, settings.tone.apply(g))),
             _ => None,
@@ -667,6 +681,7 @@ mod tests {
                 mode,
                 threshold: 0.5,
             },
+            gray_model: GrayModel::Luma,
             dither,
             limits: Default::default(),
         }
@@ -676,6 +691,7 @@ mod tests {
     fn rgb_and_cmyk_samples() {
         let rgb = to_gray8(
             &ColorSpace::Rgb,
+            GrayModel::Luma,
             8,
             &[[0.0, 1.0]; 3],
             2,
@@ -685,6 +701,7 @@ mod tests {
         assert_eq!(rgb, vec![77, 255]);
         let cmyk = to_gray8(
             &ColorSpace::Cmyk,
+            GrayModel::Luma,
             8,
             &[[0.0, 1.0]; 4],
             1,
@@ -692,9 +709,20 @@ mod tests {
             &[0, 0, 0, 255],
         );
         assert_eq!(cmyk, vec![0]);
+        let colorimetric = to_gray8(
+            &ColorSpace::Rgb,
+            GrayModel::Colorimetric,
+            8,
+            &[[0.0, 1.0]; 3],
+            3,
+            1,
+            &[255, 0, 0, 0, 0, 255, 128, 128, 128],
+        );
+        assert_eq!(colorimetric, vec![127, 76, 128]);
         // Inverted CMYK as written by Adobe applications.
         let inverted = to_gray8(
             &ColorSpace::Cmyk,
+            GrayModel::Luma,
             8,
             &[[1.0, 0.0]; 4],
             1,
@@ -707,10 +735,26 @@ mod tests {
     #[test]
     fn low_bit_depth_samples() {
         // 4-bit gray: 0xF0 -> 15, 0
-        let gray = to_gray8(&ColorSpace::Gray, 4, &[[0.0, 1.0]], 2, 1, &[0xF0]);
+        let gray = to_gray8(
+            &ColorSpace::Gray,
+            GrayModel::Luma,
+            4,
+            &[[0.0, 1.0]],
+            2,
+            1,
+            &[0xF0],
+        );
         assert_eq!(gray, vec![255, 0]);
         // 1-bit RGB: 0b111_000_00 -> white, black
-        let rgb = to_gray8(&ColorSpace::Rgb, 1, &[[0.0, 1.0]; 3], 2, 1, &[0b1110_0000]);
+        let rgb = to_gray8(
+            &ColorSpace::Rgb,
+            GrayModel::Luma,
+            1,
+            &[[0.0, 1.0]; 3],
+            2,
+            1,
+            &[0b1110_0000],
+        );
         assert_eq!(rgb, vec![255, 0]);
     }
 

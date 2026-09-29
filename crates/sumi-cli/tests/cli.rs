@@ -60,6 +60,28 @@ fn refuses_to_overwrite_without_flag() {
 }
 
 #[test]
+fn accepts_gray_model() {
+    let dir = temp_dir("accepts_gray_model");
+    let output = dir.join("out.pdf");
+    let input = fixture("libreoffice_table.pdf");
+    let out = output.to_str().unwrap();
+    let result = sumi(&[&input, "-o", out, "--gray-model", "colorimetric"]);
+    assert_eq!(
+        result.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert!(std::fs::read(&output).unwrap().starts_with(b"%PDF-"));
+    assert_eq!(
+        sumi(&[&input, "-o", out, "--overwrite", "--gray-model", "rec601"])
+            .status
+            .code(),
+        Some(2)
+    );
+}
+
+#[test]
 fn rejects_same_input_and_output() {
     let dir = temp_dir("same_input_output");
     let path = dir.join("in.pdf");

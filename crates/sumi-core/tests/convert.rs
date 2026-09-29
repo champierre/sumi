@@ -1,7 +1,7 @@
 //! Conversion tests on small PDFs built in memory.
 
 use lopdf::{Dictionary, Document, Object, ObjectId, Stream, StringFormat, dictionary};
-use sumi_core::{ConvertOptions, Mode, SumiError, convert_bytes};
+use sumi_core::{ConvertOptions, GrayModel, Mode, SumiError, convert_bytes};
 
 /// Builds a one-page PDF. `setup` can add objects and page resources.
 fn pdf(content: &[u8], setup: impl FnOnce(&mut Document, &mut Dictionary)) -> Vec<u8> {
@@ -451,6 +451,68 @@ fn monochrome_thresholds_colors() {
             .pdf,
     );
     assert_eq!(content, "0 g 0 G 0 g 0 G");
+}
+
+fn colorimetric() -> ConvertOptions {
+    let mut options = ConvertOptions::grayscale();
+    options.gray_model = GrayModel::Colorimetric;
+    options
+}
+
+#[test]
+fn colorimetric_gray_model_converts_rgb_as_srgb_luminance() {
+    // CMYK と DeviceGray は変換方式によらず同じ値になる。
+    let input = pdf(
+        b"1 0 0 rg 0 1 0 RG 0 0 1 rg 0.2 0.4 0.8 RG 0.5 0.5 0.5 rg 0 1 0 0 k 0.3 g /Im0 Do",
+        |doc, resources| {
+            let image = doc.add_object(Stream::new(
+                dictionary! {
+                    "Type" => "XObject", "Subtype" => "Image", "Width" => 2, "Height" => 1,
+                    "ColorSpace" => "DeviceRGB", "BitsPerComponent" => 8,
+                },
+                vec![255, 0, 0, 0, 0, 255],
+            ));
+            let palette = doc.add_object(Stream::new(
+                dictionary! {
+                    "Type" => "XObject", "Subtype" => "Image", "Width" => 2, "Height" => 1, "BitsPerComponent" => 8,
+                    "ColorSpace" => vec![Object::Name(b"Indexed".to_vec()), Object::Name(b"DeviceRGB".to_vec()), 1.into(), Object::String(vec![0, 255, 0, 51, 102, 204], StringFormat::Hexadecimal)],
+                },
+                vec![0, 1],
+            ));
+            resources.set("XObject", dictionary! {"Im0" => image, "Im1" => palette});
+        },
+    );
+    let converted = convert_bytes(&input, &colorimetric()).unwrap();
+    assert_eq!(
+        page_content(&converted.pdf),
+        "0.4984 g 0.8625 G 0.2979 g 0.4178 G 0.5 g 0.41 g 0.3 g /Im0 Do"
+    );
+    let doc = Document::load_mem(&converted.pdf).unwrap();
+    let image = doc
+        .get_object(resource_id(&doc, b"XObject", b"Im0"))
+        .unwrap()
+        .as_stream()
+        .unwrap();
+    assert_eq!(image.decompressed_content().unwrap(), vec![127, 76]);
+    let palette = doc
+        .get_object(resource_id(&doc, b"XObject", b"Im1"))
+        .unwrap()
+        .as_stream()
+        .unwrap();
+    let space = palette.dict.get(b"ColorSpace").unwrap().as_array().unwrap();
+    assert_eq!(space[3].as_str().unwrap(), &[220, 107]);
+}
+
+#[test]
+fn monochrome_threshold_uses_the_gray_model() {
+    // 青は luma では 0.11、colorimetric では 0.298 になる。
+    let input = pdf(b"0 0 1 rg", |_, _| {});
+    let mut options = ConvertOptions::monochrome(0.2);
+    let content = page_content(&convert_bytes(&input, &options).unwrap().pdf);
+    assert_eq!(content, "0 g");
+    options.gray_model = GrayModel::Colorimetric;
+    let content = page_content(&convert_bytes(&input, &options).unwrap().pdf);
+    assert_eq!(content, "1 g");
 }
 
 #[test]

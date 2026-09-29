@@ -566,7 +566,11 @@ impl<'s> Converter<'s> {
             4 => ColorSpace::Cmyk,
             _ => return,
         };
-        let gray = tone.apply(space.to_gray(&values).unwrap_or(0.0));
+        let gray = tone.apply(
+            space
+                .to_gray(&values, self.settings.gray_model)
+                .unwrap_or(0.0),
+        );
         if let Some(dict) = dict_at_mut(&mut self.doc, loc) {
             dict.set(key.to_vec(), vec![Object::Real(gray as f32)]);
         }

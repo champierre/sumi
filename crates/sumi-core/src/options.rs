@@ -34,6 +34,41 @@ impl fmt::Display for Mode {
     }
 }
 
+/// RGB の色をグレーに変換する方式。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GrayModel {
+    /// ガンマ補正済みの値にそのまま `0.30 × R + 0.59 × G + 0.11 × B` を掛ける。PDF 仕様の式。
+    #[default]
+    Luma,
+    /// 値を sRGB として読み、リニアに戻して Rec. 709 の係数で輝度を求め、sRGB の曲線で
+    /// グレーの値に戻す。[`GrayModel::Luma`] より原色が明るくなり、Ghostscript が既定で行う
+    /// ICC の変換に近い。
+    Colorimetric,
+}
+
+impl FromStr for GrayModel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "luma" => Ok(GrayModel::Luma),
+            "colorimetric" => Ok(GrayModel::Colorimetric),
+            other => Err(format!(
+                "unknown gray model `{other}` (expected luma or colorimetric)"
+            )),
+        }
+    }
+}
+
+impl fmt::Display for GrayModel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            GrayModel::Luma => "luma",
+            GrayModel::Colorimetric => "colorimetric",
+        })
+    }
+}
+
 /// Options for [`convert`](crate::convert) and [`convert_bytes`](crate::convert_bytes).
 ///
 /// Construct with [`ConvertOptions::default`], [`ConvertOptions::grayscale`] or
@@ -43,6 +78,8 @@ impl fmt::Display for Mode {
 #[non_exhaustive]
 pub struct ConvertOptions {
     pub mode: Mode,
+    /// RGB の色をグレーに変換する方式。
+    pub gray_model: GrayModel,
     /// Gray level in `0.0..=1.0` below which a color becomes black in monochrome mode.
     pub threshold: f32,
     /// Use Floyd–Steinberg dithering instead of a hard threshold for images in monochrome mode.
@@ -57,6 +94,7 @@ impl Default for ConvertOptions {
     fn default() -> Self {
         ConvertOptions {
             mode: Mode::Grayscale,
+            gray_model: GrayModel::Luma,
             threshold: 0.5,
             dither: false,
             strict: false,
@@ -93,6 +131,7 @@ impl ConvertOptions {
 #[derive(Debug, Clone)]
 pub(crate) struct Settings {
     pub tone: crate::color::Tone,
+    pub gray_model: GrayModel,
     pub dither: bool,
     pub limits: Limits,
 }
@@ -104,6 +143,7 @@ impl From<&ConvertOptions> for Settings {
                 mode: options.mode,
                 threshold: options.threshold as f64,
             },
+            gray_model: options.gray_model,
             dither: options.dither,
             limits: options.limits.clone(),
         }

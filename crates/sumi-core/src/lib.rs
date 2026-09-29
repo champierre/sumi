@@ -37,7 +37,7 @@ use std::path::Path;
 use lopdf::{Document, LoadOptions};
 
 pub use error::{Result, SumiError};
-pub use options::{ConvertOptions, Limits, Mode};
+pub use options::{ConvertOptions, GrayModel, Limits, Mode};
 pub use report::{Report, Warning};
 
 use options::Settings;

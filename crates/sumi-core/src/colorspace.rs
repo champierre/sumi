@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use lopdf::{Dictionary, Document, Object};
 
+use crate::GrayModel;
 use crate::color::{cmyk_to_gray, lab_to_gray, rgb_to_gray};
 use crate::error::Problem;
 use crate::function::Function;
@@ -94,11 +95,11 @@ impl ColorSpace {
     }
 
     /// Maps color components to a gray level in `0.0..=1.0`.
-    pub(crate) fn to_gray(&self, comps: &[f64]) -> Option<f64> {
+    pub(crate) fn to_gray(&self, comps: &[f64], model: GrayModel) -> Option<f64> {
         let c = |i: usize| comps.get(i).copied().unwrap_or(0.0);
         match self {
             ColorSpace::Gray => Some(crate::color::clamp01(c(0))),
-            ColorSpace::Rgb => Some(rgb_to_gray(c(0), c(1), c(2))),
+            ColorSpace::Rgb => Some(rgb_to_gray(c(0), c(1), c(2), model)),
             ColorSpace::Cmyk => Some(cmyk_to_gray(c(0), c(1), c(2), c(3))),
             ColorSpace::Lab => Some(lab_to_gray(c(0))),
             ColorSpace::Indexed {
@@ -107,7 +108,7 @@ impl ColorSpace {
                 lookup,
             } => {
                 let index = (c(0).round().max(0.0) as usize).min(*hival);
-                base.to_gray(&self_lookup(base, lookup, index))
+                base.to_gray(&self_lookup(base, lookup, index), model)
             }
             ColorSpace::Separation { tint } | ColorSpace::DeviceN { tint, .. } => match tint {
                 Tint::NoInk => None,
@@ -118,14 +119,14 @@ impl ColorSpace {
                 Tint::Transform {
                     alternate,
                     function,
-                } => alternate.to_gray(&function.eval(comps)),
+                } => alternate.to_gray(&function.eval(comps), model),
             },
             ColorSpace::Pattern { .. } | ColorSpace::Unsupported(_) => None,
         }
     }
 
     /// The gray level of every palette entry of an indexed color space.
-    pub(crate) fn palette_grays(&self) -> Option<Vec<f64>> {
+    pub(crate) fn palette_grays(&self, model: GrayModel) -> Option<Vec<f64>> {
         let ColorSpace::Indexed {
             base,
             hival,
@@ -135,7 +136,7 @@ impl ColorSpace {
             return None;
         };
         (0..=*hival)
-            .map(|i| base.to_gray(&self_lookup(base, lookup, i)))
+            .map(|i| base.to_gray(&self_lookup(base, lookup, i), model))
             .collect()
     }
 

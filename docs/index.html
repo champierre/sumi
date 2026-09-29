@@ -502,7 +502,7 @@ Q</code></pre>
             </tbody>
           </table>
         </div>
-        <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。</p>
+        <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。<code>--gray-model colorimetric</code> を付けると、色を sRGB として輝度を求める式に切り替わり、原色が明るくなります（赤 0.50、緑 0.86、青 0.30）。Ghostscript の既定の変換に近い値です。</p>
       </div>
     </div>
   </section>
@@ -875,6 +875,9 @@ sumi invoice.pdf -o invoice-gray.pdf
 
 <span class="comment"># 白黒 2 値（閾値を変えるときは --threshold）</span>
 sumi invoice.pdf -o invoice-mono.pdf --mode monochrome
+
+<span class="comment"># Ghostscript に近い明るさで RGB をグレーにする</span>
+sumi invoice.pdf -o invoice-gray.pdf --gray-model colorimetric
 
 <span class="comment"># 既存のファイルを上書きする</span>
 sumi invoice.pdf -o invoice-gray.pdf --overwrite

@@ -185,6 +185,7 @@ impl Rewriter<'_, '_> {
             return;
         };
         let tone = self.env.settings.tone;
+        let model = self.env.settings.gray_model;
         if n == 1 && !tone.is_monochrome() {
             return;
         }
@@ -193,7 +194,7 @@ impl Rewriter<'_, '_> {
             3 => ColorSpace::Rgb,
             _ => ColorSpace::Cmyk,
         };
-        let gray = tone.apply(space.to_gray(&values).unwrap_or(0.0));
+        let gray = tone.apply(space.to_gray(&values, model).unwrap_or(0.0));
         let text = format!("{} {}", format_number(gray), if stroke { "G" } else { "g" });
         self.replace(start, op.end, text.as_bytes());
         self.report.color_operators += 1;
@@ -222,6 +223,7 @@ impl Rewriter<'_, '_> {
         let space = self.resolve(&name);
         *self.current(stroke) = Some(space.clone());
         let tone = self.env.settings.tone;
+        let model = self.env.settings.gray_model;
         let (cs_op, sc_op) = if stroke { ("CS", "SC") } else { ("cs", "sc") };
 
         match &*space {
@@ -246,7 +248,7 @@ impl Rewriter<'_, '_> {
             s if !s.is_convertible() => {}
             s if s.is_gray() => {}
             s => {
-                let gray = tone.apply(s.to_gray(&s.initial_color()).unwrap_or(0.0));
+                let gray = tone.apply(s.to_gray(&s.initial_color(), model).unwrap_or(0.0));
                 let mut text = format!("/DeviceGray {cs_op}");
                 if gray != 0.0 {
                     text.push_str(&format!(" {} {sc_op}", format_number(gray)));
@@ -269,6 +271,7 @@ impl Rewriter<'_, '_> {
             return;
         };
         let tone = self.env.settings.tone;
+        let model = self.env.settings.gray_model;
         let by_count = || match count {
             1 => Some(ColorSpace::Gray),
             3 => Some(ColorSpace::Rgb),
@@ -284,7 +287,7 @@ impl Rewriter<'_, '_> {
             if count != base.components() || !base.is_convertible() {
                 return;
             }
-            let gray = tone.apply(base.to_gray(&values).unwrap_or(0.0));
+            let gray = tone.apply(base.to_gray(&values, model).unwrap_or(0.0));
             let mut text = format!("{} ", format_number(gray)).into_bytes();
             text.extend_from_slice(lexer.text(pattern));
             text.push(b' ');
@@ -310,7 +313,7 @@ impl Rewriter<'_, '_> {
         if space.is_gray() && !tone.is_monochrome() {
             return;
         }
-        let Some(gray) = space.to_gray(&values) else {
+        let Some(gray) = space.to_gray(&values, model) else {
             return;
         };
         let text = format!(
