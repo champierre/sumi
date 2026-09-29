@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>objects.rs を読む | sumi</title>
+<meta name="description" content="sumi のコードリーディング第 2 回。201 行の objects.rs を、Rust を知らない前提で読み解きます。PDF の値を表す enum、参照をたどる関数、壊れた PDF を寛容に読む工夫、ストリームの展開と圧縮まで、実際に動かした結果とともに解説します。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* 体裁は第 1 回（color.rs を読む）と同じ。色は墨の五彩だけ。 */
+  :root {
+    --kami: #f2f2f2;
+    --shiro: #ffffff;
+    --sho: #000000;
+    --no: #2b2b2b;
+    --ju: #575757;
+    --tan: #9b9b9b;
+    --sei: #d4d4d4;
+    --usu: #ebebeb;
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    /* コード例が主役なので等幅を先に置く。BIZ UDGothic が先頭だと ASCII の数字が
+       全角幅で組まれ、"0.30 * r" のような式が間延びする。 */
+    --code: ui-monospace, "SFMono-Regular", Menlo, Consolas, "BIZ UDGothic", monospace;
+
+    --measure: 40em;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+  }
+
+  img, svg { max-width: 100%; }
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ヘッダ */
+  .site-header { border-bottom: 1px solid var(--sei); background: var(--shiro); }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding-block: 14px; flex-wrap: wrap;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .seal {
+    display: grid; place-items: center; width: 32px; height: 32px;
+    background: var(--sho); color: var(--shiro);
+    font-family: var(--mincho); font-size: 19px; line-height: 1;
+  }
+  .brand-name { font-family: var(--mincho); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
+  .site-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9375rem; }
+  .site-nav a { text-decoration: none; color: var(--ju); }
+  .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+
+  /* 見出し */
+  .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
+  .page-head .kicker {
+    font-family: var(--code); font-size: .8125rem; color: var(--ju);
+    letter-spacing: .08em; margin: 0 0 .8em;
+  }
+  .page-head h1 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
+    margin: 0 0 .4em;
+  }
+  .lede { max-width: var(--measure); color: var(--ju); margin: 0 0 1em; }
+
+  .section { padding-block: clamp(32px, 6vw, 56px); }
+  .section h2 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.3rem, 3.4vw, 1.75rem); line-height: 1.5;
+    margin: 0 0 .8em; padding-bottom: .35em; border-bottom: 2px solid var(--sho);
+  }
+  .section h3 {
+    font-family: var(--mincho); font-weight: 700;
+    font-size: 1.125rem; margin: 2.2em 0 .5em;
+  }
+  .section p, .section li { max-width: var(--measure); }
+
+  /* 目次 */
+  .toc { background: var(--shiro); border: 1px solid var(--sei); padding: 20px 24px; max-width: var(--measure); }
+  .toc h2 { font-family: var(--mincho); font-size: 1rem; margin: 0 0 .5em; border: 0; padding: 0; }
+  .toc ol { margin: 0; padding-left: 1.4em; }
+  .toc li { margin-bottom: .2em; }
+  .toc a { color: var(--no); }
+
+  /* 表 */
+  .scroll { overflow-x: auto; margin: 1.2em 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; min-width: 26em; }
+  caption { text-align: left; color: var(--ju); font-size: .875rem; padding-bottom: .5em; }
+  th, td { border-bottom: 1px solid var(--sei); padding: .5em .7em; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--sho); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--code); white-space: nowrap; }
+  td code { white-space: nowrap; }
+
+  /* 補足の囲み */
+  .note {
+    background: var(--shiro); border-left: 3px solid var(--sho);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .note p { margin: 0 0 .5em; }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  /* Rust の文法メモ */
+  .rust {
+    background: var(--usu); border-left: 3px solid var(--tan);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .rust .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  .rust p { margin: 0 0 .5em; }
+  .rust p:last-child { margin-bottom: 0; }
+
+  code {
+    font-family: var(--code); font-size: .9em;
+    background: var(--shiro); padding: .1em .35em; border: 1px solid var(--sei);
+  }
+  pre {
+    font-family: var(--code); font-size: .875rem; line-height: 1.7;
+    background: var(--shiro); border: 1px solid var(--sei);
+    padding: 14px 16px; overflow-x: auto; margin: 1em 0;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; }
+  pre .hl { background: #e4e4e4; font-weight: 700; padding: .05em .2em; }
+  pre .dim { color: var(--tan); }
+
+  /* 図 */
+  figure { margin: 1.6em 0; max-width: var(--measure); }
+  figure.wide { max-width: 100%; }
+  figcaption { font-size: .875rem; color: var(--ju); margin-top: .6em; }
+  .fig { background: var(--shiro); border: 1px solid var(--sei); padding: 18px; }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig svg text[font-family="monospace"] { font-family: var(--code); letter-spacing: 0; }
+
+  /* 用語 */
+  dl.terms { max-width: var(--measure); margin: 1.2em 0; }
+  dl.terms dt { font-weight: 700; margin-top: 1em; }
+  dl.terms dd { margin: .2em 0 0; padding-left: 1.2em; border-left: 2px solid var(--sei); }
+
+  .site-footer {
+    border-top: 1px solid var(--sei); background: var(--shiro);
+    padding-block: 28px; margin-top: clamp(40px, 8vw, 72px);
+    color: var(--ju); font-size: .9375rem;
+  }
+  .site-footer p { max-width: var(--measure); }
+
+  @media (max-width: 680px) {
+    .site-nav a:not(:last-child) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="sumi トップ">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <nav class="site-nav" aria-label="ページ内">
+      <a href="../">トップ</a>
+      <a href="../pdf/">PDF のしくみ</a>
+      <a href="../color-rs/">第 1 回 color.rs</a>
+      <a href="#object">Object</a>
+      <a href="#get">辞書を引く</a>
+      <a href="#decode">ストリーム</a>
+      <a href="../diary/">開発日誌</a>
+      <a href="https://github.com/champierre/sumi">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap page-head">
+  <p class="kicker">コードリーディング 第 2 回</p>
+  <h1><code style="font:inherit;background:none;border:0;padding:0;">objects.rs</code> を読む</h1>
+  <p class="lede">
+    <a href="../color-rs/">前回</a>は、色を灰色にする計算を読みました。
+    今回は、その計算に渡す数値を <strong>PDF の中から取り出す側</strong>、201 行の <code>objects.rs</code> を読みます。
+  </p>
+  <p class="lede">
+    前回と同じく、Rust は知らない前提で進めます。
+    文法は出てきたところで、<strong>灰色の囲みで説明します。</strong>
+  </p>
+
+  <div class="note">
+    <span class="label">この回で分かること</span>
+    <p>
+      <a href="../pdf/#objects">PDF のしくみ</a>で見た辞書・配列・参照が、Rust ではどんな形になっているか。
+      そして、<strong>壊れているかもしれない PDF から値を安全に取り出すには何が要るか</strong>です。
+      Rust の <code>enum</code> と <code>Option</code> が、この仕事にぴったり合うことが分かります。
+    </p>
+  </div>
+
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#whole">まず全体を眺める</a></li>
+      <li><a href="#object">部品の正体 — lopdf の <code>Object</code></a></li>
+      <li><a href="#head">ファイルの冒頭 — 「寛容に読む」</a></li>
+      <li><a href="#deref">参照をたどる — <code>deref</code></a></li>
+      <li><a href="#get">辞書を引く — <code>get</code></a></li>
+      <li><a href="#typed">型ごとに取り出す — <code>get_int</code> など</a></li>
+      <li><a href="#arrays">配列を取り出す — <code>get_numbers</code> と <code>pairs</code></a></li>
+      <li><a href="#decode">ストリームを展開する — <code>decode_stream</code></a></li>
+      <li><a href="#flate">圧縮して書き戻す — <code>flate</code></a></li>
+      <li><a href="#map">この 201 行はどこから呼ばれるか</a></li>
+    </ol>
+  </div>
+</div>
+
+<section class="section" id="whole" aria-labelledby="whole-title">
+  <div class="wrap">
+    <h2 id="whole-title">1. まず全体を眺める</h2>
+
+    <p>
+      201 行に入っているのは、<strong>18 個の小さな関数と、定数が 1 つ</strong>だけです。
+      前回の <code>color.rs</code> と違って、テストはありません（この点は<a href="#decode">8 節</a>の最後で触れます）。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 300" role="img" aria-labelledby="fig1-title">
+          <title id="fig1-title">objects.rs の構成</title>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="10" y="10" width="700" height="26" fill="#ebebeb" stroke="#9b9b9b"/>
+            <text x="20" y="28" font-family="monospace" font-size="11">1–9 行</text>
+            <text x="120" y="28" fill="#575757">説明のコメント、use、定数 NULL</text>
+
+            <rect x="10" y="42" width="340" height="52" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="20" y="60" font-family="monospace" font-size="11">11–25 行</text>
+            <text x="120" y="60" font-weight="700">参照をたどる</text>
+            <text x="20" y="80" font-family="monospace" font-size="11" fill="#575757">deref / get</text>
+
+            <rect x="10" y="100" width="340" height="120" fill="#fff" stroke="#000"/>
+            <text x="20" y="118" font-family="monospace" font-size="11">27–99 行</text>
+            <text x="120" y="118" fill="#2b2b2b">型を決めて取り出す</text>
+            <text x="20" y="140" font-family="monospace" font-size="11" fill="#575757">number / get_number / get_int</text>
+            <text x="20" y="158" font-family="monospace" font-size="11" fill="#575757">get_bool / numbers / get_numbers</text>
+            <text x="20" y="176" font-family="monospace" font-size="11" fill="#575757">get_name / as_dict / get_dict</text>
+            <text x="20" y="194" font-family="monospace" font-size="11" fill="#575757">pairs / name_str</text>
+
+            <rect x="370" y="42" width="340" height="112" fill="#fff" stroke="#000"/>
+            <text x="380" y="60" font-family="monospace" font-size="11">101–178 行</text>
+            <text x="480" y="60" fill="#2b2b2b">ストリームを展開する</text>
+            <text x="380" y="80" font-family="monospace" font-size="11" fill="#575757">filters / decode_stream</text>
+            <text x="380" y="106" fill="#575757" font-size="11">decode_stream だけで 59 行。</text>
+            <text x="380" y="124" fill="#575757" font-size="11">ファイルの 3 割を 1 つの関数が</text>
+            <text x="380" y="142" fill="#575757" font-size="11">占めています。</text>
+
+            <rect x="370" y="160" width="340" height="60" fill="#fff" stroke="#000"/>
+            <text x="380" y="178" font-family="monospace" font-size="11">180–201 行</text>
+            <text x="480" y="178" fill="#2b2b2b">圧縮して書き戻す</text>
+            <text x="380" y="198" font-family="monospace" font-size="11" fill="#575757">flate / flate_stream / set_flate_content</text>
+
+            <text x="10" y="252" font-size="11" fill="#575757">左の 2 つは「読む」、右の 2 つは「中身を出し入れする」。</text>
+            <text x="10" y="272" font-size="11" fill="#575757">どの関数も数行から十数行で、decode_stream だけが長い。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>201 行の内訳。行番号は v0.2.0 のものです。</figcaption>
+    </figure>
+
+    <p>
+      名前が <code>get</code> で始まる関数が 7 つもあることから分かるとおり、
+      これは<strong>「PDF の辞書から値を取り出す」ための道具箱</strong>です。
+      sumi のほかのファイルは、PDF の辞書を直接いじらずに、ほぼこの道具箱を通して読みます。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="object" aria-labelledby="object-title">
+  <div class="wrap">
+    <h2 id="object-title">2. 部品の正体 — lopdf の <code>Object</code></h2>
+
+    <p>
+      <code>objects.rs</code> を読む前に、このファイルが扱っている<strong>「PDF の値」そのもの</strong>を見ておきます。
+      sumi は PDF の読み書きに <a href="https://crates.io/crates/lopdf">lopdf</a> という外部のライブラリを使っていて、
+      PDF の値は lopdf の <code>Object</code> という型で表されます。
+      定義はこうです（lopdf 0.45.0 の <code>src/object.rs</code>、38 行目）。
+    </p>
+
+<pre><code>pub enum Object {
+    Null,
+    Boolean(bool),
+    Integer(i64),
+    Real(f32),
+    Name(Vec&lt;u8&gt;),
+    String(Vec&lt;u8&gt;, StringFormat),
+    Array(Vec&lt;Object&gt;),
+    Dictionary(Dictionary),
+    Stream(Stream),
+    Reference(ObjectId),
+}</code></pre>
+
+    <p>
+      <a href="../pdf/#objects">PDF のしくみ</a>で、PDF に書ける値は 8 種類だと書きました。
+      ここには 10 行あります。対応させると次のようになります。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>PDF の値の種類と、lopdf の <code>Object</code></caption>
+        <thead><tr><th>PDF での種類</th><th>書き方</th><th><code>Object</code> の行</th></tr></thead>
+        <tbody>
+          <tr><td>数値</td><td><code>42</code> <code>0.5</code></td><td><code>Integer(i64)</code> と <code>Real(f32)</code> の<strong>2 つに分かれる</strong></td></tr>
+          <tr><td>名前</td><td><code>/Type</code></td><td><code>Name(Vec&lt;u8&gt;)</code></td></tr>
+          <tr><td>文字列</td><td><code>(Hello)</code></td><td><code>String(Vec&lt;u8&gt;, StringFormat)</code></td></tr>
+          <tr><td>配列</td><td><code>[0 0 200 100]</code></td><td><code>Array(Vec&lt;Object&gt;)</code></td></tr>
+          <tr><td>辞書</td><td><code>&lt;&lt; /A 1 &gt;&gt;</code></td><td><code>Dictionary(Dictionary)</code></td></tr>
+          <tr><td>真偽</td><td><code>true</code></td><td><code>Boolean(bool)</code></td></tr>
+          <tr><td>ヌル</td><td><code>null</code></td><td><code>Null</code></td></tr>
+          <tr><td>参照</td><td><code>3 0 R</code></td><td><code>Reference(ObjectId)</code></td></tr>
+          <tr><td>（辞書 ＋ データ）</td><td><code>stream … endstream</code></td><td><code>Stream(Stream)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      数値が整数と小数に分かれ、ストリームが独立した 1 種類になっているので、8 + 2 で 10 です。
+      参照の中身の <code>ObjectId</code> は <code>(u32, u16)</code>、
+      つまり <strong>オブジェクト番号と世代番号の組</strong>です。
+      <code>3 0 R</code> なら <code>(3, 0)</code> になります。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：中身を持つ <code>enum</code></span>
+      <p>
+        前回の <code>GrayModel</code> は、<code>Luma</code> か <code>Colorimetric</code> の<strong>どちらか</strong>を表す enum でした。
+        <code>Object</code> も同じ enum ですが、<strong>それぞれの場合が中身を持てます。</strong>
+        <code>Integer(i64)</code> は「整数で、値はこの <code>i64</code>」、
+        <code>Array(Vec&lt;Object&gt;)</code> は「配列で、中身はこの <code>Object</code> の並び」。
+      </p>
+      <p>
+        「10 通りのうちどれか 1 つで、しかも種類ごとに違う形のデータを持つ」。
+        PDF の値はまさにこういうものなので、enum でそのまま書けます。
+        取り出すときは前回と同じ <code>match</code> を使い、<strong>種類を確かめてからでないと中身に触れません。</strong>
+        整数のつもりで名前を読んでしまう、という取り違えが起こりえない仕組みです。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>Vec&lt;u8&gt;</code> — 名前は文字列ではなくバイト列</span>
+      <p>
+        <code>Vec&lt;T&gt;</code> は「<code>T</code> を何個でも並べられる入れ物」で、
+        <code>Vec&lt;u8&gt;</code> は <strong>0〜255 の数の並び、つまりバイト列</strong>です。
+        名前 <code>/Type</code> も、文字列ではなくバイト列として持っています。
+      </p>
+      <p>
+        PDF の名前には、<code>/Caf#E9</code> のように <code>#</code> と 16 進数で<strong>任意のバイト</strong>を書けます。
+        Rust の文字列（<code>String</code>）は中身が正しい UTF-8 であることを保証する型なので、
+        どんなバイトでも入りうる名前は、そのままでは入れられません。
+        だからバイト列で持ち、文字列が必要なときだけ変換します（<a href="#typed">6 節</a>の <code>name_str</code>）。
+      </p>
+    </div>
+
+    <h3>辞書とストリーム</h3>
+
+    <p>
+      辞書の <code>Dictionary</code> は、中身が <code>IndexMap&lt;Vec&lt;u8&gt;, Object&gt;</code> です。
+      <strong>キー（名前のバイト列）から値（<code>Object</code>）を引く表</strong>で、書かれた順番も覚えています。
+      値がまた <code>Object</code> なので、辞書の中に辞書や配列をいくらでも入れ子にできます。
+    </p>
+
+    <p>
+      ストリームの <code>Stream</code> は、<strong>辞書 1 つ（<code>dict</code>）と、生のバイト列（<code>content</code>）の組</strong>です。
+      <code>/Filter /FlateDecode</code> が付いていれば、<code>content</code> は圧縮されたままです。
+      展開するのは <a href="#decode">8 節</a>の <code>decode_stream</code> の仕事です。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="head" aria-labelledby="head-title">
+  <div class="wrap">
+    <h2 id="head-title">3. ファイルの冒頭 — 「寛容に読む」</h2>
+
+<pre><code>//! Small helpers for reading lopdf objects leniently.
+
+use std::io::Write;
+
+use lopdf::{Dictionary, Document, Object, Stream};
+
+use crate::error::Problem;
+
+static NULL: Object = Object::Null;</code></pre>
+
+    <p>
+      1 行目の説明は「lopdf のオブジェクトを<strong>寛容に（leniently）</strong>読むための小さな道具」。
+      このファイルの性格は、この 1 語に表れています。
+    </p>
+
+    <p>
+      実物の PDF は、仕様どおりに書かれているとは限りません。
+      参照先のオブジェクトが存在しない、数値のはずの場所に名前がある、
+      同じことを、仕様が許す何通りもの書き方で書いてある。
+      そのたびに変換全体を止めていては使いものになりません。
+      sumi が PDF の解析に lopdf を選んだのも、壊れた xref の修復などを最初から扱うためでした
+      （<a href="../diary/#day1">開発日誌</a>）。
+      <strong>分からない値は「無いもの」として扱い、読めるところは読む。</strong>
+      この方針を 1 か所にまとめたのが <code>objects.rs</code> です。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：外のライブラリと、自分のライブラリ</span>
+      <p>
+        <code>use lopdf::{…}</code> は外部のライブラリ lopdf から、
+        <code>use crate::error::Problem</code> は sumi 自身の <code>error.rs</code> から取り込んでいます。
+        前回見たとおり <code>crate</code> は「このライブラリ全体」の意味です。
+        <code>use std::io::Write</code> は標準ライブラリの書き込みの機能で、
+        <a href="#flate">9 節</a>の圧縮で使います。
+      </p>
+    </div>
+
+    <p>
+      最後の <code>static NULL</code> は、<strong>「ヌル」を 1 つだけ、プログラムの最初から最後まで置いておく</strong>定数です。
+      なぜこんなものが要るのかは、次の節で分かります。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="deref" aria-labelledby="deref-title">
+  <div class="wrap">
+    <h2 id="deref-title">4. 参照をたどる — <code>deref</code></h2>
+
+<pre><code>/// Follows references; a dangling reference yields `Null`.
+pub(crate) fn deref&lt;'a&gt;(doc: &amp;'a Document, obj: &amp;'a Object) -&gt; &amp;'a Object {
+    match doc.dereference(obj) {
+        Ok((_, o)) =&gt; o,
+        Err(_) =&gt; <span class="hl">&amp;NULL</span>,
+    }
+}</code></pre>
+
+    <p>
+      PDF の値は、<code>3 0 R</code> のように<strong>別の場所を指す参照</strong>で書かれていることがあります。
+      <code>deref</code> は、参照なら指す先まで行って本物の値を返し、参照でなければそのまま返します。
+      参照の先がまた参照なら、さらにたどります。
+    </p>
+
+    <p>
+      実際にたどる仕事は lopdf の <code>doc.dereference</code> がします。
+      sumi が足しているのは <strong>失敗したときの扱い</strong>だけです。
+      lopdf は、たどれなかったときにエラーを返します。
+      <code>deref</code> はそれを受け止めて、<strong>ヌルを返します。</strong>
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 176" role="img" aria-labelledby="fig2-title">
+          <title id="fig2-title">deref が参照をたどる様子</title>
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <text x="6" y="18" font-weight="700">たどれる場合</text>
+            <rect x="6" y="30" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="71" y="55" text-anchor="middle" font-family="monospace" font-size="11">4 0 R</text>
+            <path d="M142 50 H206" stroke="#000" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <rect x="212" y="30" width="170" height="40" fill="#fff" stroke="#000"/>
+            <text x="297" y="55" text-anchor="middle" font-family="monospace" font-size="11">4 0 obj 1 0 R</text>
+            <path d="M388 50 H452" stroke="#000" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <rect x="458" y="30" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="523" y="55" text-anchor="middle" font-family="monospace" font-size="11">1 0 obj 5</text>
+            <path d="M594 50 H638" stroke="#000" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <rect x="644" y="30" width="70" height="40" fill="#000"/>
+            <text x="679" y="55" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">5</text>
+
+            <text x="6" y="106" font-weight="700">たどれない場合</text>
+            <rect x="6" y="118" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="71" y="143" text-anchor="middle" font-family="monospace" font-size="11">99 0 R</text>
+            <path d="M142 138 H206" stroke="#000" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="297" y="135" text-anchor="middle" font-size="11" fill="#575757">99 番のオブジェクトが無い</text>
+            <text x="297" y="152" text-anchor="middle" font-size="10" fill="#575757">（lopdf はエラーを返す）</text>
+            <path d="M388 138 H638" stroke="#000" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <rect x="644" y="118" width="70" height="40" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="679" y="143" text-anchor="middle" font-family="monospace" font-size="11">null</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>参照の先が参照でも、本物の値に着くまでたどります。たどれなければヌルです。</figcaption>
+    </figure>
+
+    <p>実際に 4 通りの値を渡して、lopdf と <code>deref</code> の結果を比べました。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>lopdf の <code>dereference</code> と、sumi の <code>deref</code>（実測）</caption>
+        <thead><tr><th>渡した値</th><th>lopdf</th><th><code>deref</code></th></tr></thead>
+        <tbody>
+          <tr><td>参照ではない <code>5</code></td><td><code>5</code></td><td><code>5</code></td></tr>
+          <tr><td>参照の参照（上の図の <code>4 0 R</code>）</td><td><code>5</code></td><td><code>5</code></td></tr>
+          <tr><td>存在しない <code>99 0 R</code></td><td>エラー（<code>ObjectNotFound</code>）</td><td><code>Null</code></td></tr>
+          <tr><td>自分自身を指す参照</td><td>エラー（128 回たどって打ち切り）</td><td><code>Null</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      最後の行は、<code>5 0 obj 5 0 R endobj</code> のように<strong>自分自身を指すオブジェクト</strong>です。
+      素直にたどると永遠に終わりません。lopdf は 128 回たどったところで打ち切ってエラーにし、
+      <code>deref</code> はそれもヌルにします。壊れた PDF で止まらずに済むのは、この 2 段構えのおかげです。
+    </p>
+
+    <div class="note">
+      <span class="label">ヌルにするのは sumi の思いつきではない</span>
+      <p>
+        PDF 仕様（ISO 32000-1 の 7.3.10）は、存在しないオブジェクトへの参照を
+        <strong>エラーとせず、ヌルへの参照として扱う</strong>よう定めています。
+        <code>deref</code> の 1 行目のコメント「たどれない参照は <code>Null</code> になる」は、この決まりをそのまま書いたものです。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>&amp;</code> — 値を借りる</span>
+      <p>
+        <code>&amp;Document</code> の <code>&amp;</code> は、<strong>値そのものではなく、値を指す「借り物」</strong>を受け取るという意味です。
+        PDF 全体（<code>Document</code>）は何 MB もあるので、関数を呼ぶたびに丸ごと写していたら大変です。
+        借りるだけなら、どこにあるかを渡すだけで済みます。
+        借りた値は、読めても書き換えられません。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>'a</code> — 借りた物がいつまで使えるか</span>
+      <p>
+        <code>&lt;'a&gt;</code> や <code>&amp;'a</code> の <code>'a</code> は<strong>ライフタイム</strong>と呼ばれる印です。
+        この関数では「返す値は、受け取った <code>doc</code> と <code>obj</code> が生きているあいだ使える」という約束を表しています。
+        返すのは <code>doc</code> の中にある値か、<code>obj</code> そのものなので、筋が通っています。
+      </p>
+      <p>
+        困るのは、たどれなかったときです。関数の中で <code>Object::Null</code> を作って、その借り物を返すことはできません。
+        関数が終わった瞬間に、作ったヌルは消えてしまうからです。
+        Rust はこれを<strong>コンパイルの時点で止めます。</strong>
+        そこで、プログラムの最初から最後まで存在する <code>static NULL</code> を用意し、それを貸しています。
+        冒頭の 1 行は、このためにありました。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="get" aria-labelledby="get-title">
+  <div class="wrap">
+    <h2 id="get-title">5. 辞書を引く — <code>get</code></h2>
+
+<pre><code>/// Dictionary lookup that follows references and treats `Null` as missing.
+pub(crate) fn get&lt;'a&gt;(doc: &amp;'a Document, dict: &amp;'a Dictionary, key: &amp;[u8]) -&gt; Option&lt;&amp;'a Object&gt; {
+    match dict.get(key).ok().map(|o| deref(doc, o)) {
+        <span class="hl">Some(Object::Null) | None =&gt; None,</span>
+        some =&gt; some,
+    }
+}</code></pre>
+
+    <p>
+      辞書からキーで値を引き、参照ならたどって返します。
+      大事なのは強調した行で、<strong>値がヌルでも、キーが無くても、同じ「無い」として返します。</strong>
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>辞書の中身と <code>get</code> の結果（実測）</caption>
+        <thead><tr><th>辞書に書いてあること</th><th><code>get</code> の結果</th></tr></thead>
+        <tbody>
+          <tr><td><code>/A 5</code></td><td><code>Some(5)</code></td></tr>
+          <tr><td><code>/D 1 0 R</code>（指す先は <code>5</code>）</td><td><code>Some(5)</code></td></tr>
+          <tr><td><code>/B null</code></td><td><code>None</code></td></tr>
+          <tr><td><code>/C 2 0 R</code>（指す先は <code>null</code>）</td><td><code>None</code></td></tr>
+          <tr><td><code>/Z</code> がそもそも無い</td><td><code>None</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      これも PDF 仕様（7.3.7）の決まりです。<strong>値がヌルの項目は、項目が無いのと同じに扱う。</strong>
+      <code>get</code> を通しておけば、呼ぶ側は「キーが無い」「値がヌル」「参照の先が無い」の 3 通りを
+      区別せずに済みます。どれも <code>None</code> として 1 か所で扱えます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>Option</code> — 「有るかもしれないし、無いかもしれない」</span>
+      <p>
+        戻り値の <code>Option&lt;&amp;'a Object&gt;</code> は、
+        <strong>値が有れば <code>Some(値)</code>、無ければ <code>None</code></strong> のどちらかです。
+        実はこれも enum で、「2 通りのうちどちらか。<code>Some</code> のときだけ中身を持つ」という形をしています。
+      </p>
+      <p>
+        多くの言語では、無いことを <code>null</code> で表し、うっかり中身を読もうとして落ちます。
+        Rust では <code>Option</code> の中身を取り出すのに <code>match</code> などが必須なので、
+        <strong>「無い場合」を考えずに書くことができません。</strong>
+        値が欠けているのが当たり前の PDF を読むには、ありがたい性質です。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>.ok().map(|o| …)</code> と、<code>|</code> の 2 つの意味</span>
+      <p>
+        lopdf の <code>dict.get(key)</code> は、成功か失敗かを返す <code>Result</code> という型で答えます（<a href="#decode">8 節</a>で詳しく見ます）。
+        <code>.ok()</code> は、それを<strong>失敗の理由を捨てて <code>Option</code> に変える</strong>メソッドです。
+        続く <code>.map(|o| deref(doc, o))</code> は、「<code>Some</code> なら中身に <code>deref</code> を当てる。<code>None</code> ならそのまま」。
+      </p>
+      <p>
+        <code>|o| deref(doc, o)</code> は<strong>クロージャ</strong>と呼ばれる、その場で作る小さな関数です。
+        <code>|o|</code> が引数、うしろが本体です。
+        一方、<code>match</code> の中の <code>Some(Object::Null) | None</code> の <code>|</code> は「または」の意味です。
+        同じ記号ですが、場所で意味が変わります。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="typed" aria-labelledby="typed-title">
+  <div class="wrap">
+    <h2 id="typed-title">6. 型ごとに取り出す — <code>get_int</code> など</h2>
+
+    <p>
+      <code>get</code> で取れるのは、まだ「何かの <code>Object</code>」です。
+      呼ぶ側が欲しいのは、たいてい「幅は整数で何か」「このフラグは真か」といった<strong>決まった型の値</strong>です。
+      それを取り出す関数が並んでいます。まず土台の <code>number</code> から。
+    </p>
+
+<pre><code>pub(crate) fn number(obj: &amp;Object) -&gt; Option&lt;f64&gt; {
+    match *obj {
+        Object::Integer(i) =&gt; Some(i as f64),
+        Object::Real(r) =&gt; Some(r as f64),
+        _ =&gt; None,
+    }
+}
+
+pub(crate) fn get_number(doc: &amp;Document, dict: &amp;Dictionary, key: &amp;[u8]) -&gt; Option&lt;f64&gt; {
+    get(doc, dict, key).and_then(number)
+}</code></pre>
+
+    <p>
+      整数でも小数でも、<code>f64</code> の小数にそろえて返します。それ以外（名前や配列など）は <code>None</code>。
+      <code>get_number</code> は「辞書を引く」と「数値として読む」をつないだだけです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>match *obj</code> と <code>_</code></span>
+      <p>
+        <code>obj</code> は借り物（<code>&amp;Object</code>）なので、
+        <code>*obj</code> と書いて<strong>借り物が指している値そのもの</strong>を <code>match</code> にかけています。
+        <code>Object::Integer(i)</code> は「整数なら、その値を <code>i</code> と呼ぶ」。
+        最後の <code>_</code> は「それ以外すべて」です。
+        前回見たとおり <code>match</code> は全部の場合を書かないとコンパイルが通らないので、
+        10 通りのうち残りの 8 通りを <code>_</code> でまとめて引き受けています。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>.and_then(number)</code> — 「無いかもしれない」をつなぐ</span>
+      <p>
+        <code>and_then</code> は、<code>Some</code> のときだけ次の処理に進み、<code>None</code> ならそこで <code>None</code> を返します。
+        <code>map</code> と違うのは、<strong>次の処理自体も <code>Option</code> を返す</strong>ときに使う点です。
+        「キーが無いかもしれない」と「数値ではないかもしれない」の 2 段を、1 行でつないでいます。
+        <code>number</code> はクロージャではなく<strong>関数の名前をそのまま渡しています</strong>。
+      </p>
+    </div>
+
+    <h3>小数は、実は <code>f32</code></h3>
+
+    <p>
+      <a href="#object">2 節</a>の定義をもう一度見ると、lopdf の小数は <code>Real(f32)</code> でした。
+      <code>f32</code> は <code>f64</code> の半分の精度で、10 進数でおよそ 7 桁しか正確に持てません。
+      <code>number</code> は <code>r as f64</code> で <code>f64</code> に広げますが、
+      <strong>失った精度は戻りません。</strong>
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>辞書に書いた小数と、<code>get_number</code> の結果（実測）</caption>
+        <thead><tr><th>辞書に書いた値</th><th class="num"><code>get_number</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>0.1</code></td><td class="num">0.10000000149011612</td></tr>
+          <tr><td><code>2.9</code></td><td class="num">2.9000000953674316</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      8 桁目以降がずれています。ただ、sumi にとってはほとんど問題になりません。
+      辞書の中の小数はグラデーションの範囲（<code>/Domain</code>）や画像の <code>/Decode</code> のような値で、
+      8 桁目のずれは、256 階調の出力には現れないからです。
+      そして、<strong>色そのもの</strong>（<code>1 0 0 rg</code> の <code>1 0 0</code>）は lopdf を通さず、
+      sumi が自分で <code>f64</code> として読んでいます（<code>lexer.rs</code> の <code>parse_number</code>）。
+      前回見た <code>0.5 0.5 0.5 rg</code> の境界の話が <code>f32</code> で崩れることはありません。
+    </p>
+
+    <h3>整数、真偽、名前</h3>
+
+<pre><code>pub(crate) fn get_int(doc: &amp;Document, dict: &amp;Dictionary, key: &amp;[u8]) -&gt; Option&lt;i64&gt; {
+    get(doc, dict, key).and_then(|o| match *o {
+        Object::Integer(i) =&gt; Some(i),
+        <span class="hl">Object::Real(r) =&gt; Some(r as i64),</span>
+        _ =&gt; None,
+    })
+}
+
+pub(crate) fn get_bool(doc: &amp;Document, dict: &amp;Dictionary, key: &amp;[u8]) -&gt; Option&lt;bool&gt; {
+    match get(doc, dict, key) {
+        Some(Object::Boolean(b)) =&gt; Some(*b),
+        _ =&gt; None,
+    }
+}</code></pre>
+
+    <p>
+      <code>get_int</code> には寛容さが 1 つ入っています。強調した行で、
+      <strong>整数が来るべき場所に小数が書いてあっても受け付けます。</strong>
+      たとえば画像の幅が <code>/Width 100.0</code> と書いてあっても、100 として読めます。
+      一方の <code>get_bool</code> は厳格で、<code>true</code> / <code>false</code> 以外はすべて「無い」です。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>寛容さの違い（実測）</caption>
+        <thead><tr><th>辞書に書いた値</th><th>関数</th><th>結果</th></tr></thead>
+        <tbody>
+          <tr><td><code>2.9</code></td><td><code>get_int</code></td><td><code>Some(2)</code>（切り捨て）</td></tr>
+          <tr><td><code>-2.9</code></td><td><code>get_int</code></td><td><code>Some(-2)</code>（0 の方向へ切り捨て）</td></tr>
+          <tr><td><code>/DeviceRGB</code></td><td><code>get_int</code></td><td><code>None</code></td></tr>
+          <tr><td><code>true</code></td><td><code>get_bool</code></td><td><code>Some(true)</code></td></tr>
+          <tr><td><code>1</code></td><td><code>get_bool</code></td><td><code>None</code>（1 は真と見なさない）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>as i64</code> は四捨五入しない</span>
+      <p>
+        小数を <code>as</code> で整数にすると、<strong>小数点以下を 0 の方向へ切り捨てます</strong>。
+        2.9 は 2、-2.9 は -2 です。前回の整数版で <code>+ 128</code> を足して四捨五入していたのは、このためでした。
+      </p>
+      <p>
+        範囲外の値でも落ちないのが Rust の <code>as</code> の特徴です。
+        <code>i64</code> に入りきらない <code>1e30</code> は <code>i64</code> の最大値（9223372036854775807）に、
+        NaN は 0 になります（実測）。
+      </p>
+    </div>
+
+    <p>
+      名前を取り出す <code>get_name</code> と、名前を画面に出せる文字列にする <code>name_str</code> もあります。
+    </p>
+
+<pre><code>pub(crate) fn name_str(name: &amp;[u8]) -&gt; String {
+    String::from_utf8_lossy(name).into_owned()
+}</code></pre>
+
+    <p>
+      <a href="#object">2 節</a>で見たとおり、名前は UTF-8 とは限らないバイト列です。
+      <code>from_utf8_lossy</code> は、<strong>UTF-8 として読めないバイトを <code>�</code> に置き換えて</strong>文字列にします。
+      <code>/Caf#E9</code>（<code>E9</code> は Latin-1 の é）のバイト列を渡すと、<code>Caf�</code> になりました。
+      使われるのは「<code>/…</code> という色空間は未対応」のような警告の文章を組み立てるときなので、1 文字化けても困りません。
+      ここでも「止まらないこと」が優先されています。
+    </p>
+
+    <h3>辞書を取り出す</h3>
+
+<pre><code>/// Returns the dictionary of a dictionary or stream value.
+pub(crate) fn as_dict&lt;'a&gt;(doc: &amp;'a Document, obj: &amp;'a Object) -&gt; Option&lt;&amp;'a Dictionary&gt; {
+    match deref(doc, obj) {
+        Object::Dictionary(d) =&gt; Some(d),
+        <span class="hl">Object::Stream(s) =&gt; Some(&amp;s.dict),</span>
+        _ =&gt; None,
+    }
+}</code></pre>
+
+    <p>
+      値が辞書ならその辞書を、<strong>ストリームならストリームに付いている辞書を</strong>返します。
+      PDF では、同じ役割の値が辞書のこともストリームのこともあります。
+      たとえばグラデーションの計算式（関数）は、式の種類によって辞書だったりストリームだったりします。
+      <code>as_dict</code> を通せば、呼ぶ側はその違いを気にせず、辞書として読めます。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="arrays" aria-labelledby="arrays-title">
+  <div class="wrap">
+    <h2 id="arrays-title">7. 配列を取り出す — <code>get_numbers</code> と <code>pairs</code></h2>
+
+<pre><code>pub(crate) fn numbers(doc: &amp;Document, obj: &amp;Object) -&gt; Option&lt;Vec&lt;f64&gt;&gt; {
+    match deref(doc, obj) {
+        Object::Array(items) =&gt; <span class="hl">items.iter().map(|o| number(deref(doc, o))).collect()</span>,
+        _ =&gt; None,
+    }
+}</code></pre>
+
+    <p>
+      数値の配列を <code>Vec&lt;f64&gt;</code> として取り出します。
+      配列の要素 1 つ 1 つも参照かもしれないので、ここでも <code>deref</code> を通しています。
+      強調した 1 行は、Rust らしさが詰まった書き方です。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>.iter().map(…).collect()</code> — 全部そろうか、何も無いか</span>
+      <p>
+        <code>.iter()</code> で配列の要素を 1 つずつ取り出し、
+        <code>.map(…)</code> でそれぞれを <code>number</code> に通し、
+        <code>.collect()</code> で集めます。
+        <code>number</code> は <code>Option&lt;f64&gt;</code> を返すので、集める前は
+        「<code>Some(1.0)</code>、<code>Some(0.5)</code>、<code>None</code>……」という並びです。
+      </p>
+      <p>
+        面白いのは、戻り値の型が <code>Option&lt;Vec&lt;f64&gt;&gt;</code> なので、
+        <code>collect</code> が<strong>「1 つでも <code>None</code> があれば全体を <code>None</code> にする」</strong>集め方を自動で選ぶことです。
+        ループも <code>if</code> もありません。どう集めるかを、欲しい型から決めてくれます。
+      </p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>配列と <code>get_numbers</code> の結果（実測）</caption>
+        <thead><tr><th>辞書に書いた配列</th><th><code>get_numbers</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>[1 0.5 1 0 R]</code>（<code>1 0 R</code> の先は <code>5</code>）</td><td><code>Some([1.0, 0.5, 5.0])</code></td></tr>
+          <tr><td><code>[1 2 /X]</code></td><td><code>None</code></td></tr>
+          <tr><td><code>5</code>（配列ではない）</td><td><code>None</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      2 行目に注目してください。数値でないものが 1 つ混じると、<strong>読めた 2 つも捨てて全体を「無い」にします。</strong>
+      ここは寛容ではありません。
+      「最初の 2 つだけの範囲」のような半端な値を渡すと、呼ぶ側がそれを正しい値だと思って計算を続けてしまいます。
+      半端に読むくらいなら、「無い」と返して、呼ぶ側の既定値に任せたほうが安全です。
+    </p>
+
+    <h3>2 つずつ組にする <code>pairs</code></h3>
+
+<pre><code>pub(crate) fn pairs(nums: &amp;[f64]) -&gt; Vec&lt;[f64; 2]&gt; {
+    nums.as_chunks::&lt;2&gt;().0.to_vec()
+}</code></pre>
+
+    <p>
+      PDF には、<strong>最小値と最大値を交互に並べた配列</strong>がよく出てきます。
+      関数が受け付ける範囲 <code>/Domain [0 1]</code>、画像の値の読み替え <code>/Decode [0 1 0 1 0 1]</code> などです。
+      <code>pairs</code> は、これを <code>[[0, 1], [0, 1], [0, 1]]</code> のように 2 つずつの組にします。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>pairs</code> の結果（実測）</caption>
+        <thead><tr><th>渡した並び</th><th><code>pairs</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>[0, 1, 0, 1]</code></td><td><code>[[0, 1], [0, 1]]</code></td></tr>
+          <tr><td><code>[0, 1, 2]</code>（数が奇数）</td><td><code>[[0, 1]]</code>（余りの <code>2</code> は捨てる）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>[f64; 2]</code> と <code>as_chunks</code></span>
+      <p>
+        <code>Vec&lt;f64&gt;</code> が「何個でも」並べられるのに対し、
+        <code>[f64; 2]</code> は<strong>ちょうど 2 個</strong>と決まった並びです。
+        「最小値と最大値の組」には 2 個より多くも少なくもないので、この型がぴったりです。
+      </p>
+      <p>
+        <code>as_chunks::&lt;2&gt;()</code> は、並びを 2 個ずつの組と、組にならなかった余りに分けます。
+        <code>.0</code> は「組のほう」を選ぶ書き方で、余りは使いません。
+        この <code>as_chunks</code> は Rust 1.88 で入った比較的新しい機能です。
+        sumi の <code>Cargo.toml</code> も、必要な Rust の版を 1.88 と指定しています。
+      </p>
+    </div>
+
+    <p>
+      呼ぶ側では、<code>get_numbers</code> と <code>pairs</code> が組になって使われます（<code>function.rs</code> の 99 行目）。
+    </p>
+
+<pre><code>let domain = pairs(&amp;get_numbers(doc, dict, b"Domain").unwrap_or_else(|| vec![0.0, 1.0]));</code></pre>
+
+    <p>
+      <code>/Domain</code> が無いか、読めなければ（<code>None</code>）、<code>unwrap_or_else</code> で <code>[0, 1]</code> を代わりに使う。
+      「全部そろうか、何も無いか」の <code>get_numbers</code> と、呼ぶ側の既定値が、ここで噛み合っています。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="decode" aria-labelledby="decode-title">
+  <div class="wrap">
+    <h2 id="decode-title">8. ストリームを展開する — <code>decode_stream</code></h2>
+
+    <p>
+      ここからがこのファイルの山場です。
+      <a href="../pdf/#stream">PDF のしくみ</a>で見たとおり、実物の PDF のストリームはほぼ必ず圧縮されています。
+      色を書き換えるには、まず展開しなければなりません。
+      何で圧縮してあるかは、ストリームの辞書の <code>/Filter</code> に書いてあります。まずそれを読む関数です。
+    </p>
+
+<pre><code>/// The stream's filter names in decoding order.
+pub(crate) fn filters(doc: &amp;Document, dict: &amp;Dictionary) -&gt; Vec&lt;Vec&lt;u8&gt;&gt; {
+    match get(doc, dict, b"Filter") {
+        Some(Object::Name(n)) =&gt; vec![n.clone()],
+        Some(Object::Array(items)) =&gt; items
+            .iter()
+            .filter_map(|o| match deref(doc, o) {
+                Object::Name(n) =&gt; Some(n.clone()),
+                _ =&gt; None,
+            })
+            .collect(),
+        _ =&gt; Vec::new(),
+    }
+}</code></pre>
+
+    <p>
+      <code>/Filter /FlateDecode</code> のように名前が 1 つなら、それだけの並びを返します。
+      <code>/Filter [/ASCIIHexDecode /FlateDecode]</code> のように配列なら、書かれた順に並べます。
+      この順番が、そのまま展開する順番です。
+      ここまで読んできた <code>get</code> と <code>deref</code> を通しているので、
+      <strong><code>/Filter</code> 自体やその要素が参照で書かれていても読めます。</strong>
+      この一見地味な点が、次の <code>decode_stream</code> の存在理由になります。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>filter_map</code> と <code>.clone()</code></span>
+      <p>
+        <code>filter_map</code> は、要素ごとに <code>Option</code> を返す処理を当てて、
+        <strong><code>Some</code> だけを残し、<code>None</code> は黙って捨てます。</strong>
+        名前でない要素が混じっていても、そこだけ飛ばして続けます。
+        <a href="#arrays">7 節</a>の <code>numbers</code> が「1 つでも欠けたら全体を捨てる」だったのとは逆の、寛容な集め方です。
+      </p>
+      <p>
+        <code>n.clone()</code> は、借りている名前の<strong>写しを作る</strong>メソッドです。
+        返す並びは呼ぶ側が持ち続けるものなので、借り物ではなく自分の物として渡しています。
+      </p>
+    </div>
+
+    <h3>lopdf に任せればよいのでは?</h3>
+
+    <p>
+      実は lopdf にも、ストリームを展開する <code>decompressed_content_with_limit</code> があります。
+      <code>decode_stream</code> の最後も、結局これを呼んでいます。
+      それなのに 59 行もかけて前処理しているのはなぜか。
+      関数の説明コメントに理由が書いてあります。
+    </p>
+
+<pre><code>/// Decodes a stream with a size limit.
+///
+/// lopdf only looks at direct `/Filter` and `/DecodeParms` dictionary values, so indirect values
+/// and single-element `/DecodeParms` arrays are normalized first.</code></pre>
+
+    <p>
+      「lopdf は <code>/Filter</code> と <code>/DecodeParms</code> が<strong>参照でなく直接書かれている場合</strong>しか見ない。
+      だから、参照で書かれたものと、要素 1 つの <code>/DecodeParms</code> 配列を、先に整えておく」。
+      本当にそうなのか、同じ中身のストリームを書き方だけ変えて、lopdf と sumi に展開させてみました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>同じデータを書き方を変えて展開する（実測）</caption>
+        <thead><tr><th>ストリームの辞書</th><th>lopdf だけで展開</th><th><code>decode_stream</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>/Filter /FlateDecode</code></td><td>正しく展開</td><td>正しく展開</td></tr>
+          <tr><td><code>/Filter 3 0 R</code><br>（指す先は <code>/FlateDecode</code>）</td><td><strong>圧縮されたまま返る</strong></td><td>正しく展開</td></tr>
+          <tr><td><code>/Filter [3 0 R]</code></td><td><strong>圧縮されたまま返る</strong></td><td>正しく展開</td></tr>
+          <tr><td><code>/DecodeParms [&lt;&lt; /Predictor 12 … &gt;&gt;]</code><br>（配列で 1 つ）</td><td><strong>予測の処理が抜ける</strong></td><td>正しく展開</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      怖いのは、lopdf が<strong>どれもエラーにしない</strong>ことです。
+      2 行目と 3 行目では、圧縮されたバイト列（先頭が <code>78 9c</code> の zlib のデータ）が「展開した結果」として返ってきます。
+      lopdf の中を読むと、<code>/Filter</code> を名前として読めなかったとき、
+      「<code>/Filter</code> が無い ＝ 圧縮されていない」と同じ扱いにしていました。
+    </p>
+
+    <p>
+      4 行目の <code>/Predictor</code> は、圧縮の効きをよくするために、各行の値を「上の行との差」などに置き換えておく仕組みです。
+      パラメータを読み落とすと、この置き換えが元に戻りません。
+      2 行 3 列の小さな画像で試すと、正しくは <code>10 20 30 11 21 31</code> のところ、
+      lopdf だけでは <code>0 10 20 30 2 1 1 1</code> が返りました。
+      各行の先頭に置き換えの種類を示すバイト（<code>0</code> と <code>2</code>）が残り、
+      2 行目は差のまま（<code>1 1 1</code>）です。
+    </p>
+
+    <div class="note">
+      <span class="label">なぜ黙って間違うのがいちばん困るのか</span>
+      <p>
+        エラーなら、sumi はそのストリームを変換せずに残し、警告を出せます。
+        ところが「展開できた」と返されると、sumi には間違いに気づく手がかりがありません。
+        圧縮されたままのバイト列を、<strong>描画命令や画素だと思って処理を続けてしまいます。</strong>
+        <code>decode_stream</code> の前処理は、この「黙って間違う」経路をふさいでいます。
+      </p>
+    </div>
+
+    <h3>本体を読む</h3>
+
+<pre><code>pub(crate) fn decode_stream(
+    doc: &amp;Document,
+    stream: &amp;Stream,
+    limit: usize,
+) -&gt; Result&lt;Vec&lt;u8&gt;, Problem&gt; {
+    let filters = filters(doc, &amp;stream.dict);
+    if filters.is_empty() {                                          <span class="dim">// ① 圧縮されていない</span>
+        if stream.content.len() &gt; limit {
+            return Err(Problem::Limit(format!(
+                "a stream is larger than {limit} bytes"
+            )));
+        }
+        return Ok(stream.content.clone());
+    }
+
+    let params = match get(doc, &amp;stream.dict, b"DecodeParms") {     <span class="dim">// ② パラメータを集める</span>
+        None =&gt; None,
+        Some(Object::Dictionary(d)) =&gt; Some(d.clone()),
+        Some(Object::Array(items)) =&gt; {
+            // One entry per filter; lopdf applies a single dictionary, which is only correct when
+            // at most one filter has parameters.
+            let dicts: Vec&lt;&amp;Dictionary&gt; = items.iter().filter_map(|o| as_dict(doc, o)).collect();
+            match dicts.len() {
+                0 =&gt; None,
+                1 =&gt; Some(dicts[0].clone()),
+                _ =&gt; {
+                    return Err(Problem::unsupported(
+                        "streams with several parameterized filters",
+                    ));
+                }
+            }
+        }
+        Some(_) =&gt; None,
+    };
+
+    let direct_filter = match stream.dict.get(b"Filter") {           <span class="dim">// ③ lopdf がそのまま読めるか</span>
+        Ok(Object::Name(_)) =&gt; true,
+        Ok(Object::Array(items)) =&gt; items.iter().all(|o| matches!(o, Object::Name(_))),
+        _ =&gt; false,
+    };
+    let direct_params = matches!(
+        stream.dict.get(b"DecodeParms"),
+        Err(_) | Ok(Object::Dictionary(_))
+    );
+    if direct_filter &amp;&amp; direct_params {
+        return Ok(stream.decompressed_content_with_limit(limit)?);
+    }
+
+    let mut dict = Dictionary::new();                                <span class="dim">// ④ 整えた辞書で作り直す</span>
+    dict.set(
+        "Filter",
+        Object::Array(filters.into_iter().map(Object::Name).collect()),
+    );
+    if let Some(params) = params {
+        dict.set("DecodeParms", params);
+    }
+    let normalized = Stream::new(dict, stream.content.clone());
+    Ok(normalized.decompressed_content_with_limit(limit)?)
+}</code></pre>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 276" role="img" aria-labelledby="fig3-title">
+          <title id="fig3-title">decode_stream の分かれ道</title>
+          <defs>
+            <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="6" y="14" width="190" height="44" fill="#fff" stroke="#000"/>
+            <text x="101" y="34" text-anchor="middle">① /Filter が無い?</text>
+            <text x="101" y="50" text-anchor="middle" font-size="10" fill="#575757">filters が空</text>
+            <path d="M202 36 H300" stroke="#000" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="251" y="28" text-anchor="middle" font-size="10" fill="#575757">はい</text>
+            <rect x="306" y="14" width="408" height="44" fill="#fff" stroke="#000"/>
+            <text x="316" y="34">大きさだけ確かめて、中身をそのまま返す</text>
+            <text x="316" y="50" font-size="10" fill="#575757">上限を超えていれば Limit</text>
+
+            <path d="M101 58 V84" stroke="#000" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="110" y="76" font-size="10" fill="#575757">いいえ</text>
+            <rect x="6" y="88" width="190" height="44" fill="#fff" stroke="#000"/>
+            <text x="101" y="108" text-anchor="middle">② パラメータが 2 つ以上?</text>
+            <text x="101" y="124" text-anchor="middle" font-size="10" fill="#575757">/DecodeParms の辞書の数</text>
+            <path d="M202 110 H300" stroke="#000" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="251" y="102" text-anchor="middle" font-size="10" fill="#575757">はい</text>
+            <rect x="306" y="88" width="408" height="44" fill="#fff" stroke="#000"/>
+            <text x="316" y="108">正しく展開できないので Unsupported</text>
+            <text x="316" y="124" font-size="10" fill="#575757">変換せずに残して警告</text>
+
+            <path d="M101 132 V158" stroke="#000" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="110" y="150" font-size="10" fill="#575757">いいえ</text>
+            <rect x="6" y="162" width="190" height="44" fill="#fff" stroke="#000"/>
+            <text x="101" y="182" text-anchor="middle">③ 直接書かれている?</text>
+            <text x="101" y="198" text-anchor="middle" font-size="10" fill="#575757">参照が混じっていない</text>
+            <path d="M202 184 H300" stroke="#000" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="251" y="176" text-anchor="middle" font-size="10" fill="#575757">はい</text>
+            <rect x="306" y="162" width="408" height="44" fill="#fff" stroke="#000"/>
+            <text x="316" y="182">lopdf にそのまま渡す</text>
+            <text x="316" y="198" font-size="10" fill="#575757">元のストリームのまま</text>
+
+            <path d="M101 206 V248 H300" stroke="#000" stroke-width="1.5" fill="none" marker-end="url(#ar3)"/>
+            <text x="110" y="226" font-size="10" fill="#575757">いいえ</text>
+            <rect x="306" y="226" width="408" height="44" fill="#000"/>
+            <text x="316" y="246" fill="#fff">④ 参照を含まない辞書で作り直してから lopdf へ</text>
+            <text x="316" y="262" font-size="10" fill="#fff">元のストリームには手を付けない</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>参照も配列のパラメータも無ければ、③ から lopdf へそのまま渡ります。④ を通るのは、lopdf が読めない書き方のときだけです。</figcaption>
+    </figure>
+
+    <p>
+      ④ がこの関数の要です。<code>filters</code> が参照をたどって集めた名前の並びと、② で集めたパラメータで、
+      <strong>参照を 1 つも含まない辞書を新しく作り</strong>、中身を載せ替えたストリームを lopdf に渡します。
+      lopdf は、自分が読める形に直された辞書を受け取るので、正しく展開できます。
+      元のストリームには手を付けません。
+    </p>
+
+    <p>
+      ② で「パラメータ付きのフィルタが 2 つ以上」を未対応にしているのは、
+      lopdf がパラメータの辞書を 1 つしか受け取れないからです。
+      どのフィルタに当てるかを選べないので、正しく展開できる保証がありません。
+      <strong>黙って間違うより、「未対応」と正直に返す</strong>ほうを選んでいます。
+      README の制限事項にある「複数のフィルタにパラメータがあるストリーム」は、ここのことです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>Result</code> と <code>?</code></span>
+      <p>
+        戻り値の <code>Result&lt;Vec&lt;u8&gt;, Problem&gt;</code> は、
+        <strong>成功なら <code>Ok(展開したバイト列)</code>、失敗なら <code>Err(問題の内容)</code></strong> のどちらかです。
+        <code>Option</code> が「有る／無い」だったのに対し、<code>Result</code> は失敗の<strong>理由</strong>も運べます。
+      </p>
+      <p>
+        最後の行の <code>?</code> は、「lopdf が <code>Err</code> を返したら、ここで関数を抜けてそのエラーを返す」という意味です。
+        lopdf のエラーと sumi の <code>Problem</code> は別の型ですが、
+        <code>error.rs</code> に<strong>変換のしかた</strong>（<code>From</code>）が書いてあるので、<code>?</code> が自動で変換してくれます。
+        展開後の大きさが上限を超えたら <code>Limit</code>、lopdf が未実装なら <code>Unsupported</code>、それ以外は <code>Invalid</code> です。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>matches!</code> と <code>.all(…)</code></span>
+      <p>
+        <code>matches!(値, 形)</code> は、「値がこの形に当てはまるか」を <code>true</code> / <code>false</code> で返します。
+        <code>match</code> を 1 行で書く略記です。
+        <code>items.iter().all(|o| matches!(o, Object::Name(_)))</code> は
+        「配列の要素が<strong>全部</strong>名前か」。1 つでも参照が混じっていれば <code>false</code> になり、④ の道へ進みます。
+      </p>
+    </div>
+
+    <h3>大きさの上限 — 圧縮爆弾への備え</h3>
+
+    <p>
+      引数の <code>limit</code> は、展開してよい大きさの上限です。既定は 1 ストリームあたり 256 MB（<code>options.rs</code>）。
+      なぜ要るのかは、試してみるとすぐ分かります。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>ゼロだけのデータを Flate で圧縮する（実測）</caption>
+        <thead><tr><th>元の大きさ</th><th class="num">圧縮後</th><th class="num">比</th></tr></thead>
+        <tbody>
+          <tr><td>50,000,000 バイト（50 MB）</td><td class="num">48,584 バイト</td><td class="num">約 1/1000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      同じ値が続くデータは、1000 分の 1 以下に縮みます。
+      逆に言えば、<strong>数十 KB の PDF が、展開した途端に数十 GB に膨れ上がる</strong>ように作ることもできます。
+      上限なしに展開すれば、メモリを使い果たして落ちます。
+      この 48,584 バイトのストリームを上限 10 MB で展開させると、
+      <code>a stream decompresses to more than 10000000 bytes</code> で止まりました。
+    </p>
+
+    <p>
+      上限を超えたときの <code>Limit</code> だけは、ほかの問題と扱いが違います。
+      <code>Unsupported</code> と <code>Invalid</code> は「そのストリームを変換せずに残して警告」で済ませますが、
+      <code>Limit</code> は<strong>変換全体を止めます</strong>（<code>convert.rs</code> の <code>outcome</code>）。
+      <code>options.rs</code> のコメントにあるとおり、上限は<strong>悪意のある入力や壊れた入力から守るため</strong>のもので、
+      超えた時点で、その PDF を読み進めること自体をやめます。
+    </p>
+
+    <div class="note">
+      <span class="label">読み手として気づいたこと: このファイルにはテストがない</span>
+      <p>
+        前回の <code>color.rs</code> は 3 割強がテストでしたが、<code>objects.rs</code> には 1 つもありません。
+        ほかのファイルのテストや、PDF を丸ごと変換するテストを通して間接的に使われてはいます。
+        ただ、上の表の <strong>「参照で書かれた <code>/Filter</code>」と「配列の <code>/DecodeParms</code>」を確かめるテストは、
+        いまのリポジトリのどこにもありません。</strong>
+      </p>
+      <p>
+        この記事の表は、<code>objects.rs</code> を別の小さなクレートに写して、そこで動かして作りました。
+        同じことをテストとして残しておけば、lopdf を上げたときに挙動が変わっても気づけます。
+        前回の言い方を借りれば、今は「正しいと確かめられる」ではなく「正しいと信じる」状態です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="flate" aria-labelledby="flate-title">
+  <div class="wrap">
+    <h2 id="flate-title">9. 圧縮して書き戻す — <code>flate</code></h2>
+
+    <p>
+      展開して色を書き換えたら、今度は圧縮して PDF に戻します。最後の 3 つの関数がそれです。
+    </p>
+
+<pre><code>pub(crate) fn flate(data: &amp;[u8]) -&gt; Vec&lt;u8&gt; {
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    // Writing into a Vec cannot fail.
+    encoder.write_all(data).expect("write to Vec");
+    encoder.finish().expect("write to Vec")
+}</code></pre>
+
+    <p>
+      圧縮そのものは flate2 というライブラリに任せています。
+      <code>Compression::default()</code> は圧縮レベル 6 で、
+      <a href="../diary/#v020">開発日誌</a>に書いたとおり、レベル 9 に上げてもサイズは 1% ほどしか減らず、
+      大きな PDF では 2〜4 倍遅くなったので、この既定のままにしています。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>flate</code> で圧縮した大きさ（実測）</caption>
+        <thead><tr><th>元のデータ</th><th class="num">元</th><th class="num">圧縮後</th></tr></thead>
+        <tbody>
+          <tr><td><code>1 0 0 rg</code> から始まる 3 行の描画命令</td><td class="num">27 バイト</td><td class="num">30 バイト</td></tr>
+          <tr><td>同じ 3 行を 1000 回くり返したもの</td><td class="num">27,000 バイト</td><td class="num">113 バイト</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      1 行目では、<strong>圧縮したほうが大きくなりました。</strong>
+      zlib の形式は、先頭に 2 バイトの見出し（<code>78 9c</code>）、末尾に 4 バイトの検査用の値を付けるので、
+      ごく小さなデータでは縮む分よりこの 6 バイトのほうが大きいのです。
+      実物のページは何 KB もあり、同じ命令のくり返しも多いので、2 行目のようによく縮みます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>.expect(…)</code> — 起こらないはずの失敗</span>
+      <p>
+        <code>write_all</code> と <code>finish</code> は、書き込みに失敗するかもしれないので <code>Result</code> を返します。
+        <code>.expect("…")</code> は「<code>Ok</code> なら中身を取り出す。<code>Err</code> ならプログラムをその場で止める」。
+      </p>
+      <p>
+        プログラムを止めるのは乱暴に見えますが、書き込み先はメモリ上の <code>Vec</code> なので、失敗のしようがありません。
+        <strong>コメントの「<code>Vec</code> への書き込みは失敗しない」が、<code>expect</code> を使ってよい理由の説明になっています。</strong>
+        起こりえない失敗のために <code>Result</code> を返すと、呼ぶ側すべてに無意味なエラー処理を書かせることになります。
+      </p>
+    </div>
+
+    <h3>ストリームを作る、書き換える</h3>
+
+<pre><code>/// Creates a Flate-compressed stream.
+pub(crate) fn flate_stream(mut dict: Dictionary, data: &amp;[u8]) -&gt; Stream {
+    <span class="hl">dict.remove(b"DecodeParms");</span>
+    dict.set("Filter", Object::Name(b"FlateDecode".to_vec()));
+    Stream::new(dict, flate(data))
+}
+
+/// Replaces a stream's data with Flate-compressed `data`.
+pub(crate) fn set_flate_content(stream: &amp;mut Stream, data: &amp;[u8]) {
+    <span class="hl">stream.dict.remove(b"DecodeParms");</span>
+    stream
+        .dict
+        .set("Filter", Object::Name(b"FlateDecode".to_vec()));
+    stream.set_content(flate(data));
+}</code></pre>
+
+    <p>
+      どちらも <code>/Filter</code> を <code>/FlateDecode</code> に書き換えますが、
+      その前に<strong>強調した行で <code>/DecodeParms</code> を消しています。</strong>
+      たとえば JPEG の画像（<code>/Filter /DCTDecode</code>）を灰色にして書き戻すとき、
+      元の <code>/DecodeParms</code> は JPEG 用のパラメータです。
+      残しておくと、新しい Flate のデータに JPEG 用の指定が当てられて、読む側が正しく展開できなくなります。
+    </p>
+
+    <p>
+      実際に <code>/Filter /DCTDecode /DecodeParms &lt;&lt; /ColorTransform 1 &gt;&gt;</code> のストリームに
+      <code>set_flate_content</code> を当てると、辞書は <code>&lt;&lt;/Filter /FlateDecode/Length 30&gt;&gt;</code> になりました。
+      <code>/Length</code>（データの大きさ）は、lopdf の <code>set_content</code> が自動で直してくれます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：値の受け取り方は 3 通り</span>
+      <p>
+        この 2 つの関数と、ここまでの関数を並べると、Rust の値の受け取り方が 3 通りそろいます。
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>書き方</th><th>意味</th><th>例</th></tr></thead>
+          <tbody>
+            <tr><td><code>&amp;Dictionary</code></td><td>借りて読むだけ</td><td><code>get</code>、<code>decode_stream</code></td></tr>
+            <tr><td><code>&amp;mut Stream</code></td><td>借りて書き換える</td><td><code>set_flate_content</code></td></tr>
+            <tr><td><code>mut dict: Dictionary</code></td><td>もらって自分の物にする</td><td><code>flate_stream</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <code>set_flate_content</code> は、PDF の中にある既存のストリームを<strong>その場で書き換える</strong>ので <code>&amp;mut</code>。
+        <code>flate_stream</code> は、受け取った辞書を材料に<strong>新しいストリームを作る</strong>ので、辞書をもらってしまいます。
+        もらった物なので、中を書き換えても渡した側には影響しません。
+        <code>&amp;mut</code> で借りている間は、ほかの誰もその値を読めません。
+        「読んでいる途中で誰かが書き換える」事故を、Rust はコンパイル時に防ぎます。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="map" aria-labelledby="map-title">
+  <div class="wrap">
+    <h2 id="map-title">10. この 201 行はどこから呼ばれるか</h2>
+
+    <p>
+      <code>objects.rs</code> を使うのは 5 つのファイルです。
+      逆に <code>objects.rs</code> が使うのは lopdf と <code>error.rs</code> だけで、
+      前回の <code>color.rs</code> と同じく、<strong>いちばん下の層</strong>にあります。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 300" role="img" aria-labelledby="fig4-title">
+          <title id="fig4-title">objects.rs の呼び出し元</title>
+          <defs>
+            <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="6" y="14" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="71" y="32" text-anchor="middle" font-family="monospace" font-size="11">convert.rs</text>
+            <text x="71" y="47" text-anchor="middle" font-size="10" fill="#575757">ページの内容</text>
+
+            <rect x="150" y="14" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="215" y="32" text-anchor="middle" font-family="monospace" font-size="11">image.rs</text>
+            <text x="215" y="47" text-anchor="middle" font-size="10" fill="#575757">画像</text>
+
+            <rect x="294" y="14" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="359" y="32" text-anchor="middle" font-family="monospace" font-size="11">colorspace.rs</text>
+            <text x="359" y="47" text-anchor="middle" font-size="10" fill="#575757">色空間</text>
+
+            <rect x="438" y="14" width="130" height="40" fill="#fff" stroke="#000"/>
+            <text x="503" y="32" text-anchor="middle" font-family="monospace" font-size="11">shading.rs</text>
+            <text x="503" y="47" text-anchor="middle" font-size="10" fill="#575757">グラデーション</text>
+
+            <rect x="582" y="14" width="132" height="40" fill="#fff" stroke="#000"/>
+            <text x="648" y="32" text-anchor="middle" font-family="monospace" font-size="11">function.rs</text>
+            <text x="648" y="47" text-anchor="middle" font-size="10" fill="#575757">色の計算式</text>
+
+            <path d="M71 58 V90 H648 V58" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M215 58 V90" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M359 58 V90" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M503 58 V90" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M360 90 V116" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+            <rect x="230" y="120" width="260" height="52" fill="#000"/>
+            <text x="360" y="142" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">objects.rs</text>
+            <text x="360" y="160" text-anchor="middle" font-size="10" fill="#fff">201 行・18 の関数</text>
+
+            <path d="M300 172 V204" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <path d="M420 172 V204" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <rect x="200" y="208" width="160" height="40" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
+            <text x="280" y="226" text-anchor="middle" font-family="monospace" font-size="11">lopdf</text>
+            <text x="280" y="241" text-anchor="middle" font-size="10" fill="#575757">外部のライブラリ</text>
+            <rect x="380" y="208" width="140" height="40" fill="#fff" stroke="#000"/>
+            <text x="450" y="226" text-anchor="middle" font-family="monospace" font-size="11">error.rs</text>
+            <text x="450" y="241" text-anchor="middle" font-size="10" fill="#575757">Problem</text>
+
+            <text x="6" y="284" font-size="11" fill="#575757">矢印は「使う」向き。content.rs・lexer.rs・color.rs は objects.rs を使いません。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>PDF の辞書を読むファイルは、ほぼすべてここを通ります。</figcaption>
+    </figure>
+
+    <p>
+      いちばん多く呼ばれているのは <code>get_numbers</code>（15 か所）と <code>get_int</code>（11 か所）です。
+      たとえば <code>image.rs</code> の 59 行目では、画像の幅をこう読んでいます。
+    </p>
+
+<pre><code>let width = get_int(doc, dict, b"Width")
+    .filter(|&amp;w| w &gt; 0)
+    .ok_or_else(|| Problem::invalid("image without /Width"))? as usize;</code></pre>
+
+    <p>
+      <code>get_int</code> が「無い」か、あっても 0 以下なら、「幅の無い画像」という <code>Invalid</code> にして、この画像の変換をあきらめます。
+      <code>objects.rs</code> は<strong>「無い」と返すところまで</strong>を受け持ち、
+      無いときにどうするか（既定値を使う、あきらめる）は、呼ぶ側が場面ごとに決めています。
+      この役割分担が、この回でいちばん持ち帰ってほしいところです。
+    </p>
+
+    <div class="note">
+      <span class="label">この回のまとめ</span>
+      <p>
+        PDF の値は、中身を持つ enum の <code>Object</code> で表されていました。
+        <code>objects.rs</code> はその上に、<strong>壊れているかもしれない PDF を寛容に読むための約束</strong>を重ねています。
+        たどれない参照はヌル、ヌルは「無い」、「無い」は <code>None</code>。
+        この 3 段で、呼ぶ側は欠けた値を 1 通りの方法で扱えます。
+      </p>
+      <p>
+        一方で、寛容にしない場所もありました。
+        数値の配列は 1 つでも欠けたら捨てる。パラメータの当て先が分からないストリームは「未対応」と返す。
+        膨れ上がるストリームは変換ごと止める。
+        <strong>「黙って間違う」よりは「無い」「できない」と正直に返す</strong>。寛容さの線は、そこに引かれています。
+      </p>
+    </div>
+
+    <h3>次に読むもの</h3>
+
+    <p>
+      次は <code>lexer.rs</code>（495 行）です。
+      <code>decode_stream</code> で展開したコンテンツストリームは、<code>1 0 0 rg</code> のような文字の並びです。
+      これを「数値 1」「数値 0」「数値 0」「命令 rg」に切り分けるのが字句解析（lexer）で、
+      6 節で触れた、色の数値を <code>f64</code> で読む <code>parse_number</code> もここにあります。
+    </p>
+
+    <p>
+      その前に手を動かしたい人は、次のコマンドで lopdf の <code>Object</code> の定義と、
+      <code>objects.rs</code> の関数がどこで使われているかを見てみてください。
+    </p>
+
+<pre><code><span class="dim"># lopdf の Object の定義を見る（一度 cargo build したあとなら手元にある）</span>
+grep -n "pub enum Object" -A11 ~/.cargo/registry/src/*/lopdf-0.45.0/src/object.rs
+
+<span class="dim"># get_numbers がどこで呼ばれているかを数える</span>
+grep -n "get_numbers(" crates/sumi-core/src/*.rs
+
+<span class="dim"># lopdf が /Filter を読めないときに「圧縮なし」と扱っている箇所</span>
+grep -n "No /Filter key" -A6 ~/.cargo/registry/src/*/lopdf-0.45.0/src/object.rs</code></pre>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>sumi — PDF の色をグレースケール・白黒 2 値に変換する Rust 製ライブラリ兼 CLI。MIT ライセンス。</p>
+  </div>
+</footer>
+
+</body>
+</html>
