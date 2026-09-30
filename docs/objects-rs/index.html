@@ -541,7 +541,7 @@ pub(crate) fn deref&lt;'a&gt;(doc: &amp;'a Document, obj: &amp;'a Object) -&gt; 
     <div class="note">
       <span class="label">ヌルにするのは sumi の思いつきではない</span>
       <p>
-        <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=29" target="_blank" rel="noopener">PDF 仕様（ISO 32000-1 の 7.3.10）</a>は、存在しないオブジェクトへの参照を
+        <a href="https://web.archive.org/web/20260827044602/https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=29" target="_blank" rel="noopener">PDF 仕様（ISO 32000-1 の 7.3.10）</a>は、存在しないオブジェクトへの参照を
         <strong>エラーとせず、ヌルへの参照として扱う</strong>よう定めています。
         <code>deref</code> の 1 行目のコメント「たどれない参照は <code>Null</code> になる」は、この決まりをそのまま書いたものです。
       </p>
@@ -607,7 +607,7 @@ pub(crate) fn get&lt;'a&gt;(doc: &amp;'a Document, dict: &amp;'a Dictionary, key
     </div>
 
     <p>
-      これも <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=26" target="_blank" rel="noopener">PDF 仕様（7.3.7）</a>の決まりです。<strong>値がヌルの項目は、項目が無いのと同じに扱う。</strong>
+      これも <a href="https://web.archive.org/web/20260827044602/https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=26" target="_blank" rel="noopener">PDF 仕様（7.3.7）</a>の決まりです。<strong>値がヌルの項目は、項目が無いのと同じに扱う。</strong>
       <code>get</code> を通しておけば、呼ぶ側は「キーが無い」「値がヌル」「参照の先が無い」の 3 通りを
       区別せずに済みます。どれも <code>None</code> として 1 か所で扱えます。
     </p>
