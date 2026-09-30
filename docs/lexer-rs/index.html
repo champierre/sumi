@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lexer.rs を読む | sumi</title>
+<meta name="description" content="sumi のコードリーディング第 3 回。495 行の lexer.rs を、Rust を知らない前提で読み解きます。ページの中身を切れ端に分ける字句解析、位置だけを覚えて命令以外をそのまま写す設計、数の読み方、インライン画像の終わりの探し方まで、実際に動かした結果とともに解説します。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* 体裁は第 1 回（color.rs を読む）と同じ。色は墨の五彩だけ。 */
+  :root {
+    --kami: #f2f2f2;
+    --shiro: #ffffff;
+    --sho: #000000;
+    --no: #2b2b2b;
+    --ju: #575757;
+    --tan: #9b9b9b;
+    --sei: #d4d4d4;
+    --usu: #ebebeb;
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    /* コード例が主役なので等幅を先に置く。BIZ UDGothic が先頭だと ASCII の数字が
+       全角幅で組まれ、"0.30 * r" のような式が間延びする。 */
+    --code: ui-monospace, "SFMono-Regular", Menlo, Consolas, "BIZ UDGothic", monospace;
+
+    --measure: 40em;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+  }
+
+  img, svg { max-width: 100%; }
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ヘッダ（トップページと同じ。角印は請求書に押した社印のイメージ） */
+  .site-header { padding-block: 20px; border-bottom: 1px solid var(--sei); background: var(--shiro); }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: var(--sho); }
+  .seal {
+    display: inline-grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 3px solid var(--sho);
+    font-family: var(--mincho);
+    font-weight: 800;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--sho);
+  }
+  .brand-name { font-family: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 1.25rem; letter-spacing: 0.02em; }
+  .site-nav { display: flex; gap: clamp(12px, 3vw, 28px); font-size: 0.9375rem; }
+  .site-nav a { text-decoration: none; color: var(--ju); }
+  .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+  .site-header .site-nav { margin-left: auto; }
+
+  /* 見出し */
+  .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
+  .page-head .kicker {
+    font-family: var(--code); font-size: .8125rem; color: var(--ju);
+    letter-spacing: .08em; margin: 0 0 .8em;
+  }
+  .page-head h1 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
+    margin: 0 0 .4em;
+  }
+  .lede { max-width: var(--measure); color: var(--ju); margin: 0 0 1em; }
+
+  .section { padding-block: clamp(32px, 6vw, 56px); }
+  .section h2 {
+    font-family: var(--mincho); font-weight: 800;
+    font-size: clamp(1.3rem, 3.4vw, 1.75rem); line-height: 1.5;
+    margin: 0 0 .8em; padding-bottom: .35em; border-bottom: 2px solid var(--sho);
+  }
+  .section h3 {
+    font-family: var(--mincho); font-weight: 700;
+    font-size: 1.125rem; margin: 2.2em 0 .5em;
+  }
+  .section p, .section li { max-width: var(--measure); }
+
+  /* 目次 */
+  .toc { background: var(--shiro); border: 1px solid var(--sei); padding: 20px 24px; max-width: var(--measure); }
+  .toc h2 { font-family: var(--mincho); font-size: 1rem; margin: 0 0 .5em; border: 0; padding: 0; }
+  .toc ol { margin: 0; padding-left: 1.4em; }
+  .toc li { margin-bottom: .2em; }
+  .toc a { color: var(--no); }
+
+  /* 連載の目次（各回へのリンク）。見た目は上の .toc と同じ */
+  .series { margin-bottom: 1.2em; }
+  .series ol { list-style: none; padding-left: 0; }
+
+  /* 表 */
+  .scroll { overflow-x: auto; margin: 1.2em 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; min-width: 26em; }
+  caption { text-align: left; color: var(--ju); font-size: .875rem; padding-bottom: .5em; }
+  th, td { border-bottom: 1px solid var(--sei); padding: .5em .7em; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--sho); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--code); white-space: nowrap; }
+  td code { white-space: nowrap; }
+
+  /* 補足の囲み */
+  .note {
+    background: var(--shiro); border-left: 3px solid var(--sho);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .note p { margin: 0 0 .5em; }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  /* Rust の文法メモ */
+  .rust {
+    background: var(--usu); border-left: 3px solid var(--tan);
+    padding: 14px 18px; margin: 1.4em 0; max-width: var(--measure);
+  }
+  .rust .label {
+    font-family: var(--mincho); font-weight: 700; font-size: .9375rem;
+    display: block; margin-bottom: .3em;
+  }
+  .rust p { margin: 0 0 .5em; }
+  .rust p:last-child { margin-bottom: 0; }
+
+  code {
+    font-family: var(--code); font-size: .9em;
+    background: var(--shiro); padding: .1em .35em; border: 1px solid var(--sei);
+  }
+  pre {
+    font-family: var(--code); font-size: .875rem; line-height: 1.7;
+    background: var(--shiro); border: 1px solid var(--sei);
+    padding: 14px 16px; overflow-x: auto; margin: 1em 0;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; }
+  pre .hl { background: #e4e4e4; font-weight: 700; padding: .05em .2em; }
+  pre .dim { color: var(--tan); }
+
+  /* 図 */
+  figure { margin: 1.6em 0; max-width: var(--measure); }
+  figure.wide { max-width: 100%; }
+  figcaption { font-size: .875rem; color: var(--ju); margin-top: .6em; }
+  .fig { background: var(--shiro); border: 1px solid var(--sei); padding: 18px; }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig svg text[font-family="monospace"] { font-family: var(--code); letter-spacing: 0; }
+
+  /* 用語 */
+  dl.terms { max-width: var(--measure); margin: 1.2em 0; }
+  dl.terms dt { font-weight: 700; margin-top: 1em; }
+  dl.terms dd { margin: .2em 0 0; padding-left: 1.2em; border-left: 2px solid var(--sei); }
+
+  .site-footer {
+    border-top: 1px solid var(--sei); background: var(--shiro);
+    padding-block: 28px; margin-top: clamp(40px, 8vw, 72px);
+    color: var(--ju); font-size: .9375rem;
+  }
+  .site-footer p { max-width: var(--measure); }
+
+  @media (max-width: 640px) {
+    .site-nav a:not(:last-child) { display: none; }
+    .site-header .wrap { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="sumi トップ">
+      <span class="seal" aria-hidden="true">墨</span>
+      <span class="brand-name">sumi</span>
+    </a>
+    <nav class="site-nav" aria-label="サイト内">
+      <a href="../">sumi とは</a>
+      <a href="../pdf/">PDF のしくみ</a>
+      <a href="../color-rs/">コードを読む</a>
+      <a href="../diary/">開発日誌</a>
+      <a href="https://github.com/champierre/sumi" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap page-head">
+  <p class="kicker">コードリーディング 第 3 回</p>
+  <h1><code style="font:inherit;background:none;border:0;padding:0;">lexer.rs</code> を読む</h1>
+  <!-- 連載の目次。新しい回を書いたら、各ページのこのリストに 1 行足す -->
+  <nav class="toc series" aria-label="コードを読む の各回">
+    <h2>コードを読む</h2>
+    <ol>
+      <li><a href="../color-rs/">第 1 回 <code>color.rs</code></a></li>
+      <li><a href="../objects-rs/">第 2 回 <code>objects.rs</code></a></li>
+      <li><strong>第 3 回 <code>lexer.rs</code>（本記事）</strong></li>
+    </ol>
+  </nav>
+  <p class="lede">
+    <a href="../objects-rs/">前回</a>の <code>decode_stream</code> で、圧縮されたページの中身を展開しました。
+    出てくるのは <code>1 0 0 rg</code> のような<strong>文字の並び</strong>です。
+    今回は、これを「数 1」「数 0」「数 0」「命令 rg」に切り分ける 495 行の <code>lexer.rs</code> を読みます。
+  </p>
+  <p class="lede">
+    これまでと同じく、Rust は知らない前提で進めます。
+    文法は出てきたところで、<strong>灰色の囲みで説明します。</strong>
+  </p>
+
+  <div class="note">
+    <span class="label">この回で分かること</span>
+    <p>
+      <a href="../pdf/#stream">PDF のしくみ</a>で見た描画命令の並びを、プログラムはどうやって読んでいるか。
+      そして、<strong>読んだあとに「命令だけ書き換えて、ほかは 1 バイトも変えない」ための工夫</strong>です。
+      Rust の <code>?</code>、<code>loop</code> で値を返す書き方、再帰が出てきます。
+    </p>
+  </div>
+
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#whole">まず全体を眺める</a></li>
+      <li><a href="#what">字句解析とは — <code>1 0 0 rg</code> を 4 つに切る</a></li>
+      <li><a href="#token">切れ端の形 — <code>Kind</code> と <code>Token</code></a></li>
+      <li><a href="#chars">バイトを 3 つに分ける — <code>is_whitespace</code> など</a></li>
+      <li><a href="#lexer">読む位置を覚える — <code>Lexer</code></a></li>
+      <li><a href="#skip">空白とコメントを飛ばす</a></li>
+      <li><a href="#next">心臓部 — <code>next_token</code></a></li>
+      <li><a href="#number">数を読む — <code>parse_number</code></a></li>
+      <li><a href="#inline">画像の終わりを探す — <code>inline_image_data</code></a></li>
+      <li><a href="#object">小さな読み書き — <code>parse_object</code> と <code>write_object</code></a></li>
+      <li><a href="#decode">名前と文字列を戻す — <code>decode_name</code> と <code>decode_string</code></a></li>
+      <li><a href="#tests">テストを読む</a></li>
+      <li><a href="#map">この 495 行はどこから呼ばれるか</a></li>
+    </ol>
+  </div>
+</div>
+
+<section class="section" id="whole" aria-labelledby="whole-title">
+  <div class="wrap">
+    <h2 id="whole-title">1. まず全体を眺める</h2>
+
+    <p>
+      これまでの 2 回より倍以上長いファイルですが、部品は 5 つに分かれます。
+      <strong>切れ端の型、バイトの分類、切り分ける本体、切れ端を値に戻す関数、テスト</strong>です。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 330" role="img" aria-labelledby="fig1-title">
+          <title id="fig1-title">lexer.rs の構成</title>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="10" y="10" width="700" height="26" fill="#ebebeb" stroke="#9b9b9b"/>
+            <text x="20" y="28" font-family="monospace" font-size="11">1–4 行</text>
+            <text x="120" y="28" fill="#575757">説明のコメントと use</text>
+
+            <rect x="10" y="42" width="340" height="52" fill="#fff" stroke="#000"/>
+            <text x="20" y="60" font-family="monospace" font-size="11">6–24 行</text>
+            <text x="120" y="60" fill="#2b2b2b">切れ端の型</text>
+            <text x="20" y="80" font-family="monospace" font-size="11" fill="#575757">enum Kind / struct Token</text>
+
+            <rect x="10" y="100" width="340" height="52" fill="#fff" stroke="#000"/>
+            <text x="20" y="118" font-family="monospace" font-size="11">26–39 行</text>
+            <text x="120" y="118" fill="#2b2b2b">バイトの分類</text>
+            <text x="20" y="138" font-family="monospace" font-size="11" fill="#575757">is_whitespace / is_delimiter / is_regular</text>
+
+            <rect x="10" y="158" width="340" height="104" fill="#fff" stroke="#000" stroke-width="2"/>
+            <text x="20" y="176" font-family="monospace" font-size="11">41–190 行</text>
+            <text x="120" y="176" font-weight="700">切り分ける本体</text>
+            <text x="20" y="196" font-family="monospace" font-size="11" fill="#575757">struct Lexer / new / data / text</text>
+            <text x="20" y="214" font-family="monospace" font-size="11" fill="#575757">skip_whitespace_and_comments</text>
+            <text x="20" y="232" font-family="monospace" font-size="11" fill="#575757">next_token（67 行）</text>
+            <text x="20" y="250" font-family="monospace" font-size="11" fill="#575757">inline_image_data / looks_like_content</text>
+
+            <rect x="370" y="42" width="340" height="150" fill="#fff" stroke="#000"/>
+            <text x="380" y="60" font-family="monospace" font-size="11">192–416 行</text>
+            <text x="480" y="60" fill="#2b2b2b">切れ端を値に戻す</text>
+            <text x="380" y="80" font-family="monospace" font-size="11" fill="#575757">parse_number</text>
+            <text x="380" y="98" font-family="monospace" font-size="11" fill="#575757">parse_object / write_object</text>
+            <text x="380" y="116" font-family="monospace" font-size="11" fill="#575757">decode_name / decode_string</text>
+            <text x="380" y="146" fill="#575757" font-size="11">ここだけで 225 行。</text>
+            <text x="380" y="164" fill="#575757" font-size="11">切り分けるより、値に戻すほうが</text>
+            <text x="380" y="182" fill="#575757" font-size="11">書くことが多い。</text>
+
+            <rect x="370" y="198" width="340" height="64" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
+            <text x="380" y="216" font-family="monospace" font-size="11">418–495 行</text>
+            <text x="480" y="216" fill="#2b2b2b">テスト（4 つ、全体の 16%）</text>
+            <text x="380" y="236" fill="#575757" font-size="11">・20 個の切れ端が正しく出るか　・数の書き方</text>
+            <text x="380" y="254" fill="#575757" font-size="11">・名前と文字列の復元　・画像の中の偽の EI</text>
+
+            <text x="10" y="292" font-size="11" fill="#575757">左の太枠が「切る」側、右が「戻す」側。両方をつなぐのが Token（切れ端の位置）です。</text>
+            <text x="10" y="312" font-size="11" fill="#575757">前回は 0 だったテストが、今回は 4 つあります。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>495 行の内訳。行番号は v0.2.0 のものです（このファイルは最初のコミットから変わっていません）。</figcaption>
+    </figure>
+
+    <p>
+      1〜2 行目のコメントに、このファイルの狙いが書いてあります。
+    </p>
+
+<pre><code>//! Content stream tokenizer that keeps byte offsets, so the rewriter can replace individual
+//! operators and copy everything else verbatim.</code></pre>
+
+    <p>
+      「<strong>バイト位置を覚えておく</strong>コンテンツストリームのトークナイザ。
+      おかげで書き換え側は、個々の命令だけを置き換えて、<strong>ほかは一字一句そのまま写せる</strong>」。
+      切り分けるだけなら簡単ですが、「位置を覚える」が、このファイルの設計を決めています。
+      理由は <a href="#token">3 節</a>で分かります。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="what" aria-labelledby="what-title">
+  <div class="wrap">
+    <h2 id="what-title">2. 字句解析とは — <code>1 0 0 rg</code> を 4 つに切る</h2>
+
+    <p>
+      <a href="../pdf/#stream">PDF のしくみ</a>で見たとおり、ページの中身は次のような命令の並びです。
+    </p>
+
+<pre><code>1 0 0 rg
+/F1 12 Tf
+(Hello) Tj</code></pre>
+
+    <p>
+      人が見れば「赤にする」「フォント F1 を 12 ポイントで」「Hello を書く」と読めますが、
+      プログラムにとっては <code>1 0 0 rg\n/F1 12 Tf\n(Hello) Tj</code> という 1 本のバイト列です。
+      これを意味のある最小の切れ端に分ける仕事を<strong>字句解析（lexical analysis）</strong>、
+      する部品を <strong>lexer</strong> または tokenizer、切れ端を <strong>token</strong> と呼びます。
+      ファイル名の <code>lexer.rs</code> はここから来ています。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 150" role="img" aria-labelledby="fig2-title">
+          <title id="fig2-title">バイト列がトークンに切り分けられる様子</title>
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <text x="6" y="18" font-weight="700">入力（バイト列）</text>
+            <g font-family="monospace" font-size="13">
+              <rect x="6" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="19" y="48" text-anchor="middle">1</text>
+              <rect x="32" y="28" width="26" height="30" fill="#ebebeb" stroke="#000"/><text x="45" y="48" text-anchor="middle" fill="#9b9b9b">␣</text>
+              <rect x="58" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="71" y="48" text-anchor="middle">0</text>
+              <rect x="84" y="28" width="26" height="30" fill="#ebebeb" stroke="#000"/><text x="97" y="48" text-anchor="middle" fill="#9b9b9b">␣</text>
+              <rect x="110" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="123" y="48" text-anchor="middle">0</text>
+              <rect x="136" y="28" width="26" height="30" fill="#ebebeb" stroke="#000"/><text x="149" y="48" text-anchor="middle" fill="#9b9b9b">␣</text>
+              <rect x="162" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="175" y="48" text-anchor="middle">r</text>
+              <rect x="188" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="201" y="48" text-anchor="middle">g</text>
+              <rect x="214" y="28" width="26" height="30" fill="#ebebeb" stroke="#000"/><text x="227" y="48" text-anchor="middle" fill="#9b9b9b">⏎</text>
+              <rect x="240" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="253" y="48" text-anchor="middle">/</text>
+              <rect x="266" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="279" y="48" text-anchor="middle">F</text>
+              <rect x="292" y="28" width="26" height="30" fill="#fff" stroke="#000"/><text x="305" y="48" text-anchor="middle">1</text>
+              <text x="330" y="48" fill="#9b9b9b">…</text>
+            </g>
+            <g font-size="10" fill="#575757" font-family="monospace">
+              <text x="19" y="72" text-anchor="middle">0</text>
+              <text x="71" y="72" text-anchor="middle">2</text>
+              <text x="123" y="72" text-anchor="middle">4</text>
+              <text x="175" y="72" text-anchor="middle">6</text>
+              <text x="201" y="72" text-anchor="middle">7</text>
+              <text x="253" y="72" text-anchor="middle">9</text>
+            </g>
+
+            <path d="M360 44 H420" stroke="#000" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <text x="390" y="36" text-anchor="middle" font-size="10" fill="#575757">Lexer</text>
+
+            <text x="436" y="18" font-weight="700">出力（Token の列）</text>
+            <g font-family="monospace" font-size="11">
+              <rect x="436" y="28" width="130" height="22" fill="#fff" stroke="#000"/><text x="442" y="43">Number  0..1</text>
+              <rect x="436" y="52" width="130" height="22" fill="#fff" stroke="#000"/><text x="442" y="67">Number  2..3</text>
+              <rect x="436" y="76" width="130" height="22" fill="#fff" stroke="#000"/><text x="442" y="91">Number  4..5</text>
+              <rect x="436" y="100" width="130" height="22" fill="#000"/><text x="442" y="115" fill="#fff">Keyword 6..8</text>
+              <rect x="576" y="28" width="130" height="22" fill="#fff" stroke="#000"/><text x="582" y="43">Name    9..12</text>
+              <rect x="576" y="52" width="130" height="22" fill="#fff" stroke="#000"/><text x="582" y="67">Number 13..15</text>
+              <rect x="576" y="76" width="130" height="22" fill="#000"/><text x="582" y="91" fill="#fff">Keyword 16..18</text>
+              <text x="582" y="115" fill="#9b9b9b">…</text>
+            </g>
+            <text x="6" y="100" font-size="11" fill="#575757">空白は切れ端にならず、切れ目の役目だけ</text>
+            <text x="6" y="116" font-size="11" fill="#575757">果たして消えます。</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Token が持っているのは「種類」と「何バイト目から何バイト目まで」だけです。文字そのものは持ちません。</figcaption>
+    </figure>
+
+    <p>
+      図の右側がこのファイルの出力です。
+      <strong>「1」という文字ではなく「0 バイト目から 1 バイト目まで」という位置</strong>を返しています。
+      これが 1 行目のコメントにあった「バイト位置を覚えておく」の意味です。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="token" aria-labelledby="token-title">
+  <div class="wrap">
+    <h2 id="token-title">3. 切れ端の形 — <code>Kind</code> と <code>Token</code></h2>
+
+<pre><code>#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Kind {
+    Number,
+    Name,
+    String,
+    ArrayOpen,
+    ArrayClose,
+    DictOpen,
+    DictClose,
+    /// Operators, `true`/`false`/`null` and stray bytes.
+    Keyword,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Token {
+    pub kind: Kind,
+    pub start: usize,
+    pub end: usize,
+}</code></pre>
+
+    <p>
+      切れ端の種類は 8 つです。<a href="../pdf/#objects">PDF の値の種類</a>と見比べると、対応がすぐ分かります。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>切れ端の種類と、コンテンツストリームでの書き方</caption>
+        <thead><tr><th><code>Kind</code></th><th>書き方</th><th>PDF での意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>Number</code></td><td><code>1</code> <code>0.5</code> <code>-3.</code></td><td>数値（整数と小数の区別はここではしない）</td></tr>
+          <tr><td><code>Name</code></td><td><code>/F1</code> <code>/DeviceRGB</code></td><td>名前</td></tr>
+          <tr><td><code>String</code></td><td><code>(Hello)</code> <code>&lt;48656c&gt;</code></td><td>文字列（括弧のものと 16 進のもの）</td></tr>
+          <tr><td><code>ArrayOpen</code> / <code>ArrayClose</code></td><td><code>[</code> <code>]</code></td><td>配列の始まりと終わり</td></tr>
+          <tr><td><code>DictOpen</code> / <code>DictClose</code></td><td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td><td>辞書の始まりと終わり</td></tr>
+          <tr><td><code>Keyword</code></td><td><code>rg</code> <code>Tj</code> <code>true</code></td><td>命令、<code>true</code>/<code>false</code>/<code>null</code>、それ以外の変なバイト</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      配列と辞書は「始まり」と「終わり」の記号を別々の切れ端にするだけで、
+      <strong>中身をまとめて 1 つの配列にはしません。</strong>
+      入れ子をたどるのは字句解析の次の段階（構文解析）の仕事で、
+      このファイルでは <a href="#object">10 節</a>の <code>parse_object</code> が、必要なときだけそれをします。
+    </p>
+
+    <p>
+      <code>Keyword</code> のコメントに「stray bytes（はぐれたバイト）」とあります。
+      たとえば対応する <code>(</code> のない <code>)</code> のような、どの種類にも当てはまらないバイトも、
+      エラーにせず 1 バイトの <code>Keyword</code> にします。
+      <strong>lexer は決して失敗しません。</strong>
+      前回の「寛容に読む」が、ここでも貫かれています。
+    </p>
+
+    <h3>なぜ文字ではなく位置を持つのか</h3>
+
+    <p>
+      <code>Token</code> の中身は <code>kind</code>、<code>start</code>、<code>end</code> の 3 つだけ。
+      切れ端の文字そのものを持たないのは、<strong>sumi の仕事が「命令の置き換え」だから</strong>です。
+    </p>
+
+    <p>
+      sumi が書き換えたいのは <code>1 0 0 rg</code> のような色の命令だけで、
+      文字の位置や字形、パスの座標には触りたくありません。
+      触らないことを確実にするいちばん簡単な方法は、<strong>元のバイト列を、書き換える範囲以外そのままコピーする</strong>ことです。
+      そのためには「どこからどこまでが <code>1 0 0 rg</code> だったか」の位置が要ります。
+      文字を切り出して持ってしまうと、逆に位置が分からなくなります。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 130" role="img" aria-labelledby="fig3-title">
+          <title id="fig3-title">位置を使って、命令だけ置き換える</title>
+          <g font-family="sans-serif" font-size="12">
+            <text x="6" y="18" font-weight="700">元のバイト列</text>
+            <rect x="6" y="28" width="210" height="30" fill="#fff" stroke="#000"/>
+            <text x="111" y="48" text-anchor="middle" font-family="monospace" font-size="12">q 1 0 0 1 50 700 cm</text>
+            <rect x="216" y="28" width="90" height="30" fill="#000"/>
+            <text x="261" y="48" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">1 0 0 rg</text>
+            <rect x="306" y="28" width="220" height="30" fill="#fff" stroke="#000"/>
+            <text x="416" y="48" text-anchor="middle" font-family="monospace" font-size="12">/F1 12 Tf (Hello) Tj Q</text>
+            <text x="216" y="74" font-family="monospace" font-size="10" fill="#575757">start</text>
+            <text x="286" y="74" font-family="monospace" font-size="10" fill="#575757">end</text>
+
+            <text x="6" y="104" font-weight="700">出力</text>
+            <rect x="60" y="86" width="156" height="30" fill="#fff" stroke="#000"/>
+            <text x="138" y="106" text-anchor="middle" font-size="11" fill="#575757">そのままコピー</text>
+            <rect x="216" y="86" width="90" height="30" fill="#000"/>
+            <text x="261" y="106" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">0.3 g</text>
+            <rect x="306" y="86" width="220" height="30" fill="#fff" stroke="#000"/>
+            <text x="416" y="106" text-anchor="middle" font-size="11" fill="#575757">そのままコピー</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>書き換え側（<code>content.rs</code>）は、<code>start</code> より前をコピーし、新しい命令を書き、<code>end</code> から先をまたコピーします。</figcaption>
+    </figure>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>usize</code> と、<code>start..end</code></span>
+      <p>
+        <code>usize</code> は「大きさや位置を表す整数」で、負になりません。
+        配列の何番目、バイト列の何バイト目、といった値にはこの型を使います。
+      </p>
+      <p>
+        <code>start..end</code> は「<code>start</code> 以上 <code>end</code> 未満」の範囲です。
+        <code>0..1</code> なら 0 バイト目だけ、<code>6..8</code> なら 6 と 7 バイト目。
+        終わりを含まないので、<strong>長さは <code>end - start</code></strong>、
+        次の切れ端は <code>end</code> から始まる、と計算がきれいになります。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>PartialEq, Eq</code></span>
+      <p>
+        <code>Kind</code> の <code>derive</code> には、第 1 回で見た <code>Debug, Clone, Copy</code> に加えて
+        <code>PartialEq, Eq</code> があります。これは <strong><code>==</code> で比べられるようにする</strong>指定です。
+        呼ぶ側の <code>token.kind != Kind::Keyword</code> のような比較は、これがないと書けません。
+        <code>Token</code> に付いていないのは、位置まで含めて 2 つの切れ端を比べる場面がないからです。
+      </p>
+    </div>
+
+    <p>
+      3 つとも小さな値なので、<code>Token</code> 全体で 24 バイトです（実測）。
+      1 ページ分の切れ端をすべて <code>Vec</code> に入れても、数十 KB で済みます。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="chars" aria-labelledby="chars-title">
+  <div class="wrap">
+    <h2 id="chars-title">4. バイトを 3 つに分ける — <code>is_whitespace</code> など</h2>
+
+<pre><code>pub(crate) fn is_whitespace(b: u8) -&gt; bool {
+    matches!(b, b'\0' | b'\t' | b'\n' | b'\x0c' | b'\r' | b' ')
+}
+
+pub(crate) fn is_delimiter(b: u8) -&gt; bool {
+    matches!(
+        b,
+        b'(' | b')' | b'&lt;' | b'&gt;' | b'[' | b']' | b'{' | b'}' | b'/' | b'%'
+    )
+}
+
+pub(crate) fn is_regular(b: u8) -&gt; bool {
+    !is_whitespace(b) &amp;&amp; !is_delimiter(b)
+}</code></pre>
+
+    <p>
+      切り分けの土台は、<strong>1 バイトを 3 種類のどれかに分類する</strong>ことです。
+      <a href="https://web.archive.org/web/20260827044602/https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=20" target="_blank" rel="noopener">PDF 仕様（7.2.2）</a>が、そのとおりに 3 つに分けています。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>PDF 仕様 7.2.2 の 3 分類</caption>
+        <thead><tr><th>分類</th><th>バイト</th><th>役目</th></tr></thead>
+        <tbody>
+          <tr><td>空白（white-space）</td><td>NUL、タブ、改行、改ページ、復帰、スペースの 6 つ</td><td>切れ目。何個並んでも 1 つの切れ目</td></tr>
+          <tr><td>区切り（delimiter）</td><td><code>( ) &lt; &gt; [ ] { } / %</code> の 10 個</td><td>切れ目であり、それ自身が意味を持つ</td></tr>
+          <tr><td>普通（regular）</td><td>それ以外すべて</td><td>数、命令、名前の本体</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      大事なのは、<strong>区切りは前後に空白がなくても切れ目になる</strong>ことです。
+      <code>(Hello)Tj</code> も <code>[.5]TJ</code> も、空白なしでつながって書けます。
+      逆に「普通」のバイト同士は、空白がないとつながってしまいます。
+      <a href="#next">7 節</a>の実測で、<code>1 0 0rg</code> と書くとどうなるかを見ます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>u8</code>、<code>b'…'</code>、<code>matches!</code></span>
+      <p>
+        <code>u8</code> は 0〜255 の整数、つまり 1 バイトです。
+        <code>b' '</code> は「スペースのバイト（32）」のように、<strong>文字をバイトの数値として書く</strong>書き方です。
+        <code>b'\x0c'</code> は 16 進で 0C、改ページのバイトです。
+      </p>
+      <p>
+        <code>matches!(b, A | B | C)</code> は「<code>b</code> が A か B か C なら <code>true</code>」。
+        第 1 回の <code>match</code> を、真偽を返すだけの 1 行に縮めた書き方です。
+        末尾の <code>!</code> は、関数ではなく<strong>マクロ</strong>（コンパイル前に展開される定型文）である印で、
+        前回の <code>vec!</code> と同じ仲間です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="lexer" aria-labelledby="lexer-title">
+  <div class="wrap">
+    <h2 id="lexer-title">5. 読む位置を覚える — <code>Lexer</code></h2>
+
+<pre><code>pub(crate) struct Lexer&lt;'a&gt; {
+    data: &amp;'a [u8],
+    pos: usize,
+}
+
+impl&lt;'a&gt; Lexer&lt;'a&gt; {
+    pub(crate) fn new(data: &amp;'a [u8]) -&gt; Self {
+        Lexer { data, pos: 0 }
+    }
+
+    pub(crate) fn data(&amp;self) -&gt; &amp;'a [u8] {
+        self.data
+    }
+
+    pub(crate) fn text(&amp;self, token: Token) -&gt; &amp;'a [u8] {
+        &amp;self.data[token.start..token.end]
+    }</code></pre>
+
+    <p>
+      <code>Lexer</code> が持つのは、<strong>読んでいるバイト列（<code>data</code>）と、いま何バイト目まで読んだか（<code>pos</code>）</strong>の 2 つだけです。
+      <code>new</code> は先頭（0）から始める。<code>text</code> は、切れ端の位置から実際のバイト列を切り出す。
+      切れ端が位置しか持たないぶん、文字が欲しいときはこの <code>text</code> に切れ端を渡します。
+    </p>
+
+    <p>
+      <code>data</code> が借り物（<code>&amp;</code>）であることに注意してください。
+      <code>Lexer</code> は<strong>バイト列をコピーしません。</strong>
+      前回の <code>decode_stream</code> が展開した結果を、そのまま借りて読みます。
+      何 MB のページでも、<code>Lexer</code> 自体は 24 バイトです（実測。借り物の場所と長さで 16 バイト、<code>pos</code> で 8 バイト）。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：struct にも付く <code>'a</code></span>
+      <p>
+        前回、関数に付く <code>'a</code>（ライフタイム）を見ました。今回は struct に付いています。
+        <code>Lexer&lt;'a&gt;</code> は「<strong>この struct は、<code>'a</code> のあいだ生きている何かを借りている</strong>」という宣言です。
+        借りているのは <code>data</code> で、元のバイト列より長生きすることはできません。
+      </p>
+      <p>
+        <code>text</code> の戻り値が <code>&amp;'a [u8]</code> なのが肝です。
+        「<code>Lexer</code> が生きているあいだ」ではなく「<strong>元のバイト列が生きているあいだ</strong>」使える、と言っています。
+        だから呼ぶ側は、切り出したバイト列を持ったまま、<code>Lexer</code> を先に進めたり手放したりできます。
+        もし <code>&amp;self</code> と同じ長さにしてしまうと、切り出した文字を見ているあいだ <code>Lexer</code> を動かせなくなります。
+        小さな違いですが、呼ぶ側の書きやすさが大きく変わります。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>&amp;[u8]</code> と <code>Vec&lt;u8&gt;</code></span>
+      <p>
+        前回の <code>Vec&lt;u8&gt;</code> が「自分で持っているバイト列」だったのに対し、
+        <code>&amp;[u8]</code> は「<strong>どこかにあるバイト列の一部を借りて見ている</strong>」型です。
+        <code>&amp;self.data[token.start..token.end]</code> は、<code>data</code> の一部分を切り出して借りる書き方で、
+        コピーは起きません。範囲を指すだけです。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="skip" aria-labelledby="skip-title">
+  <div class="wrap">
+    <h2 id="skip-title">6. 空白とコメントを飛ばす</h2>
+
+<pre><code>    fn skip_whitespace_and_comments(&amp;mut self) {
+        while let Some(&amp;b) = self.data.get(self.pos) {
+            if is_whitespace(b) {
+                self.pos += 1;
+            } else if b == b'%' {
+                while self.pos &lt; self.data.len() &amp;&amp; !matches!(self.data[self.pos], b'\r' | b'\n') {
+                    self.pos += 1;
+                }
+            } else {
+                break;
+            }
+        }
+    }</code></pre>
+
+    <p>
+      切れ端を読む前の下ごしらえです。
+      いまの位置のバイトが空白なら 1 つ進む。<code>%</code> なら行末まで進む（PDF では <code>%</code> から行末までがコメント）。
+      どちらでもなければ止まる。
+    </p>
+
+    <p>
+      <code>self.data.get(self.pos)</code> は、<strong>末尾を越えていれば <code>None</code></strong> を返すので、
+      バイト列の終わりで自然にループが止まります。
+      「<code>pos</code> が長さ未満か」をいちいち確かめる代わりに、<code>Option</code> に答えさせています。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>&amp;mut self</code> と <code>while let</code></span>
+      <p>
+        <code>&amp;mut self</code> は「自分自身を書き換える」メソッドの印です。
+        <code>pos</code> を進めるので、<a href="#lexer">5 節</a>の <code>text</code>（読むだけの <code>&amp;self</code>）と違って <code>mut</code> が要ります。
+      </p>
+      <p>
+        <code>while let Some(&amp;b) = …</code> は「<code>Some</code> である限りくり返し、中身を <code>b</code> と呼ぶ」。
+        前回の <code>if let</code> のくり返し版です。
+        <code>Some(&amp;b)</code> の <code>&amp;</code> は、<code>get</code> が返す借り物（<code>&amp;u8</code>）から中の値を取り出す書き方で、
+        1 バイトのコピーは安いので借りたままにする理由がありません。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="next" aria-labelledby="next-title">
+  <div class="wrap">
+    <h2 id="next-title">7. 心臓部 — <code>next_token</code></h2>
+
+    <p>
+      いよいよ本体です。67 行ありますが、骨組みは単純で、
+      <strong>「先頭の 1 バイトを見て種類を決め、その種類の終わりまで進む」</strong>だけです。まず骨組みから。
+    </p>
+
+<pre><code>    pub(crate) fn next_token(&amp;mut self) -&gt; Option&lt;Token&gt; {
+        self.skip_whitespace_and_comments();
+        let data = self.data;
+        let start = self.pos;
+        let b = *data.get(start)<span class="hl">?</span>;
+        let (kind, end) = match b {
+            <span class="dim">// … 先頭のバイトごとに (種類, 終わりの位置) を決める …</span>
+        };
+        self.pos = end.min(data.len());
+        Some(Token {
+            kind,
+            start,
+            end: self.pos,
+        })
+    }</code></pre>
+
+    <p>
+      空白を飛ばし、いまの位置を <code>start</code> として覚え、先頭のバイト <code>b</code> を取り出す。
+      <code>match</code> で種類と終わりを決め、<code>pos</code> を終わりまで進めて、<code>Token</code> を返す。
+      戻り値が <code>Option</code> なのは、<strong>バイト列の終わりに来たら <code>None</code></strong> を返して「もう切れ端はない」と伝えるためです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>?</code> — 無ければ、ここで帰る</span>
+      <p>
+        強調した <code>?</code> は、<strong>「<code>Some</code> なら中身を取り出して続ける。<code>None</code> なら関数ごと <code>None</code> を返して終わる」</strong>という 1 文字です。
+        <code>data.get(start)</code> は末尾を越えていれば <code>None</code> なので、
+        バイト列を読み切ったときは、この行で <code>next_token</code> が <code>None</code> を返します。
+      </p>
+      <p>
+        前回の <code>decode_stream</code> でも <code>?</code> が出てきましたが、あちらは <code>Result</code>（失敗なら <code>Err</code> を返す）でした。
+        <code>?</code> は <code>Option</code> にも <code>Result</code> にも使えて、どちらも「だめなら早めに帰る」を 1 文字で書けます。
+        これを <code>match</code> で書くと 4 行になります。
+      </p>
+    </div>
+
+    <h3>先頭のバイトで分ける</h3>
+
+    <p>
+      <code>match b</code> の腕（分岐）は 9 つあります。短いものから見ます。
+    </p>
+
+<pre><code>            b'&lt;' if data.get(start + 1) == Some(&amp;b'&lt;') =&gt; (Kind::DictOpen, start + 2),
+            b'&gt;' if data.get(start + 1) == Some(&amp;b'&gt;') =&gt; (Kind::DictClose, start + 2),
+            b'[' =&gt; (Kind::ArrayOpen, start + 1),
+            b']' =&gt; (Kind::ArrayClose, start + 1),
+            _ if is_delimiter(b) =&gt; (Kind::Keyword, start + 1),</code></pre>
+
+    <p>
+      <code>[</code> と <code>]</code> は 1 バイトで終わり。<code>&lt;&lt;</code> と <code>&gt;&gt;</code> は 2 バイトで終わり。
+      最後の行は、<a href="#token">3 節</a>で触れた「はぐれたバイト」で、
+      ここまでのどれにも当てはまらなかった区切り（対応のない <code>)</code> や <code>}</code> など）を 1 バイトの <code>Keyword</code> にして先へ進みます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>match</code> の腕に付く <code>if</code></span>
+      <p>
+        <code>b'&lt;' if 次のバイトも '&lt;'</code> のように、腕には条件を足せます（<strong>ガード</strong>と呼びます）。
+        上から順に試すので、<code>&lt;</code> で始まっても次が <code>&lt;</code> でなければこの腕は選ばれず、
+        次に出てくる「16 進の文字列」の腕に落ちます。
+        <code>_ if is_delimiter(b)</code> は「何でもいいが、区切りであること」という腕です。
+      </p>
+    </div>
+
+    <p>
+      名前と、数・命令の腕は、「普通のバイトが続く限り進む」という同じ形をしています。
+    </p>
+
+<pre><code>            b'/' =&gt; {
+                let mut i = start + 1;
+                while i &lt; data.len() &amp;&amp; is_regular(data[i]) {
+                    i += 1;
+                }
+                (Kind::Name, i)
+            }
+            _ =&gt; {
+                let mut i = start;
+                while i &lt; data.len() &amp;&amp; is_regular(data[i]) {
+                    i += 1;
+                }
+                let kind = if <span class="hl">parse_number(&amp;data[start..i]).is_some()</span> {
+                    Kind::Number
+                } else {
+                    Kind::Keyword
+                };
+                (kind, i)
+            }</code></pre>
+
+    <p>
+      <code>/</code> で始まれば名前。それ以外（最後の <code>_</code>）は、普通のバイトが続くところまで読んでから、
+      <strong>数として読めれば <code>Number</code>、読めなければ <code>Keyword</code></strong> と決めます。
+      数かどうかの判定は <a href="#number">8 節</a>の <code>parse_number</code> に任せています。
+      「<code>rg</code> は命令、<code>1</code> は数」という区別は、この 1 行で付いています。
+    </p>
+
+    <h3>文字列 — 括弧の入れ子を数える</h3>
+
+    <p>いちばん長い腕が、<code>(</code> で始まる文字列です。</p>
+
+<pre><code>            b'(' =&gt; {
+                let mut depth = 0usize;
+                let mut i = start;
+                loop {
+                    match data.get(i) {
+                        None =&gt; <span class="hl">break (Kind::String, data.len())</span>,
+                        Some(b'\\') =&gt; i += 2,
+                        Some(b'(') =&gt; {
+                            depth += 1;
+                            i += 1;
+                        }
+                        Some(b')') =&gt; {
+                            depth -= 1;
+                            i += 1;
+                            if depth == 0 {
+                                break (Kind::String, i);
+                            }
+                        }
+                        Some(_) =&gt; i += 1,
+                    }
+                }
+            }</code></pre>
+
+    <p>
+      PDF の文字列は <code>(a(b)c)</code> のように、<strong>対になっていれば中に括弧を書けます</strong>。
+      だから「次の <code>)</code> で終わり」ではだめで、<code>(</code> で深さを 1 増やし、<code>)</code> で 1 減らし、
+      <strong>深さが 0 に戻ったところ</strong>が終わりです。
+      <code>\</code> の次のバイトは <code>\)</code> のように意味を打ち消されているので、2 つまとめて飛ばします。
+    </p>
+
+    <p>
+      閉じ括弧のないまま終わりに来たら（<code>None</code> の腕）、<strong>末尾までを文字列にして終わります。</strong>
+      エラーにはしません。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>loop</code> と、値を持って抜ける <code>break</code></span>
+      <p>
+        <code>loop</code> は「<code>break</code> するまで永遠にくり返す」ループです。
+        面白いのは <code>break (Kind::String, i)</code> のように、<strong><code>break</code> に値を添えると、それが <code>loop</code> 全体の値になる</strong>ことです。
+        <code>let (kind, end) = match b { b'(' =&gt; { … loop { … } } … }</code> と読むと、
+        <code>loop</code> の値が腕の値になり、<code>match</code> の値になり、<code>(kind, end)</code> に入ります。
+        「終わりの位置を入れる変数を外に用意して、<code>break</code> の前に代入する」を、書かずに済ませています。
+      </p>
+    </div>
+
+    <h3>実際に切ってみる</h3>
+
+    <p>
+      <code>Lexer</code> にいろいろなバイト列を渡して、出てきた切れ端を並べました。
+      種類と、<code>text</code> で切り出した文字を示します。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>next_token</code> の結果（実測）</caption>
+        <thead><tr><th>渡したバイト列</th><th>切れ端</th></tr></thead>
+        <tbody>
+          <tr><td><code>1 0 0 rg</code></td><td>Number <code>1</code>、Number <code>0</code>、Number <code>0</code>、Keyword <code>rg</code></td></tr>
+          <tr><td><code>1 0 0 rg % red⏎0 g</code></td><td>上の 4 つ、Number <code>0</code>、Keyword <code>g</code>（コメントは消える）</td></tr>
+          <tr><td><code>(Hello) Tj</code></td><td>String <code>(Hello)</code>、Keyword <code>Tj</code></td></tr>
+          <tr><td><code>(a(b)c\)) Tj</code></td><td>String <code>(a(b)c\))</code>、Keyword <code>Tj</code>（入れ子と <code>\)</code> を越えて 1 つ）</td></tr>
+          <tr><td><code>[.5 -3.]TJ</code></td><td>ArrayOpen、Number <code>.5</code>、Number <code>-3.</code>、ArrayClose、Keyword <code>TJ</code>（空白なしでも切れる）</td></tr>
+          <tr><td><code>&lt;&lt;/MCID 0&gt;&gt;BDC</code></td><td>DictOpen、Name <code>/MCID</code>、Number <code>0</code>、DictClose、Keyword <code>BDC</code></td></tr>
+          <tr><td><code>1 0 0rg</code></td><td>Number <code>1</code>、Number <code>0</code>、<strong>Keyword <code>0rg</code></strong></td></tr>
+          <tr><td><code>1.2.3 rg</code></td><td><strong>Keyword <code>1.2.3</code></strong>、Keyword <code>rg</code></td></tr>
+          <tr><td><code>1 0 0 rg)</code></td><td>上の 4 つ、Keyword <code>)</code>（はぐれたバイト）</td></tr>
+          <tr><td><code>(never closed</code></td><td>String <code>(never closed</code>（末尾まで）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      下の 4 行が「寛容さ」の実例です。
+      <code>0rg</code> は空白がないので 1 つの塊になり、数として読めないので <code>Keyword</code> になります。
+      呼ぶ側は <code>0rg</code> という命令を知らないので何もせず、<strong>この行は色が変わらないまま残ります。</strong>
+      壊れた入力で止まるのではなく、その部分だけあきらめる。第 2 回の方針が、切れ端の段階から効いています。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="number" aria-labelledby="number-title">
+  <div class="wrap">
+    <h2 id="number-title">8. 数を読む — <code>parse_number</code></h2>
+
+<pre><code>pub(crate) fn parse_number(text: &amp;[u8]) -&gt; Option&lt;f64&gt; {
+    let mut digits = 0;
+    let mut dots = 0;
+    for (i, &amp;c) in text.iter().enumerate() {
+        match c {
+            b'0'..=b'9' =&gt; digits += 1,
+            b'.' =&gt; dots += 1,
+            b'+' | b'-' if i == 0 =&gt; {}
+            _ =&gt; return None,
+        }
+    }
+    if digits == 0 || dots &gt; 1 {
+        return None;
+    }
+    let s = std::str::from_utf8(text).ok()?;
+    let s = s.strip_prefix('+').unwrap_or(s);
+    let s = s.strip_suffix('.').unwrap_or(s);
+    let (sign, body) = match s.strip_prefix('-') {
+        Some(body) =&gt; (-1.0, body),
+        None =&gt; (1.0, s),
+    };
+    let body = if body.starts_with('.') {
+        format!("0{body}")
+    } else {
+        body.to_string()
+    };
+    body.parse::&lt;f64&gt;().ok().map(|v| sign * v)
+}</code></pre>
+
+    <p>
+      第 1 回で「色の数値は lopdf を通さず、sumi が自分で <code>f64</code> として読む」と書いた、その関数です。
+      前半で<strong>「数字と、高々 1 つの点と、先頭だけの符号」しかないこと</strong>を確かめ、
+      後半で Rust 標準の <code>parse</code> に渡せる形に整えます。
+    </p>
+
+    <p>
+      Rust の <code>"1.5".parse::&lt;f64&gt;()</code> は優秀ですが、PDF の数の書き方とは少しずれています。
+      整える 3 行は、そのずれを埋めるためのものです。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>parse_number</code> の結果（実測）</caption>
+        <thead><tr><th>渡した文字</th><th>結果</th><th>整え方</th></tr></thead>
+        <tbody>
+          <tr><td><code>.5</code></td><td><code>Some(0.5)</code></td><td>先頭の <code>.</code> の前に <code>0</code> を足す（Rust は <code>.5</code> を読めない）</td></tr>
+          <tr><td><code>-.25</code></td><td><code>Some(-0.25)</code></td><td>符号を外してから <code>0</code> を足し、あとで掛け直す</td></tr>
+          <tr><td><code>4.</code></td><td><code>Some(4.0)</code></td><td>末尾の <code>.</code> を取る</td></tr>
+          <tr><td><code>+7</code></td><td><code>Some(7.0)</code></td><td>先頭の <code>+</code> を取る</td></tr>
+          <tr><td><code>007</code></td><td><code>Some(7.0)</code></td><td>そのまま</td></tr>
+          <tr><td><code>1.2.3</code></td><td><code>None</code></td><td>点が 2 つ</td></tr>
+          <tr><td><code>-</code></td><td><code>None</code></td><td>数字がない</td></tr>
+          <tr><td><code>1e3</code></td><td><code>None</code></td><td><code>e</code> は数字でも点でもない</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      最後の行に注目してください。
+      Rust の <code>parse</code> は <code>1e3</code>（10 の 3 乗）を 1000 として読めますが、
+      <strong>PDF の数に指数の書き方はありません。</strong>
+      前半の検査がなければ、<code>1e3</code> は数になってしまいます。
+      「Rust が読めるもの」ではなく「PDF が数と定めているもの」だけを数にする。
+      それが、<code>parse</code> に丸投げせず前半の検査を置いている理由です。
+      第 1 回の <code>format_number</code> が指数なしで書き出していたのと、表裏の関係です。
+    </p>
+
+    <p>
+      もう 1 つ。<code>parse_number</code> は <code>f64</code> を返します。
+      前回、lopdf の小数は <code>f32</code> で 8 桁目からずれると書きました。
+      色の値はここで <code>f64</code> として読むので、<code>0.30000001</code> は <code>0.30000001</code> のまま届きます（実測）。
+      第 1 回の <code>0.5 0.5 0.5 rg</code> の境界が崩れない、と言えたのはこのためです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>for (i, &amp;c) in text.iter().enumerate()</code></span>
+      <p>
+        <code>.iter()</code> でバイトを 1 つずつ、<code>.enumerate()</code> で「何番目か」も一緒に取り出します。
+        <code>(i, &amp;c)</code> で番号を <code>i</code>、バイトを <code>c</code> と呼ぶ。
+        番号が要るのは、<code>+</code> と <code>-</code> を<strong>先頭だけで許す</strong>ためで、腕のガード <code>if i == 0</code> がそれです。
+        <code>b'0'..=b'9'</code> は「<code>0</code> 以上 <code>9</code> 以下」の範囲で、<code>..=</code> は終わりを含みます。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>strip_prefix</code> と <code>unwrap_or</code></span>
+      <p>
+        <code>s.strip_prefix('+')</code> は「先頭が <code>+</code> なら、それを除いた残りを <code>Some</code> で返す。違えば <code>None</code>」。
+        <code>.unwrap_or(s)</code> は「<code>Some</code> なら中身、<code>None</code> なら <code>s</code> のまま」。
+        2 つ合わせて<strong>「あれば取る、なければそのまま」</strong>が 1 行になります。
+        <code>-</code> のほうは <code>match</code> で受けているのは、取ったかどうかで符号（<code>-1.0</code> か <code>1.0</code>）も決めたいからです。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="inline" aria-labelledby="inline-title">
+  <div class="wrap">
+    <h2 id="inline-title">9. 画像の終わりを探す — <code>inline_image_data</code></h2>
+
+    <p>
+      <code>next_token</code> が扱えない例外が 1 つあります。<strong>インライン画像</strong>です。
+      小さな画像は、別のオブジェクトにせず、コンテンツストリームの中に直接埋め込めます
+      （<a href="https://web.archive.org/web/20260827044602/https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=222" target="_blank" rel="noopener">PDF 仕様 8.9.7</a>）。
+    </p>
+
+<pre><code>BI /W 2 /H 1 /BPC 8 /CS /G ID <span class="dim">←ここから画像のバイト→</span> EI</code></pre>
+
+    <p>
+      <code>BI</code> から <code>ID</code> までは普通の切れ端（幅、高さ、色空間などの辞書）ですが、
+      <code>ID</code> の直後から <code>EI</code> までは<strong>生のバイナリ</strong>です。
+      切れ端の規則は通用しません。空白や区切りのバイトが、画素の値として平気で現れます。
+      困ったことに、<strong>画素の中に <code>E</code> <code>I</code> という 2 バイトが並ぶことも</strong>あります。
+      「次の <code>EI</code> まで」では、そこで切ってしまいます。
+    </p>
+
+<pre><code>    pub(crate) fn inline_image_data(
+        &amp;mut self,
+        expected_len: Option&lt;usize&gt;,
+    ) -&gt; (usize, usize, usize) {
+        let data = self.data;
+        let data_start = (self.pos + 1).min(data.len());
+
+        if let Some(len) = expected_len {
+            let data_end = data_start.saturating_add(len);
+            if data_end &lt;= data.len() {
+                let mut i = data_end;
+                while i &lt; data.len() &amp;&amp; is_whitespace(data[i]) {
+                    i += 1;
+                }
+                if data[i..].starts_with(b"EI") &amp;&amp; data.get(i + 2).is_none_or(|&amp;c| !is_regular(c)) {
+                    self.pos = i + 2;
+                    return (data_start, data_end, i + 2);
+                }
+            }
+        }
+
+        let mut i = data_start;
+        while i + 1 &lt; data.len() {
+            if data[i] == b'E'
+                &amp;&amp; data[i + 1] == b'I'
+                &amp;&amp; (i == data_start || is_whitespace(data[i - 1]))
+                &amp;&amp; data.get(i + 2).is_none_or(|&amp;c| !is_regular(c))
+                &amp;&amp; <span class="hl">looks_like_content(&amp;data[i + 2..])</span>
+            {
+                let data_end = if i &gt; data_start { i - 1 } else { i };
+                self.pos = i + 2;
+                return (data_start, data_end, i + 2);
+            }
+            i += 1;
+        }
+        self.pos = data.len();
+        (data_start, data.len(), data.len())
+    }</code></pre>
+
+    <p>
+      2 段構えです。
+    </p>
+
+    <dl class="terms">
+      <dt>1 段目：長さが分かっているなら、それを信じる</dt>
+      <dd>
+        圧縮されていない画像なら、幅 × 高さ × 色の数から<strong>データの長さが計算できます</strong>（呼ぶ側の <code>image.rs</code> が計算して <code>expected_len</code> に渡します）。
+        その長さぶん飛ばした先に <code>EI</code> があれば、それが終わりです。中身は一切見ません。
+      </dd>
+      <dt>2 段目：分からなければ、それらしい <code>EI</code> を探す</dt>
+      <dd>
+        圧縮された画像は長さが分からないので、先頭から 1 バイトずつ <code>EI</code> を探します。
+        ただし条件を 3 つ付けます。前が空白であること、後ろが普通のバイトでないこと、
+        そして<strong>その先 64 バイトが「命令の続きに見える」こと</strong>（強調した <code>looks_like_content</code>）。
+      </dd>
+    </dl>
+
+<pre><code>fn looks_like_content(rest: &amp;[u8]) -&gt; bool {
+    rest.iter()
+        .take(64)
+        .all(|&amp;c| c.is_ascii_graphic() || is_whitespace(c))
+}</code></pre>
+
+    <p>
+      「命令の続きに見える」とは、<strong>表示できる ASCII 文字と空白だけでできている</strong>ということです。
+      画像の中の偽の <code>EI</code> の後ろには、たいてい画素のバイナリが続くので、この検査で弾けます。
+      3 通り試しました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>inline_image_data</code> の結果（実測。<code>\x01</code> のような表記は 1 バイトの値）</caption>
+        <thead><tr><th><code>ID</code> より後ろ</th><th>長さ</th><th>画像とされた範囲</th><th>残り</th></tr></thead>
+        <tbody>
+          <tr><td><code>\x01\x02 EI Q</code></td><td>2</td><td><code>\x01\x02</code></td><td><code> Q</code></td></tr>
+          <tr><td><code>\x01\x02 EI Q</code></td><td>不明</td><td><code>\x01\x02</code></td><td><code> Q</code></td></tr>
+          <tr><td><code>\x01EI\xff\x00 EI Q</code>（画素の中に <code>EI</code>）</td><td>不明</td><td><code>\x01EI\xff\x00</code></td><td><code> Q</code></td></tr>
+          <tr><td><code>\x01 EI q\x02 EI Q</code>（偽の <code>EI</code> の後ろに命令風の <code>q</code>）</td><td>不明</td><td><code>\x01 EI q\x02</code></td><td><code> Q</code></td></tr>
+          <tr><td><code>\x01\x02\x03\x04 EI Q</code></td><td>2（嘘）</td><td><code>\x01\x02\x03\x04</code></td><td><code> Q</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      3 行目は、偽の <code>EI</code> の後ろが <code>\xff</code>（表示できない）なので弾かれ、本物にたどり着いています。
+      4 行目はもっと意地悪で、偽の <code>EI</code> の後ろに命令のような <code>q</code> を置きましたが、
+      さらにその後ろの <code>\x02</code> が 64 バイトの検査に引っかかり、やはり本物に着きました。
+      5 行目は、辞書が言う長さが実際より短い場合です。
+      長さぶん飛んだ先に <code>EI</code> がないので 1 段目は不成立となり、2 段目に落ちて正しい終わりを見つけています。
+      <strong>長さは信じるが、信じた先に <code>EI</code> がなければ疑う。</strong>
+      ここも寛容さの線引きです。
+    </p>
+
+    <p>
+      それでも見つからなければ、末尾までを画像として返します。
+      戻り値が 3 つ組 <code>(データの始まり, データの終わり, EI の終わり)</code> なのは、
+      書き換え側が「<code>BI</code> から <code>EI</code> の終わりまで」を丸ごと置き換えるのに、両方の位置が要るからです。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>saturating_add</code> と <code>is_none_or</code></span>
+      <p>
+        <code>a.saturating_add(b)</code> は、足した結果が <code>usize</code> の上限を超えたら上限で止める足し算です。
+        <code>expected_len</code> は PDF の辞書から来た値なので、とんでもなく大きいかもしれません。
+        普通の <code>+</code> だと、桁あふれでプログラムが止まる（デバッグ時）か、小さな値に化ける（リリース時）ので、それを防いでいます。
+      </p>
+      <p>
+        <code>data.get(i + 2).is_none_or(|&amp;c| !is_regular(c))</code> は
+        「<code>i + 2</code> バイト目が<strong>無いか、あっても普通のバイトでない</strong>」。
+        <code>EI</code> が末尾にあっても、<code>EIQ</code> のようにくっついていても正しく扱うための 1 行です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="object" aria-labelledby="object-title">
+  <div class="wrap">
+    <h2 id="object-title">10. 小さな読み書き — <code>parse_object</code> と <code>write_object</code></h2>
+
+    <p>
+      <a href="#token">3 節</a>で「配列や辞書の中身はまとめない」と書きました。
+      唯一まとめる必要があるのが、インライン画像の辞書（<code>BI</code> から <code>ID</code> まで）です。
+      幅や色空間を読むには、切れ端の列を前回の <code>Object</code> に組み立てなければなりません。
+      それが <code>parse_object</code> です。
+    </p>
+
+<pre><code>pub(crate) fn parse_object(
+    lexer: &amp;Lexer,
+    tokens: &amp;[Token],
+    index: &amp;mut usize,
+    depth: usize,
+) -&gt; Option&lt;Object&gt; {
+    let token = *tokens.get(*index)?;
+    *index += 1;
+    let text = lexer.text(token);
+    Some(match token.kind {
+        Kind::Number =&gt; {
+            let v = parse_number(text)?;
+            if text.contains(&amp;b'.') {
+                Object::Real(v as f32)
+            } else {
+                Object::Integer(v as i64)
+            }
+        }
+        Kind::Name =&gt; Object::Name(decode_name(&amp;text[1..])),
+        Kind::String =&gt; Object::String(decode_string(text), StringFormat::Literal),
+        Kind::Keyword =&gt; match text {
+            b"true" =&gt; Object::Boolean(true),
+            b"false" =&gt; Object::Boolean(false),
+            b"null" =&gt; Object::Null,
+            _ =&gt; return None,
+        },
+        Kind::ArrayOpen <span class="hl">if depth &lt; 16</span> =&gt; {
+            let mut items = Vec::new();
+            loop {
+                match tokens.get(*index) {
+                    None =&gt; return None,
+                    Some(t) if t.kind == Kind::ArrayClose =&gt; {
+                        *index += 1;
+                        break;
+                    }
+                    Some(_) =&gt; items.push(<span class="hl">parse_object(lexer, tokens, index, depth + 1)</span>?),
+                }
+            }
+            Object::Array(items)
+        }
+        Kind::DictOpen if depth &lt; 16 =&gt; {
+            <span class="dim">// … 配列と同じ形で、名前と値の組を集める …</span>
+        }
+        _ =&gt; return None,
+    })
+}</code></pre>
+
+    <p>
+      切れ端を 1 つ取り、種類ごとに <code>Object</code> にします。
+      数なら、<code>.</code> を含むかどうかで <code>Real</code> と <code>Integer</code> に分けます。
+      配列なら、<code>]</code> が来るまで<strong>自分自身を呼んで</strong>要素を集めます。
+      要素がまた配列なら、その中でまた自分を呼びます。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：再帰と、<code>depth</code> の上限</span>
+      <p>
+        関数が自分自身を呼ぶことを<strong>再帰</strong>と言います。
+        「配列の中に配列の中に配列」のように、入れ子がいくつ深くても同じ関数で読めるのが利点です。
+      </p>
+      <p>
+        欠点は、入れ子が深すぎると呼び出しの記録（スタック）があふれてプログラムが落ちることです。
+        <code>[[[[[…</code> と 10 万個書いた PDF を渡されたら、そうなります。
+        強調した <code>if depth &lt; 16</code> がその守りで、<strong>16 段より深い入れ子は読まずに <code>None</code></strong> を返します。
+        インライン画像の辞書で 16 段の入れ子が要ることはないので、実用上は困りません。
+        スタックがあふれて落ちる実例は、<a href="../diary/#mutool">開発日誌</a>の mutool のクラッシュで見ました（あちらは再帰ではなく大きな配列が原因ですが、落ち方は同じです）。
+      </p>
+    </div>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>index: &amp;mut usize</code> — 呼ぶ側の変数を進める</span>
+      <p>
+        <code>index</code> は「次に読む切れ端は何番目か」で、<strong>呼ぶ側の変数を借りて書き換えます</strong>。
+        <code>*index += 1</code> の <code>*</code> は、借り物の指す先を書き換える印です。
+        再帰で自分を呼ぶときも同じ <code>index</code> を渡すので、内側で読み進めた分が外側にもそのまま伝わります。
+        戻り値で「何個読んだか」を返して足し合わせる代わりに、1 つの数を全員で共有しています。
+      </p>
+    </div>
+
+    <h3>逆向きの <code>write_object</code></h3>
+
+    <p>
+      灰色にした画像を書き戻すときは、辞書を文字に戻す必要があります。それが <code>write_object</code> で、
+      <code>parse_object</code> をちょうど裏返した形です。名前と文字列の部分だけ見ます。
+    </p>
+
+<pre><code>        Object::Real(r) =&gt; out.extend_from_slice(<span class="hl">crate::color::format_number(*r as f64)</span>.as_bytes()),
+        Object::Name(name) =&gt; {
+            out.push(b'/');
+            for &amp;c in name {
+                if is_regular(c) &amp;&amp; c != b'#' &amp;&amp; c.is_ascii_graphic() {
+                    out.push(c);
+                } else {
+                    out.extend_from_slice(format!("#{c:02X}").as_bytes());
+                }
+            }
+        }
+        Object::String(bytes, _) =&gt; {
+            out.push(b'&lt;');
+            for c in bytes {
+                out.extend_from_slice(format!("{c:02X}").as_bytes());
+            }
+            out.push(b'&gt;');
+        }</code></pre>
+
+    <p>
+      小数は第 1 回の <code>format_number</code> で書きます（<code>0.30000001</code> → <code>0.3</code>、実測）。
+      名前は、そのまま書けないバイト（空白、区切り、<code>#</code>、表示できないバイト）を <code>#</code> と 16 進 2 桁にします。
+      文字列は、<strong>中身を問わず全部 16 進</strong>にします。
+      <code>(…)</code> の形で書くには <code>\</code> で逃がす規則を全部なぞる必要がありますが、16 進なら考えることがありません。
+      読むときは両方読み、書くときは簡単なほうだけ書く。実装の手間を減らす、よくある割り切りです。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>write_object</code> の結果（実測）</caption>
+        <thead><tr><th>渡した <code>Object</code></th><th>書き出し</th></tr></thead>
+        <tbody>
+          <tr><td><code>Real(0.30000001)</code></td><td><code>0.3</code></td></tr>
+          <tr><td><code>Name("Caé x")</code>（é は 1 バイト E9）</td><td><code>/Ca#E9#20x</code></td></tr>
+          <tr><td><code>String("Hi")</code></td><td><code>&lt;4869&gt;</code></td></tr>
+          <tr><td>インライン画像の辞書</td><td><code>&lt;&lt;/W 2/H 1/BPC 8/CS /G/F /Fl&gt;&gt;</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="decode" aria-labelledby="decode-title">
+  <div class="wrap">
+    <h2 id="decode-title">11. 名前と文字列を戻す — <code>decode_name</code> と <code>decode_string</code></h2>
+
+    <p>
+      切れ端の文字は、まだ「書かれたまま」です。
+      名前の <code>/Ca#66#e9</code> は本当は <code>Café</code> のバイト列だし、
+      文字列の <code>(a\)b)</code> は本当は <code>a)b</code> です。書き方の規則をほどいて元のバイト列に戻すのが、この 2 つです。
+    </p>
+
+<pre><code>pub(crate) fn decode_name(raw: &amp;[u8]) -&gt; Vec&lt;u8&gt; {
+    let mut out = Vec::with_capacity(raw.len());
+    let mut i = 0;
+    while i &lt; raw.len() {
+        if raw[i] == b'#'
+            &amp;&amp; i + 2 &lt; raw.len()
+            &amp;&amp; <span class="hl">let Some(v)</span> = std::str::from_utf8(&amp;raw[i + 1..i + 3])
+                .ok()
+                .and_then(|h| u8::from_str_radix(h, 16).ok())
+        {
+            out.push(v);
+            i += 3;
+        } else {
+            out.push(raw[i]);
+            i += 1;
+        }
+    }
+    out
+}</code></pre>
+
+    <p>
+      <code>#</code> の後ろに 16 進 2 桁があれば、その 1 バイトに置き換える。なければ <code>#</code> をそのまま残す。
+      <code>A#20B</code> は <code>A B</code> に、桁が足りない <code>A#2</code> は <code>A#2</code> のままです（実測）。
+      ここでもエラーにはしません。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>if … &amp;&amp; let Some(v) = …</code></span>
+      <p>
+        <code>if</code> の条件の途中に <code>let Some(v) = …</code> を挟むと、
+        <strong>「ここまでの条件が真で、しかもこれが <code>Some</code> なら、中身を <code>v</code> として使う」</strong>と書けます。
+        前回の <code>if let</code> と <code>&amp;&amp;</code> を混ぜた形で、Rust 1.88 で使えるようになった新しい書き方です。
+        これがない頃は、<code>if</code> を 2 段に分けるか、<code>match</code> で書く必要がありました。
+      </p>
+    </div>
+
+    <p>
+      <code>decode_string</code> は 62 行あり、このファイルで 2 番目に長い関数です。
+      16 進の <code>&lt;…&gt;</code> なら 2 桁ずつバイトにし（奇数桁なら最後を <code>0</code> で埋める）、
+      <code>(…)</code> なら <code>\</code> の次を見て置き換えます。
+      <code>\n</code> は改行、<code>\101</code>（8 進）は <code>A</code>、<code>\</code> のすぐ後ろの改行は「行の続き」として消えます。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption><code>decode_string</code> の結果（実測）</caption>
+        <thead><tr><th>切れ端</th><th>戻したバイト列</th></tr></thead>
+        <tbody>
+          <tr><td><code>(a\(b\)\101\n)</code></td><td><code>a(b)A</code> と改行</td></tr>
+          <tr><td><code>(line1\⏎line2)</code></td><td><code>line1line2</code></td></tr>
+          <tr><td><code>&lt;48 65 6c6&gt;</code>（空白入り、奇数桁）</td><td><code>Hel`</code>（最後の <code>6</code> は <code>60</code> と読む）</td></tr>
+          <tr><td><code>(\0053)</code></td><td>5 と <code>3</code>（8 進は最大 3 桁で打ち切る）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      sumi は文字列の中身を書き換えないので、実は <code>decode_string</code> の結果が色の変換に効くことはありません。
+      使われるのは、インライン画像の辞書の中に文字列があった場合だけです。
+      それでも仕様どおりに実装してあるのは、<strong>辞書を <code>Object</code> に戻して、また文字に書き出す</strong>という往復で、
+      中身を壊さないためです。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="tests" aria-labelledby="tests-title">
+  <div class="wrap">
+    <h2 id="tests-title">12. テストを読む</h2>
+
+    <p>
+      前回は「テストがない」と書きましたが、今回は 4 つあります。1 つ目が、この記事の 7 節の表とほぼ同じことをしています。
+    </p>
+
+<pre><code>    #[test]
+    fn tokenizes_operators_strings_and_names() {
+        let tokens =
+            kinds(b"1 0 0 rg (a(b)c\\)) Tj/F1 12 Tf &lt;48656c&gt; % comment\n[.5 -3.]TJ&lt;&lt;/MCID 0&gt;&gt;BDC");
+        let expected = [
+            (Kind::Number, "1"),
+            (Kind::Number, "0"),
+            (Kind::Number, "0"),
+            (Kind::Keyword, "rg"),
+            (Kind::String, "(a(b)c\\))"),
+            <span class="dim">// … 全部で 20 個 …</span>
+        ];
+        assert_eq!(tokens, expected);
+    }</code></pre>
+
+    <p>
+      1 本のバイト列に、入れ子の文字列、空白なしの <code>Tj/F1</code>、16 進文字列、コメント、
+      <code>.5</code> と <code>-3.</code>、辞書、と<strong>難しい書き方を詰め込んで</strong>、20 個の切れ端が期待どおりに出るかを見ています。
+      「普通の入力で動く」ではなく「意地悪な入力で動く」を確かめるテストです。
+    </p>
+
+    <p>
+      残りの 3 つは、<code>parse_number</code>（8 節の表の 6 行）、<code>decode_string</code> と <code>decode_name</code>（11 節の表の 3 行）、
+      そして画素の中に <code>EI</code> が入った画像（9 節の表の 3 行目）です。
+      この記事の表のうち、テストにないのは
+      <strong>「長さの申告が嘘」の場合と、「偽の <code>EI</code> の後ろに命令風のバイト」の場合</strong>だけでした。
+      どちらも実測では正しく動いていますが、テストとして残しておくと安心です。
+    </p>
+
+    <div class="rust">
+      <span class="label">Rust メモ：<code>std::iter::from_fn</code></span>
+      <p>
+        テストの補助関数 <code>kinds</code> は、
+        <code>std::iter::from_fn(|| lexer.next_token())</code> で、
+        <strong>「<code>None</code> が返るまで <code>next_token</code> を呼び続ける」列</strong>を作っています。
+        <code>next_token</code> が <code>Option</code> を返す設計にしておくと、こうして標準の道具にそのまま乗ります。
+        本体の <code>content.rs</code> も <code>while let Some(token) = lexer.next_token()</code> で同じことをしています。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="map" aria-labelledby="map-title">
+  <div class="wrap">
+    <h2 id="map-title">13. この 495 行はどこから呼ばれるか</h2>
+
+    <p>
+      <code>lexer.rs</code> を使うのは 2 つのファイルだけです。
+      色の命令を書き換える <code>content.rs</code> と、画像の辞書を書き出す <code>image.rs</code>。
+      <code>lexer.rs</code> 自身が使うのは lopdf の <code>Object</code>（<code>parse_object</code> の戻り値のため）と、第 1 回の <code>format_number</code> です。
+    </p>
+
+    <figure class="wide">
+      <div class="fig">
+        <svg viewBox="0 0 720 250" role="img" aria-labelledby="fig4-title">
+          <title id="fig4-title">lexer.rs の呼び出し元</title>
+          <defs>
+            <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+            </marker>
+          </defs>
+          <g font-family="sans-serif" font-size="12">
+            <rect x="150" y="14" width="180" height="44" fill="#fff" stroke="#000"/>
+            <text x="240" y="32" text-anchor="middle" font-family="monospace" font-size="11">content.rs</text>
+            <text x="240" y="48" text-anchor="middle" font-size="10" fill="#575757">命令の書き換え</text>
+
+            <rect x="390" y="14" width="180" height="44" fill="#fff" stroke="#000"/>
+            <text x="480" y="32" text-anchor="middle" font-family="monospace" font-size="11">image.rs</text>
+            <text x="480" y="48" text-anchor="middle" font-size="10" fill="#575757">辞書の書き出し</text>
+
+            <path d="M240 58 V90 H480 V58" stroke="#000" stroke-width="1.2" fill="none"/>
+            <path d="M360 90 V116" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+            <rect x="230" y="120" width="260" height="52" fill="#000"/>
+            <text x="360" y="142" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">lexer.rs</text>
+            <text x="360" y="160" text-anchor="middle" font-size="10" fill="#fff">495 行</text>
+
+            <path d="M300 172 V204" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <path d="M420 172 V204" stroke="#000" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <rect x="200" y="208" width="160" height="36" fill="#fff" stroke="#9b9b9b" stroke-dasharray="4 3"/>
+            <text x="280" y="230" text-anchor="middle" font-family="monospace" font-size="11">lopdf::Object</text>
+            <rect x="380" y="208" width="140" height="36" fill="#fff" stroke="#000"/>
+            <text x="450" y="230" text-anchor="middle" font-family="monospace" font-size="11">color.rs</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>第 1 回の <code>color.rs</code> が、ここから使われています。3 回分のファイルが 1 本につながりました。</figcaption>
+    </figure>
+
+    <p>
+      <code>content.rs</code> の使い方が、このファイルの設計を締めくくります（79 行目から）。
+    </p>
+
+<pre><code>let mut lexer = Lexer::new(input);
+let mut operands: Vec&lt;Token&gt; = Vec::new();
+while let Some(token) = lexer.next_token() {
+    let text = lexer.text(token);
+    if token.kind != Kind::Keyword || matches!(text, b"true" | b"false" | b"null") {
+        <span class="hl">operands.push(token);</span>
+        continue;
+    }
+    match text {
+        b"rg" =&gt; rw.device_color(&amp;lexer, &amp;operands, token, 3, false),
+        <span class="dim">// … g / G / RG / k / K / cs / sc / scn / BI など …</span>
+        _ =&gt; {}
+    }
+    operands.clear();
+}</code></pre>
+
+    <p>
+      命令でない切れ端（数や名前）は、<strong>そのまま <code>operands</code> に積んでおく</strong>。
+      命令が来たら、積んであるものを引数として処理し、空にする。
+      <code>1 0 0 rg</code> なら、<code>1</code>、<code>0</code>、<code>0</code> が積まれ、<code>rg</code> で 3 つ取り出されます。
+      積むのは <code>Token</code>（位置）なので、置き換える範囲は <code>operands[0].start</code> から <code>token.end</code> まで、とすぐ決まります。
+      PDF の命令が「引数が先、命令が後」の順で書かれているからこそ、この単純な形で読めます。
+    </p>
+
+    <h3>1 ページで、どれくらい切るのか</h3>
+
+    <p>
+      <code>fixtures/chrome_invoice.pdf</code>（Chrome が作った請求書）の 1 ページ分の中身を展開して、この <code>Lexer</code> に通しました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>1 ページ分の字句解析（実測、リリースビルド、Apple M4）</caption>
+        <thead><tr><th>項目</th><th class="num">値</th></tr></thead>
+        <tbody>
+          <tr><td>展開後のバイト数</td><td class="num">13,357</td></tr>
+          <tr><td>切れ端の数</td><td class="num">3,089</td></tr>
+          <tr><td>　うち Number</td><td class="num">1,250</td></tr>
+          <tr><td>　うち Keyword（命令）</td><td class="num">1,069</td></tr>
+          <tr><td>　うち Name</td><td class="num">319</td></tr>
+          <tr><td>　うち String</td><td class="num">305</td></tr>
+          <tr><td>　うち <code>&lt;&lt;</code> と <code>&gt;&gt;</code></td><td class="num">73 組</td></tr>
+          <tr><td>色の命令（<code>rg</code> と <code>RG</code>）</td><td class="num">38</td></tr>
+          <tr><td>かかった時間（1000 回の平均）</td><td class="num">89 µs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      3,089 個の切れ端のうち、sumi が書き換えるのは色の命令 38 個とその引数だけです。
+      残りの約 3,000 個は、位置を確かめるためだけに切られ、<strong>1 バイトも変わらずに出力へ写されます。</strong>
+      時間は 1 ページ 89 マイクロ秒、1 秒あたり約 150 MB。
+      <a href="../#benchmark">性能比較</a>で sumi が速いのは、ページを描画しないからですが、
+      その「描画しない」を可能にしているのが、この位置だけを覚える lexer です。
+    </p>
+
+    <div class="note">
+      <span class="label">この回のまとめ</span>
+      <p>
+        <code>lexer.rs</code> は、バイト列を切れ端に分けるファイルでした。
+        切れ端が持つのは<strong>種類と位置だけ</strong>で、文字は元のバイト列から借りて見る。
+        この設計のおかげで、書き換え側は命令だけを置き換え、ほかを一字一句そのまま写せます。
+      </p>
+      <p>
+        そして、この lexer は<strong>決して失敗しません</strong>。
+        閉じない括弧は末尾まで、知らないバイトは 1 バイトの命令、深すぎる入れ子は「無い」。
+        第 2 回の「寛容に読む」を、切れ端の段階で実現しています。
+        一方で、<code>1e3</code> を数と認めない、長さの申告を鵜呑みにしない、と厳格な場所もありました。
+        <strong>PDF が定めた形だけを認め、それ以外は壊さず素通しする。</strong>その線引きが、495 行の中身です。
+      </p>
+    </div>
+
+    <h3>次に読むもの</h3>
+
+    <p>
+      次は、この切れ端を受け取って色の命令を書き換える <code>content.rs</code>（372 行）です。
+      13 節で見た <code>operands</code> の積み下ろしの先で、第 1 回の <code>rgb_to_gray</code> と <code>format_number</code>、
+      第 2 回の <code>get_name</code> と <code>as_dict</code>、そして今回の <code>Token</code> が、1 つの関数の中で出会います。
+    </p>
+
+    <p>
+      その前に手を動かしたい人は、次のコマンドで、実物の PDF がどんな切れ端でできているかを見てみてください。
+    </p>
+
+<pre><code><span class="dim"># lexer のテストだけ走らせる</span>
+cargo test -p sumi-core lexer::
+
+<span class="dim"># 1 ページ目の中身を展開して、色の命令の行だけ見る（poppler が要る）</span>
+python3 -c "
+import re, zlib, sys
+data = open(sys.argv[1], 'rb').read()
+for m in re.finditer(rb'stream\r?\n(.*?)\r?\nendstream', data, re.S):
+    try: s = zlib.decompress(m.group(1)).decode('latin1')
+    except Exception: continue
+    for op in re.findall(r'[\d.\s]+(?:rg|RG|k|K|g|G)\b', s):
+        print(op.strip())
+" fixtures/chrome_invoice.pdf
+
+<span class="dim"># content.rs が lexer をどう使っているか</span>
+grep -n "lexer\.\|Kind::\|operands" crates/sumi-core/src/content.rs</code></pre>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>sumi — PDF の色をグレースケール・白黒 2 値に変換する Rust 製ライブラリ兼 CLI。MIT ライセンス。</p>
+  </div>
+</footer>
+
+</body>
+</html>
