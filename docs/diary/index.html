@@ -61,6 +61,8 @@
   }
   .brand-name { font-family: var(--mincho); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
   .site-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9375rem; }
+  .site-nav a { text-decoration: none; color: var(--ju); }
+  .site-nav a:hover { color: var(--sho); text-decoration: underline; }
 
   /* 見出し */
   .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
@@ -140,6 +142,9 @@
     padding-block: 28px; margin-top: clamp(40px, 8vw, 72px);
     color: var(--ju); font-size: .9375rem;
   }
+  @media (max-width: 680px) {
+    .site-nav a:not(:last-child) { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -151,17 +156,13 @@
       <span class="brand-name">sumi</span>
     </a>
     <nav class="site-nav" aria-label="ページ内">
-      <a href="../">トップ</a>
+      <a href="../#how">しくみ</a>
+      <a href="../#benchmark">性能</a>
+      <a href="../#scope">対応範囲</a>
+      <a href="../#install">インストール</a>
       <a href="../pdf/">PDF のしくみ</a>
       <a href="../color-rs/">コードを読む</a>
-      <a href="#v020">0.2.0</a>
-      <a href="#reading">読みもの</a>
-      <a href="#mutool">mutool のクラッシュ</a>
-      <a href="#validation">実世界検証</a>
-      <a href="#ycck-title">見つかったバグ</a>
-      <a href="#upstream">zune-jpeg への報告</a>
-      <a href="#bench">性能比較</a>
-      <a href="#day1">実装</a>
+      <a href="../diary/">開発日誌</a>
       <a href="https://github.com/champierre/sumi">GitHub</a>
     </nav>
   </div>
