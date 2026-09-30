@@ -607,7 +607,7 @@ pub(crate) fn get&lt;'a&gt;(doc: &amp;'a Document, dict: &amp;'a Dictionary, key
     </div>
 
     <p>
-      これも PDF 仕様（7.3.7）の決まりです。<strong>値がヌルの項目は、項目が無いのと同じに扱う。</strong>
+      これも <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=26" target="_blank" rel="noopener">PDF 仕様（7.3.7）</a>の決まりです。<strong>値がヌルの項目は、項目が無いのと同じに扱う。</strong>
       <code>get</code> を通しておけば、呼ぶ側は「キーが無い」「値がヌル」「参照の先が無い」の 3 通りを
       区別せずに済みます。どれも <code>None</code> として 1 か所で扱えます。
     </p>
