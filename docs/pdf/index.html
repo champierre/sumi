@@ -50,22 +50,27 @@
 
   .wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
 
-  /* ヘッダ */
-  .site-header { border-bottom: 1px solid var(--sei); background: var(--shiro); }
-  .site-header .wrap {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px; padding-block: 14px; flex-wrap: wrap;
-  }
-  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  /* ヘッダ（トップページと同じ。角印は請求書に押した社印のイメージ） */
+  .site-header { padding-block: 20px; border-bottom: 1px solid var(--sei); background: var(--shiro); }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: var(--sho); }
   .seal {
-    display: grid; place-items: center; width: 32px; height: 32px;
-    background: var(--sho); color: var(--shiro);
-    font-family: var(--mincho); font-size: 19px; line-height: 1;
+    display: inline-grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 3px solid var(--sho);
+    font-family: var(--mincho);
+    font-weight: 800;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--sho);
   }
-  .brand-name { font-family: var(--mincho); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
-  .site-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9375rem; }
+  .brand-name { font-family: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 1.25rem; letter-spacing: 0.02em; }
+  .site-nav { display: flex; gap: clamp(12px, 3vw, 28px); font-size: 0.9375rem; }
   .site-nav a { text-decoration: none; color: var(--ju); }
   .site-nav a:hover { color: var(--sho); text-decoration: underline; }
+  .site-header .site-nav { margin-left: auto; }
 
   /* 見出し */
   .page-head { padding-block: clamp(40px, 8vw, 72px) 0; }
@@ -150,8 +155,9 @@
   }
   .site-footer p { max-width: var(--measure); }
 
-  @media (max-width: 680px) {
+  @media (max-width: 640px) {
     .site-nav a:not(:last-child) { display: none; }
+    .site-header .wrap { gap: 12px; }
   }
 </style>
 </head>
