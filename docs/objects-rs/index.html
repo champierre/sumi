@@ -541,7 +541,7 @@ pub(crate) fn deref&lt;'a&gt;(doc: &amp;'a Document, obj: &amp;'a Object) -&gt; 
     <div class="note">
       <span class="label">ヌルにするのは sumi の思いつきではない</span>
       <p>
-        PDF 仕様（ISO 32000-1 の 7.3.10）は、存在しないオブジェクトへの参照を
+        <a href="https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf#page=29" target="_blank" rel="noopener">PDF 仕様（ISO 32000-1 の 7.3.10）</a>は、存在しないオブジェクトへの参照を
         <strong>エラーとせず、ヌルへの参照として扱う</strong>よう定めています。
         <code>deref</code> の 1 行目のコメント「たどれない参照は <code>Null</code> になる」は、この決まりをそのまま書いたものです。
       </p>
