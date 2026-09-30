@@ -163,7 +163,7 @@
       <a href="../pdf/">PDF のしくみ</a>
       <a href="../color-rs/">コードを読む</a>
       <a href="../diary/">開発日誌</a>
-      <a href="https://github.com/champierre/sumi">GitHub</a>
+      <a href="https://github.com/champierre/sumi" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </div>
 </header>
@@ -199,22 +199,22 @@
         <thead><tr><th>番号</th><th>困っていたこと</th><th>対応</th></tr></thead>
         <tbody>
           <tr>
-            <td><a href="https://github.com/champierre/sumi/issues/10">#10</a></td>
+            <td><a href="https://github.com/champierre/sumi/issues/10" target="_blank" rel="noopener">#10</a></td>
             <td>Ghostscript から置き換えると、原色、とくに青が暗く刷られる</td>
             <td><code>--gray-model colorimetric</code></td>
           </tr>
           <tr>
-            <td><a href="https://github.com/champierre/sumi/issues/7">#7</a></td>
+            <td><a href="https://github.com/champierre/sumi/issues/7" target="_blank" rel="noopener">#7</a></td>
             <td>ページ数や警告を知るには、人向けの文章を解析するしかない</td>
             <td><code>--report json</code></td>
           </tr>
           <tr>
-            <td><a href="https://github.com/champierre/sumi/issues/8">#8</a></td>
+            <td><a href="https://github.com/champierre/sumi/issues/8" target="_blank" rel="noopener">#8</a></td>
             <td>開発環境・CI・本番のそれぞれで、実行ファイルを取ってきて置く必要がある</td>
             <td>gem（sumi-ruby）で配る</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/champierre/sumi/issues/9">#9</a></td>
+            <td><a href="https://github.com/champierre/sumi/issues/9" target="_blank" rel="noopener">#9</a></td>
             <td>写真を含まない PDF でも、出力が mutool より大きい</td>
             <td>object stream と xref stream で保存する</td>
           </tr>
@@ -283,7 +283,7 @@
         <p>
           <code>--gray-model</code> を足したことで、color.rs は 129 行から 222 行に増えました。
           「コードを読む」の記事に、sRGB の曲線と、表を引く整数版の節を書き足しています
-          （<a href="https://github.com/champierre/sumi/pull/17">#17</a>）。
+          （<a href="https://github.com/champierre/sumi/pull/17" target="_blank" rel="noopener">#17</a>）。
           書き直しの途中で、README の <code>colorimetric</code> の緑が 0.863 になっているのに気づきました。
           0.86248 の丸め誤りで、正しくは 0.862 です。
         </p>
@@ -385,7 +385,7 @@
       バージョンを上げるたびにその全部を直し、それでも環境ごとにずれやすい状態でした。
     </p>
     <p>
-      そこで <a href="https://github.com/flavorjones/tailwindcss-ruby">tailwindcss-ruby</a> と同じ形で、
+      そこで <a href="https://github.com/flavorjones/tailwindcss-ruby" target="_blank" rel="noopener">tailwindcss-ruby</a> と同じ形で、
       プラットフォームごとにビルド済みの実行ファイルを同梱した gem を作りました。
       <code>Gemfile.lock</code> でバージョンが固定されるので、開発環境・CI・本番で同じ sumi が動きます。
     </p>
@@ -693,7 +693,7 @@ float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];</code></pre>
 
     <p>
       調査の記録は
-      <a href="https://github.com/champierre/sumi/blob/main/docs/mutool-comparison-notes.md">docs/mutool-comparison-notes.md</a>
+      <a href="https://github.com/champierre/sumi/blob/main/docs/mutool-comparison-notes.md" target="_blank" rel="noopener">docs/mutool-comparison-notes.md</a>
       に残しています。
     </p>
   </div>
@@ -943,7 +943,7 @@ float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];</code></pre>
 
     <p>
       白黒反転の原因は sumi ではなく、JPEG のデコードに使っている
-      <a href="https://github.com/etemesi254/zune-image">zune-jpeg</a> 側にありました。
+      <a href="https://github.com/etemesi254/zune-image" target="_blank" rel="noopener">zune-jpeg</a> 側にありました。
       調べた内容を開発元に報告し、修正も提案しています。
     </p>
 
@@ -953,17 +953,17 @@ float out[(FUNSEGS+1)*(FUNSEGS+1)*FZ_MAX_COLORS];</code></pre>
         <thead><tr><th>番号</th><th>種別</th><th>内容</th></tr></thead>
         <tbody>
           <tr>
-            <td><a href="https://github.com/etemesi254/zune-image/issues/442">#442</a></td>
+            <td><a href="https://github.com/etemesi254/zune-image/issues/442" target="_blank" rel="noopener">#442</a></td>
             <td>issue</td>
             <td>YCCK を RGB にすると色が反転する。CMYK への変換は未実装で回避もできない</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/etemesi254/zune-image/pull/443">#443</a></td>
+            <td><a href="https://github.com/etemesi254/zune-image/pull/443" target="_blank" rel="noopener">#443</a></td>
             <td>PR</td>
             <td>YCCK から CMYK への変換を実装（48 行）。zune-jpeg 付属のテスト画像で libjpeg と一致することを確認</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/etemesi254/zune-image/issues/444">#444</a></td>
+            <td><a href="https://github.com/etemesi254/zune-image/issues/444" target="_blank" rel="noopener">#444</a></td>
             <td>issue</td>
             <td>APP14 付きの 1 成分 JPEG が 0.5.16-rc1 以降で復号できない（退行）</td>
           </tr>
