@@ -99,16 +99,9 @@
   .toc li { margin-bottom: .2em; }
   .toc a { color: var(--no); }
 
-  /* 連載の目次（各回へのリンク） */
-  .series {
-    display: flex; flex-wrap: wrap; align-items: baseline; gap: .3em 1em;
-    max-width: var(--measure); margin: 0 0 1.2em; padding: .6em 0;
-    border-block: 1px solid var(--sei); font-size: .9375rem;
-  }
-  .series .label { font-family: var(--mincho); font-weight: 700; margin-right: .2em; }
-  .series ol { display: flex; flex-wrap: wrap; gap: .3em 1.2em; margin: 0; padding: 0; list-style: none; }
-  .series a { color: var(--no); }
-  .series strong { font-weight: 700; }
+  /* 連載の目次（各回へのリンク）。見た目は上の .toc と同じ */
+  .series { margin-bottom: 1.2em; }
+  .series ol { list-style: none; padding-left: 0; }
 
   /* 表 */
   .scroll { overflow-x: auto; margin: 1.2em 0; }
@@ -207,8 +200,8 @@
   <p class="kicker">コードリーディング 第 1 回</p>
   <h1><code style="font:inherit;background:none;border:0;padding:0;">color.rs</code> を読む</h1>
   <!-- 連載の目次。新しい回を書いたら、両ページのこのリストに 1 行足す -->
-  <nav class="series" aria-label="コードを読む の各回">
-    <span class="label">コードを読む</span>
+  <nav class="toc series" aria-label="コードを読む の各回">
+    <h2>コードを読む</h2>
     <ol>
       <li><strong>第 1 回 <code>color.rs</code>（本記事）</strong></li>
       <li><a href="../objects-rs/">第 2 回 <code>objects.rs</code></a></li>
