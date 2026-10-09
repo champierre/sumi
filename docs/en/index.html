@@ -250,8 +250,8 @@
   /* Representative colors compared with Ghostscript */
   .tones-compare { margin: 56px 0 0; }
   .tones-compare img { display: block; width: 100%; height: auto; border: 1px solid var(--sei); background: var(--shiro); }
-  .heading-anchor { margin-left: 0.4em; color: var(--ju); font-weight: 400; text-decoration: none; opacity: 0.45; }
-  .heading-anchor:hover, .heading-anchor:focus-visible { opacity: 1; text-decoration: underline; }
+  .heading-anchor { margin-left: 0.4em; font-size: 0.85em; font-weight: 400; text-decoration: none; opacity: 0.45; }
+  .heading-anchor:hover, .heading-anchor:focus-visible { opacity: 1; }
   .tones-compare figcaption { margin-top: 10px; font-size: 0.875rem; line-height: 1.8; color: var(--ju); max-width: 44em; }
 
   /* Gray formula table */
@@ -525,7 +525,7 @@ Q</code></pre>
     </div>
     <div class="wrap">
       <figure class="tones-compare" id="colors">
-        <h3 class="bench-title">Representative colors compared with Ghostscript<a class="heading-anchor" href="#colors" aria-label="Link to this figure">#</a></h3>
+        <h3 class="bench-title">Representative colors compared with Ghostscript<a class="heading-anchor" href="#colors" aria-label="Link to this figure">🔗</a></h3>
         <img src="../images/colors-en.svg" width="1008" height="348" alt="Ten colors (red, orange, yellow, green, cyan, blue, purple, magenta, brown and gray) converted to gray by sumi with luma, sumi with colorimetric, and Ghostscript. colorimetric and Ghostscript give nearly the same shades, while luma makes primary colors, especially blue and green, darker">
         <figcaption>A PDF with ten colored squares was converted, rendered with poppler, and the gray in the middle of each square was read (0 is black, 1 is white). <code>--gray-model colorimetric</code> gives nearly the same shades as Ghostscript’s default conversion; the largest difference is 0.03, for blue. The default <code>luma</code> makes red, green, blue, cyan and magenta 0.15 to 0.28 darker than Ghostscript. Measured with sumi 0.2.0 and Ghostscript 10.05.1.</figcaption>
       </figure>
