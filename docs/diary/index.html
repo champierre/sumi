@@ -180,10 +180,247 @@
     うまくいかなかったことと、その原因も残しています。
   </p>
   <p class="lede">
-    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-09-29 18:05 のものです。
+    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-09 14:03 のものです。
     日付の新しいセクションほど上に並べ、セクションの中は起きた順に書いています。
   </p>
 </div>
+
+<section class="section" id="oct09" aria-labelledby="oct09-title">
+  <div class="wrap">
+    <h2 id="oct09-title">10月9日 — Ghostscript と色を見比べる図、zune-jpeg の PR の続き</h2>
+
+    <p>
+      この日にしたことは 2 つです。
+      <code>--gray-model</code> の違いを数字ではなく見た目で伝える図を載せたことと、
+      9 月に出したまま止まっていた zune-jpeg への PR の CI を直したことです。
+    </p>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-10-09T10:45">2026-10-09 10:45</time>
+        <h3>代表的な色を Ghostscript と見比べる図</h3>
+        <p>
+          赤、緑、青など 10 色の四角形を並べた PDF を、sumi の <code>luma</code>、sumi の <code>colorimetric</code>、
+          Ghostscript の 3 通りでグレースケールにし、各色の値を並べた図を README とトップページに載せました
+          （<a href="https://github.com/champierre/sumi/pull/31" target="_blank" rel="noopener">#31</a>）。
+          下記のとおりです。
+        </p>
+        <p class="hash">6e2e2d7</p>
+      </li>
+      <li>
+        <time datetime="2026-10-09T11:06">2026-10-09 11:06</time>
+        <h3>図の見出しに直接リンクできるようにする</h3>
+        <p>
+          図のある場所を URL で示せるように、見出しにアンカーを付けました。
+          アンカーの印は、最後にリンクの絵文字にしています。
+        </p>
+        <p class="hash">c1ec062 / fb2763d / 6221b6d</p>
+      </li>
+      <li>
+        <time datetime="2026-10-09T14:03">2026-10-09 14:03</time>
+        <h3>zune-jpeg への PR の no_std ビルドを直す</h3>
+        <p>
+          <a href="https://github.com/etemesi254/zune-image/pull/443" target="_blank" rel="noopener">#443</a> の
+          CI が落ちているという指摘を受けて、import を 1 行直しました。下記のとおりです。
+        </p>
+        <p class="hash">zune-image 89384180</p>
+      </li>
+    </ol>
+
+    <h3>色を見比べる — luma、colorimetric、Ghostscript</h3>
+
+    <p>
+      0.2.0 で <code>--gray-model colorimetric</code> を足したとき、
+      「Ghostscript から置き換えると青が暗くなる」という困りごとは式と数値で説明していました。
+      ただ、0.11 と 0.07 のような数字を並べても、刷ったときにどれだけ違うのかは伝わりません。
+      そこで、同じ PDF を 3 通りに変換し、poppler で描画して各色の中央の値を読み取りました。
+    </p>
+
+    <img src="../images/colors.svg" alt="赤、橙、黄、緑、シアン、青、紫、マゼンタ、茶、灰の 10 色を、sumi の luma、sumi の colorimetric、Ghostscript でグレーにした結果。colorimetric と Ghostscript はほぼ同じ濃さで、luma は原色、とくに青と緑が暗い">
+
+    <div class="scroll">
+      <table>
+        <caption>グレーにしたあとの値（0 が黒、255 が白。10 色のうち 5 色）</caption>
+        <thead><tr><th>色</th><th class="num">sumi（luma）</th><th class="num">sumi（colorimetric）</th><th class="num">Ghostscript</th></tr></thead>
+        <tbody>
+          <tr><td>赤</td><td class="num">76</td><td class="num">127</td><td class="num">129</td></tr>
+          <tr><td>緑</td><td class="num">150</td><td class="num">220</td><td class="num">220</td></tr>
+          <tr><td>青</td><td class="num">28</td><td class="num">76</td><td class="num">69</td></tr>
+          <tr><td>茶</td><td class="num">94</td><td class="num">97</td><td class="num">98</td></tr>
+          <tr><td>灰</td><td class="num">128</td><td class="num">128</td><td class="num">127</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      <code>colorimetric</code> は Ghostscript とほぼ同じ濃さになり、差がいちばん大きい青でも 255 段階の 7 です。
+      既定の <code>luma</code> では、赤、緑、青、シアン、マゼンタが Ghostscript よりはっきり暗くなります。
+      茶や灰のように 3 つの成分の差が小さい色は、どの方法でもほとんど変わりません。
+      計測したのは sumi 0.2.0 と Ghostscript 10.05.1（Mac）で、
+      値は <code>bench/colors.json</code> にあり、<code>python3 bench/colors.py</code> で再現できます。
+    </p>
+
+    <h3>zune-jpeg の PR — 手元では通るのに CI で落ちる</h3>
+
+    <p>
+      <a href="#upstream">9 月に報告した</a> YCCK から CMYK への変換の PR（#443）は、その後こう進んでいました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>#443 の経過（日本時間）</caption>
+        <thead><tr><th>日時</th><th>だれが</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>9月21日 01:58</td><td>開発元</td><td>内容は問題なし。ただし別の PR が入って衝突したので、解消すれば取り込める</td></tr>
+          <tr><td>9月25日 10:13</td><td>こちら</td><td><code>dev</code> を取り込んで衝突を解消。<code>tests/app14.rs</code> で両方のテストを残した</td></tr>
+          <tr><td>10月7日 19:46</td><td>開発元</td><td>CI が落ちている。<code>vec!</code> は no_std 環境では import が要る</td></tr>
+          <tr><td>10月9日 14:03</td><td>こちら</td><td><code>worker.rs</code> の import を直して push</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      落ちていたのは、標準ライブラリのないターゲット（<code>x86_64-unknown-uefi</code>）向けにビルドするジョブでした。
+      エラーは 1 件だけです。
+    </p>
+
+<pre><code>error: cannot find macro `vec` in this scope
+   --&gt; crates/zune-jpeg/src/worker.rs:282:19</code></pre>
+
+    <p>
+      追加した変換の関数は、作業用のバッファを <code>vec!</code> で確保しています。
+      ところが <code>worker.rs</code> が <code>alloc</code> から取り込んでいたのは <code>format</code> だけでした。
+      直したのは次の 1 行で、同じクレートの <code>mcu.rs</code> や <code>decoder.rs</code> と同じ書き方です。
+    </p>
+
+<pre><code>// 直す前
+use alloc::format;
+// 直した後
+use alloc::{format, vec};</code></pre>
+
+    <p>
+      CI と同じコマンドを手元の stable（1.93.0）で実行し、<code>arith</code> 機能のあり・なしの両方でビルドが通ること、
+      <code>app14</code> のテスト 10 件が通ることを確かめてから push しました。
+    </p>
+
+    <div class="note">
+      <span class="label">つまずき: 標準ライブラリがあると気づけない</span>
+      <p>
+        ふつうにビルドすると、<code>vec!</code> は何も書かなくても使えます。
+        そのため手元のビルドとテストも、CI のほかのジョブも、すべて通っていました。
+        no_std を名乗るクレートに手を入れるときは、標準ライブラリのないターゲットでも
+        一度ビルドしてから出すべきでした。
+      </p>
+    </div>
+
+    <div class="note">
+      <span class="label">つまずき: 置いた場所のせいでビルドできなかった</span>
+      <p>
+        最初は zune-image を別の Rust プロジェクトと同じディレクトリの下に置きました。
+        その親ディレクトリの <code>rust-toolchain.toml</code> が 2024 年 1 月の nightly を指定していたため、
+        こちらにも同じ指定が効き、<code>edition2024</code> を読めずにビルドが始まりませんでした。
+        指定の効かない場所に置き直して、stable でビルドしています。
+      </p>
+    </div>
+
+    <p>
+      この記事を書いている時点では、<strong>直した結果を開発元の CI ではまだ確かめられていません</strong>。
+      外部からの PR では、開発元が承認するまでワークフローが動かず、no_std のジョブも承認待ちのままです。
+      手元で確かめたのは stable だけで、CI が回す beta と nightly では実行していません。
+    </p>
+
+    <p>
+      push の直後に 1 つだけ失敗の表示が出ましたが、これは今回の変更とは関係がありません。
+      テスト用のワークフロー（<code>test.yml</code>）がジョブを 1 つも起動できずに終わっており、
+      開発元の <code>dev</code> ブランチへの push でも、ほかの人の PR でも、確かめた範囲（10 月 5 日以降）では同じ形で失敗しています。
+      ファイルには、YAML としては正しくても GitHub Actions が受け付けない書き方
+      （トップレベルの独自のキーと、<code>&lt;&lt;:</code> によるマージ）があり、これが原因だと見ています。
+      GitHub が出している正確なエラーメッセージは確認できていません。
+    </p>
+
+    <p>
+      #442 と #444 はどちらも未解決のままなので、sumi が zune-jpeg 0.5.15 に留まる判断は変えていません。
+    </p>
+  </div>
+</section>
+
+<section class="section" id="sep30" aria-labelledby="sep30-title">
+  <div class="wrap">
+    <h2 id="sep30-title">9月30日 — コードを読むの第 2 回と第 3 回</h2>
+
+    <p>
+      0.2.0 を出した翌日は、コードには触らず、読みものを書き進めました。
+      「コードを読む」が 3 回の連載になり、あわせて各ページの見出しまわりを揃えています。
+    </p>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-09-30T04:58">2026-09-30 04:58</time>
+        <h3>この日誌を 0.2.0 まで書き足す</h3>
+        <p>
+          9 月 29 日までの記事を足し、セクションを新しい順に並べ替えました。
+          一度はセクションの中まで新しい順にしましたが、経緯を追いにくくなったので、中は起きた順に戻しています。
+        </p>
+        <p class="hash">db4e9cb / dcf91cf</p>
+      </li>
+      <li>
+        <time datetime="2026-09-30T08:58">2026-09-30 08:58</time>
+        <h3>コードを読む 第 2 回 — objects.rs</h3>
+        <p>
+          <a href="../objects-rs/">objects.rs の 201 行</a>を読み解く記事です
+          （<a href="https://github.com/champierre/sumi/pull/20" target="_blank" rel="noopener">#20</a>）。
+          PDF を読むライブラリ lopdf の <code>Object</code> から入り、値の取り出し、ストリームの展開の順に進みます。
+          数値は、objects.rs を別のクレートに写して動かして確かめました。
+          たとえば <code>/Filter</code> が参照で書かれていると、lopdf だけでは圧縮されたままのバイト列がエラーなしで返ること。
+          lopdf の小数は f32 なので、0.1 が 0.10000000149011612 になること。
+          ゼロだけの 50 MB が Flate で 48,584 バイトに縮むこと。
+          objects.rs にテストがないことも、記事にそのまま書いています。
+        </p>
+        <p class="hash">2744922</p>
+      </li>
+      <li>
+        <time datetime="2026-09-30T14:00">2026-09-30 14:00</time>
+        <h3>連載の目次と、ページ間で揃っていなかった見出しまわり</h3>
+        <p>
+          「コードを読む」の各回の冒頭に、連載の目次を置きました。
+          書き足すうちに、下層ページのナビゲーションの項目やヘッダーの色がトップページと食い違っていたので、
+          すべて同じに揃えています。外部サイトへのリンクは別のタブで開くようにしました。
+        </p>
+        <p class="hash">9a3555f / 22c4f87 / 1822d27 / bce693f / 5489ab8 / 6eb5219 / ec2ee21</p>
+      </li>
+      <li>
+        <time datetime="2026-09-30T18:23">2026-09-30 18:23</time>
+        <h3>PDF 仕様へのリンクを張り、すぐに張り替える</h3>
+        <p>
+          objects.rs の解説で触れている PDF 仕様（ISO 32000-1）の 7.3.7 節と 7.3.10 節を、仕様書へのリンクにしました。
+          下記のとおり、リンク先はその日のうちに差し替えています。
+        </p>
+        <p class="hash">6f4090c / a8188fb / 632a93d</p>
+      </li>
+      <li>
+        <time datetime="2026-09-30T19:04">2026-09-30 19:04</time>
+        <h3>コードを読む 第 3 回 — lexer.rs</h3>
+        <p>
+          <a href="../lexer-rs/">lexer.rs の 495 行</a>を 13 節に分けて読み解く記事です
+          （<a href="https://github.com/champierre/sumi/pull/30" target="_blank" rel="noopener">#30</a>）。
+          字句解析とは何かから始めて、位置だけを覚えて命令以外をそのまま写す設計、
+          数値の解析が指数表記を認めない理由、インライン画像の終わりを探す 2 段構え、
+          入れ子の深さに上限を置いている理由までを扱います。
+        </p>
+        <p class="hash">96be6a1</p>
+      </li>
+    </ol>
+
+    <div class="note">
+      <span class="label">つまずき: 張ったばかりのリンクが切れていた</span>
+      <p>
+        仕様書のリンク先には、Adobe が公開していた <code>PDF32000_2008.pdf</code> の URL を使いました。
+        ところがこの URL は 404 を返すようになっていて、9 月 28 日に color.rs の解説へ張ったリンクも切れていました。
+        3 か所とも、Internet Archive に残っている 2026 年 8 月 27 日のスナップショットへ向け直しています。
+      </p>
+    </div>
+  </div>
+</section>
 
 <section class="section" id="v020" aria-labelledby="v020-title">
   <div class="wrap">
