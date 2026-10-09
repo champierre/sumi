@@ -389,6 +389,16 @@ Gray = lin⁻¹(Y)          （lin は sRGB の値をリニアに戻す関数）
 
 Ghostscript は `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray` で変換しました。`-dUseFastColor=true`（ICC を使わない）にすると `luma` と同じ値になります。CMYK と Lab は `--gray-model` によらず上の式で変換します。
 
+#### 代表的な色の比較
+
+赤、緑、青など 10 色の四角形を並べた PDF を sumi と Ghostscript でグレースケールに変換し、poppler で描画して各色の中央の値を読み取りました（0 が黒、1 が白）。
+
+<img src="docs/images/colors.svg" alt="赤、橙、黄、緑、シアン、青、紫、マゼンタ、茶、灰の 10 色を、sumi の luma、sumi の colorimetric、Ghostscript でグレーにした結果。colorimetric と Ghostscript はほぼ同じ濃さで、luma は原色、とくに青と緑が暗い">
+
+`colorimetric` は Ghostscript とほぼ同じ濃さになり、差は青の 0.03 が最大です。既定の `luma` では、赤、緑、青、シアン、マゼンタが Ghostscript より 0.15〜0.28 暗くなります。茶や灰のように 3 つの成分の差が小さい色は、どの方法でも差が 0.02 以内です。
+
+sumi 0.2.0 と Ghostscript 10.05.1（Mac）で計測しました。値は [bench/colors.json](bench/colors.json) にあり、`python3 bench/colors.py` で再現できます。
+
 モノクロでは `Gray < threshold` を黒、それ以外を白にします。`Gray` は `--gray-model` で選んだ式で求めます。
 
 ## 制限事項

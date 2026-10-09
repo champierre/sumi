@@ -389,6 +389,16 @@ Gray = lin⁻¹(Y)          (lin converts an sRGB value to linear light)
 
 Ghostscript was run with `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray`. With `-dUseFastColor=true` (no ICC) it gives the same values as `luma`. CMYK and Lab are always converted with the formulas above, regardless of `--gray-model`.
 
+#### Representative colors
+
+A PDF with ten colored squares, including red, green and blue, was converted to grayscale with sumi and Ghostscript, rendered with poppler, and the gray in the middle of each square was read (0 is black, 1 is white).
+
+<img src="docs/images/colors-en.svg" alt="Ten colors (red, orange, yellow, green, cyan, blue, purple, magenta, brown and gray) converted to gray by sumi with luma, sumi with colorimetric, and Ghostscript. colorimetric and Ghostscript give nearly the same shades, while luma makes primary colors, especially blue and green, darker">
+
+`colorimetric` gives nearly the same shades as Ghostscript; the largest difference is 0.03, for blue. The default `luma` makes red, green, blue, cyan and magenta 0.15 to 0.28 darker than Ghostscript. Colors whose three components are close together, such as brown and gray, stay within 0.02 whichever method is used.
+
+Measured with sumi 0.2.0 and Ghostscript 10.05.1 (Mac). The values are in [bench/colors.json](bench/colors.json) and can be reproduced with `python3 bench/colors.py`.
+
 In monochrome, `Gray < threshold` becomes black and everything else white. `Gray` is computed with the formula selected by `--gray-model`.
 
 ## Limitations

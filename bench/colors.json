@@ -1,0 +1,126 @@
+{
+  "sumi_version": "0.2.0",
+  "ghostscript_version": "10.05.1",
+  "colors": [
+    {
+      "name": "赤",
+      "name_en": "Red",
+      "rgb": [
+        1,
+        0,
+        0
+      ],
+      "sumi_luma": 76,
+      "sumi_colorimetric": 127,
+      "ghostscript": 129
+    },
+    {
+      "name": "橙",
+      "name_en": "Orange",
+      "rgb": [
+        1,
+        0.5,
+        0
+      ],
+      "sumi_luma": 152,
+      "sumi_colorimetric": 163,
+      "ghostscript": 164
+    },
+    {
+      "name": "黄",
+      "name_en": "Yellow",
+      "rgb": [
+        1,
+        1,
+        0
+      ],
+      "sumi_luma": 227,
+      "sumi_colorimetric": 247,
+      "ghostscript": 248
+    },
+    {
+      "name": "緑",
+      "name_en": "Green",
+      "rgb": [
+        0,
+        1,
+        0
+      ],
+      "sumi_luma": 150,
+      "sumi_colorimetric": 220,
+      "ghostscript": 220
+    },
+    {
+      "name": "シアン",
+      "name_en": "Cyan",
+      "rgb": [
+        0,
+        1,
+        1
+      ],
+      "sumi_luma": 178,
+      "sumi_colorimetric": 229,
+      "ghostscript": 228
+    },
+    {
+      "name": "青",
+      "name_en": "Blue",
+      "rgb": [
+        0,
+        0,
+        1
+      ],
+      "sumi_luma": 28,
+      "sumi_colorimetric": 76,
+      "ghostscript": 69
+    },
+    {
+      "name": "紫",
+      "name_en": "Purple",
+      "rgb": [
+        0.5,
+        0,
+        0.5
+      ],
+      "sumi_luma": 52,
+      "sumi_colorimetric": 70,
+      "ghostscript": 69
+    },
+    {
+      "name": "マゼンタ",
+      "name_en": "Magenta",
+      "rgb": [
+        1,
+        0,
+        1
+      ],
+      "sumi_luma": 105,
+      "sumi_colorimetric": 145,
+      "ghostscript": 144
+    },
+    {
+      "name": "茶",
+      "name_en": "Brown",
+      "rgb": [
+        0.6,
+        0.3,
+        0.1
+      ],
+      "sumi_luma": 94,
+      "sumi_colorimetric": 97,
+      "ghostscript": 98
+    },
+    {
+      "name": "灰",
+      "name_en": "Gray",
+      "rgb": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "sumi_luma": 128,
+      "sumi_colorimetric": 128,
+      "ghostscript": 127
+    }
+  ]
+}
