@@ -245,6 +245,11 @@
   .diff mark { display: inline-block; padding-inline: 4px; margin-inline: -4px; background: var(--sho); color: var(--shiro); }
   .diff-note { margin-top: 12px; font-size: 0.875rem; color: var(--ju); }
 
+  /* Representative colors compared with Ghostscript */
+  .tones-compare { margin: 56px 0 0; }
+  .tones-compare img { display: block; width: 100%; height: auto; border: 1px solid var(--sei); background: var(--shiro); }
+  .tones-compare figcaption { margin-top: 10px; font-size: 0.875rem; line-height: 1.8; color: var(--ju); max-width: 44em; }
+
   /* Gray formula table */
   .formula {
     margin: 32px 0 16px;
@@ -509,6 +514,13 @@ Q</code></pre>
         </div>
         <p class="diff-note">PDF 仕様が定める変換式です。黄色のような明るい色は、モノクロでは白になります。<code>--gray-model colorimetric</code> を付けると、色を sRGB として輝度を求める式に切り替わり、原色が明るくなります（赤 0.50、緑 0.86、青 0.30）。Ghostscript の既定の変換に近い値です。</p>
       </div>
+    </div>
+    <div class="wrap">
+      <figure class="tones-compare">
+        <h3 class="bench-title">代表的な色の変換結果を Ghostscript と比べる</h3>
+        <img src="images/colors.svg" width="1008" height="348" alt="赤、橙、黄、緑、シアン、青、紫、マゼンタ、茶、灰の 10 色を、sumi の luma、sumi の colorimetric、Ghostscript でグレーにした結果。colorimetric と Ghostscript はほぼ同じ濃さで、luma は原色、とくに青と緑が暗い">
+        <figcaption>10 色の四角形を並べた PDF を変換し、poppler で描画した各色の中央の値です（0 が黒、1 が白）。<code>--gray-model colorimetric</code> は Ghostscript の既定の変換とほぼ同じ濃さになり、差は青の 0.03 が最大です。既定の <code>luma</code> では、赤、緑、青、シアン、マゼンタが Ghostscript より 0.15〜0.28 暗くなります。sumi 0.2.0、Ghostscript 10.05.1 で計測しました。</figcaption>
+      </figure>
     </div>
   </section>
 
