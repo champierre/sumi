@@ -76,8 +76,8 @@
     font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
     margin: 0 0 .4em;
   }
-  /* 語の途中で折り返さないよう、文節の切れ目で折り返す（対応していないブラウザでは今までどおり） */
-  .lede { max-width: var(--measure); color: var(--ju); margin: 0; word-break: auto-phrase; }
+  /* 冒頭の段落は本文の幅いっぱいに使い、文ごとに改行する。収まらない幅では文節の切れ目で折り返す（対応していないブラウザでは今までどおり） */
+  .lede { color: var(--ju); margin: 0; word-break: auto-phrase; }
   .lede + .lede { margin-top: 0.8em; }
 
   .section { padding-block: clamp(32px, 6vw, 56px); }
@@ -178,11 +178,11 @@
 <div class="wrap page-head">
   <h1>開発日誌</h1>
   <p class="lede">
-    PDF の色指定だけを書き換えて白黒にする sumi を、どう作り、どう確かめてきたかの記録です。
+    PDF の色指定だけを書き換えて白黒にする sumi を、どう作り、どう確かめてきたかの記録です。<br>
     うまくいかなかったことと、その原因も残しています。
   </p>
   <p class="lede">
-    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-21 10:22 のものです。
+    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-21 10:22 のものです。<br>
     日付の新しいセクションほど上に並べ、セクションの中は起きた順に書いています。
   </p>
 </div>
