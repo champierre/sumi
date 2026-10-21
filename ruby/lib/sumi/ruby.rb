@@ -70,3 +70,5 @@ module Sumi
     end
   end
 end
+
+require_relative "conversion"
