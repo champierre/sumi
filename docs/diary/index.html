@@ -192,9 +192,9 @@
     <h2 id="oct21-title">10月21日 — Ruby から 1 行で変換する（0.2.1）、zune-jpeg 0.5.16 を待つ</h2>
 
     <p>
-      この日にしたことは 2 つです。
-      sumi-ruby に PDF のバイト列をそのまま変換する <code>Sumi.convert</code> を足して 0.2.1 を公開したことと、
-      <a href="#oct10">取り込まれた</a> zune-jpeg の修正を sumi にいつ入れるかを決めたことです。
+      この日にしたことは 3 つです。
+      sumi-ruby に PDF のバイト列をそのまま変換する <code>Sumi.convert</code> を足して 0.2.1 を公開したこと、
+      <a href="#oct10">取り込まれた</a> zune-jpeg の修正を sumi にいつ入れるかを決めたこと、その修正が Chromium のテストの失敗にも関わっていたことを調べたことです。
     </p>
 
     <ol class="log">
@@ -315,6 +315,75 @@ File.binwrite("output.pdf", gray)</code></pre>
       </li>
       <li>「YCCK は警告が出る」としているテストと README を、「変換される」に書き換える。</li>
     </ul>
+
+    <h3 id="chromium">同じ不具合が Chromium でも足を止めていた</h3>
+
+    <p>
+      <a href="#oct10">10月10日</a>に開発元が #443 に付けたコメントは、
+      「Chromium で落ちているテストが、これで直るはず」というものでした。
+      どういうことかを調べました。
+    </p>
+
+    <p>
+      コメントが示していた Chromium の変更
+      （<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8539408" target="_blank" rel="noopener">CL 8539408</a>）は、
+      JPEG のデコーダとエンコーダを Rust 製のものに替える機能（<code>RustyJpegFeature</code>）を、
+      Chromium の CI で試しに有効にするものです。
+      有効にすると、Web 標準のテスト（WPT）のうち、広色域（Display P3）の canvas に <code>ImageBitmap</code> 経由で画像を描く次の 3 件が落ちていました。
+    </p>
+
+    <ul>
+      <li><code>canvas-display-p3-drawImage-ImageBitmap-image.html</code></li>
+      <li><code>canvas-display-p3-drawImage-ImageBitmap-cloned.html</code></li>
+      <li><code>canvas-display-p3-drawImage-ImageBitmap-ImageBitmap.html</code></li>
+    </ul>
+
+    <p>
+      テストが読む画像を落として調べると、<code>Generic-CMYK-FF000000.jpg</code> と <code>Generic-CMYK-BE000000.jpg</code> の 2 枚は
+      APP14 の transform が 2、つまり sumi で白黒反転を起こしたのと<strong>同じ Adobe の YCCK の JPEG</strong>でした。
+      ファイル名は CMYK の値で、FF000000 は C が 100%、ほかが 0 です。期待値はシアン（sRGB で <code>[0, 163, 218]</code>）になっています。
+      ブラウザは CMYK のピクセルを受け取ってから、埋め込まれた ICC プロファイルで sRGB や P3 に変換します。
+      そのため、YCCK を CMYK にできない zune-jpeg では正しい色を描けません。
+    </p>
+
+    <p>
+      では、#443 がマージされてこの 3 件は通るようになったのか。
+      CL の最新の状況（10月21日 00:54 時点）では、<strong>まだ通っていません</strong>。
+      パッチは 10 回出し直され、失敗は 82 件から 47 件まで減りましたが、
+      残る 47 件のうち 12 件（この 3 件のテストをブラウザの組み合わせごとに数えたもの）が YCCK によるものです。
+      10月20日の分析のコメントには、原因が次のように書かれていました。
+    </p>
+
+    <ul>
+      <li>テストの CMYK の JPEG は YCCK である。</li>
+      <li>
+        Chromium の main に入っている zune-jpeg は、CMYK での出力を頼むと
+        <code>Unimplemented colorspace mapping from YCCK to CMYK</code> で断る。
+      </li>
+      <li>次にすることは、ICC プロファイルを保ったまま、YCCK を反転した CMYK として出力すること。</li>
+    </ul>
+
+    <p>
+      このエラーは、sumi で<a href="#ycck-title">白黒反転を調べたとき</a>に出会い、#442 で報告したものと同じです。
+      Chromium が取り込んでいる zune-jpeg は #443 より前の版で、#443 の入った正式版もまだ出ていません。
+      「次にすること」に挙がっている変換は、ちょうど #443 で足したものです。
+      Chromium が #443 の入った zune-jpeg を取り込めば、この部分は進むはずです。
+      ただ、ほかにも原因があるかどうかは、取り込んで CI を回すまでわかりません。
+    </p>
+
+    <p>
+      sumi のために直した不具合が、Chromium が JPEG のデコーダを Rust 製に替える作業でも障害になっていた、ということです。
+      Chromium に直接手を入れたわけではなく、Chromium が使う部品を先に直していた形です。
+      役に立ったと言えるのは、Chromium でこの 3 件が通るようになってからです。
+    </p>
+
+    <div class="note">
+      <span class="label">sumi にとっての手がかり</span>
+      <p>
+        Chromium も、YCCK を「反転した CMYK」として扱うつもりでいます。
+        0.5.16 に上げるときに確かめる予定の、反転した CMYK を扱う今の処理と合うかという点と同じ方向です。
+      </p>
+    </div>
   </div>
 </section>
 
@@ -343,7 +412,7 @@ File.binwrite("output.pdf", gray)</code></pre>
       10月9日の時点では確かめられていなかった開発元の CI は、マージコミットで 47 件のジョブが動き、
       失敗はありませんでした（2 件は条件に合わずスキップ）。
       開発元のコメントによると、Chromium で zune-jpeg を試験的に有効にする変更の中で見つかったテストの失敗があり、sumi のために直した YCCK の変換が、
-      その修正にもつながるようです。
+      その修正にもつながるようです（<a href="#chromium">10月21日に調べた結果</a>）。
     </p>
   </div>
 </section>
