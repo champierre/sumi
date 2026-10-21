@@ -76,7 +76,9 @@
     font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.35;
     margin: 0 0 .4em;
   }
-  .lede { max-width: var(--measure); color: var(--ju); margin: 0; }
+  /* 語の途中で折り返さないよう、文節の切れ目で折り返す（対応していないブラウザでは今までどおり） */
+  .lede { max-width: var(--measure); color: var(--ju); margin: 0; word-break: auto-phrase; }
+  .lede + .lede { margin-top: 0.8em; }
 
   .section { padding-block: clamp(32px, 6vw, 56px); }
   .section h2 {
