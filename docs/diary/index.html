@@ -187,12 +187,12 @@
 
 <section class="section" id="oct21" aria-labelledby="oct21-title">
   <div class="wrap">
-    <h2 id="oct21-title">10月10日〜10月21日 — Ruby から 1 行で変換する（0.2.1）、zune-jpeg の PR が取り込まれる</h2>
+    <h2 id="oct21-title">10月21日 — Ruby から 1 行で変換する（0.2.1）、zune-jpeg 0.5.16 を待つ</h2>
 
     <p>
-      この期間にあったことは 2 つです。
+      この日にしたことは 2 つです。
       sumi-ruby に PDF のバイト列をそのまま変換する <code>Sumi.convert</code> を足して 0.2.1 を公開したことと、
-      9 月に出した zune-jpeg への PR（#443）が開発元に取り込まれたことです。
+      <a href="#oct10">取り込まれた</a> zune-jpeg の修正を sumi にいつ入れるかを決めたことです。
     </p>
 
     <ol class="log">
@@ -276,30 +276,12 @@ File.binwrite("output.pdf", gray)</code></pre>
       こうしておけば、sumi にオプションが増えても gem を直さずに使えます。
     </p>
 
-    <h3>zune-jpeg の PR が取り込まれる</h3>
+    <h3>zune-jpeg 0.5.16 を待つ</h3>
 
     <p>
-      <a href="#oct09">10月9日</a>に import を直した #443 は、その後こう進みました。
-    </p>
-
-    <div class="scroll">
-      <table>
-        <caption>#443 のその後（日本時間）</caption>
-        <thead><tr><th>日時</th><th>だれが</th><th>内容</th></tr></thead>
-        <tbody>
-          <tr><td>10月10日 09:09</td><td>開発元</td><td>承認（「LGTM. Thanks!」）</td></tr>
-          <tr><td>10月10日 09:13</td><td>開発元</td><td>Chromium で落ちている広色域 canvas のテストが、これで直るはずとのコメント</td></tr>
-          <tr><td>10月11日 22:56</td><td>開発元</td><td><code>dev</code> にマージ</td></tr>
-          <tr><td>10月19日</td><td>開発元</td><td>#443 を含む zune-jpeg 0.5.16-rc3 を crates.io に公開</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>
-      10月9日の時点では確かめられていなかった開発元の CI は、マージコミットで 47 件のジョブが動き、
-      失敗はありませんでした（2 件は条件に合わずスキップ）。
-      開発元のコメントによると、Chromium で zune-jpeg を試験的に有効にする変更の中で見つかったテストの失敗があり、sumi のために直した YCCK の変換が、
-      その修正にもつながるようです。
+      #443 がマージされたので、sumi 側で何か変える必要があるかを調べました。
+      今の sumi は zune-jpeg 0.5.15 に固定しているので、マージされただけでは何も変わりません。
+      crates.io には 10月19日に 0.5.16-rc3 が出ていて、落として中を見ると、#443 の YCCK から CMYK への変換が入っていました。
     </p>
 
     <div class="note">
@@ -331,6 +313,36 @@ File.binwrite("output.pdf", gray)</code></pre>
       </li>
       <li>「YCCK は警告が出る」としているテストと README を、「変換される」に書き換える。</li>
     </ul>
+  </div>
+</section>
+
+<section class="section" id="oct10" aria-labelledby="oct10-title">
+  <div class="wrap">
+    <h2 id="oct10-title">10月10日 — zune-jpeg の PR が承認される</h2>
+
+    <p>
+      <a href="#oct09">10月9日</a>に import を直した #443 を、開発元が承認しました。
+      マージは翌日です。この日にこちらで手を動かしたことはありません。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>#443 のその後（日本時間）</caption>
+        <thead><tr><th>日時</th><th>だれが</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>10月10日 09:09</td><td>開発元</td><td>承認（「LGTM. Thanks!」）</td></tr>
+          <tr><td>10月10日 09:13</td><td>開発元</td><td>Chromium で落ちている広色域 canvas のテストが、これで直るはずとのコメント</td></tr>
+          <tr><td>10月11日 22:56</td><td>開発元</td><td><code>dev</code> にマージ</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      10月9日の時点では確かめられていなかった開発元の CI は、マージコミットで 47 件のジョブが動き、
+      失敗はありませんでした（2 件は条件に合わずスキップ）。
+      開発元のコメントによると、Chromium で zune-jpeg を試験的に有効にする変更の中で見つかったテストの失敗があり、sumi のために直した YCCK の変換が、
+      その修正にもつながるようです。
+    </p>
   </div>
 </section>
 
