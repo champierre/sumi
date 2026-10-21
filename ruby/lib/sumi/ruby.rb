@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require_relative "ruby/version"
 require_relative "ruby/platforms"
 
@@ -9,6 +10,7 @@ module Sumi
     class UnsupportedPlatformError < Error; end
     class ExecutableNotFoundError < Error; end
     class DirectoryNotFoundError < Error; end
+    class ConversionError < Error; end
 
     GEM_NAME = "sumi-ruby"
     INSTALL_DIR_ENV = "SUMI_INSTALL_DIR"
@@ -54,6 +56,21 @@ module Sumi
             bundle install
           Or set #{INSTALL_DIR_ENV} to a directory that contains the sumi executable.
         MESSAGE
+      end
+
+      # Converts the PDF in `pdf` (a String of its bytes) and returns the converted PDF as a String.
+      #
+      # `args` are passed to sumi as they are, for example `"--gray-model", "colorimetric"`.
+      # Raises ConversionError with sumi's error output when sumi exits with a non-zero status.
+      def convert(pdf, *args)
+        output, error, status = Open3.capture3(executable, "-", "-o", "-", *args, stdin_data: pdf, binmode: true)
+        unless status.success?
+          message = error.strip
+          message = "sumi exited with status #{status.exitstatus}" if message.empty?
+          raise ConversionError, message
+        end
+
+        output
       end
 
       private

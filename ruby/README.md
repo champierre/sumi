@@ -22,7 +22,19 @@ bundle install
 bundle exec sumi input.pdf -o output.pdf
 ```
 
-Ruby からは `Sumi::Ruby.executable` で実行ファイルの絶対パスを取得できます。
+Ruby からは `Sumi::Ruby.convert` で、PDF のバイト列を変換できます。
+2 つ目以降の引数は、そのまま sumi のオプションとして渡します。
+sumi が失敗すると、sumi のエラー出力をメッセージにした `Sumi::Ruby::ConversionError` を投げます。
+
+```ruby
+require "sumi/ruby"
+
+pdf = File.binread("input.pdf")
+gray = Sumi::Ruby.convert(pdf, "--gray-model", "colorimetric", "--strict")
+File.binwrite("output.pdf", gray)
+```
+
+ファイルを直接指定したい場合や、`--report json` の出力を受け取りたい場合は、`Sumi::Ruby.executable` で実行ファイルの絶対パスを取得して実行します。
 
 ```ruby
 require "open3"
