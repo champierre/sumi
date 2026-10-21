@@ -180,10 +180,159 @@
     うまくいかなかったことと、その原因も残しています。
   </p>
   <p class="lede">
-    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-09 14:03 のものです。
+    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-21 10:22 のものです。
     日付の新しいセクションほど上に並べ、セクションの中は起きた順に書いています。
   </p>
 </div>
+
+<section class="section" id="oct21" aria-labelledby="oct21-title">
+  <div class="wrap">
+    <h2 id="oct21-title">10月10日〜10月21日 — Ruby から 1 行で変換する（0.2.1）、zune-jpeg の PR が取り込まれる</h2>
+
+    <p>
+      この期間にあったことは 2 つです。
+      sumi-ruby に PDF のバイト列をそのまま変換する <code>Sumi.convert</code> を足して 0.2.1 を公開したことと、
+      9 月に出した zune-jpeg への PR（#443）が開発元に取り込まれたことです。
+    </p>
+
+    <ol class="log">
+      <li>
+        <time datetime="2026-10-21T10:12">2026-10-21 10:12</time>
+        <h3>sumi-ruby に変換のメソッドを足す</h3>
+        <p>
+          PDF のバイト列とオプションを受け取り、変換後のバイト列を返すメソッドを足しました。
+          最初は <code>Sumi::Ruby.convert</code> という名前でした。
+        </p>
+        <p class="hash">7596194</p>
+      </li>
+      <li>
+        <time datetime="2026-10-21T10:17">2026-10-21 10:17</time>
+        <h3>入口を <code>Sumi.convert</code> にし、オプションをキーワード引数にする</h3>
+        <p>
+          5 分後に名前と引数の形を変えました。理由は下記のとおりです。
+        </p>
+        <p class="hash">cf2fd18</p>
+      </li>
+      <li>
+        <time datetime="2026-10-21T10:22">2026-10-21 10:22</time>
+        <h3>0.2.1 を公開</h3>
+        <p>
+          <a href="https://github.com/champierre/sumi/pull/37" target="_blank" rel="noopener">#37</a> をマージし、
+          <code>v0.2.1</code> のタグを push しました。
+          Release のワークフローが 5 プラットフォーム分の実行ファイルを GitHub Releases に置き、
+          sumi-ruby をプラットフォームごとの 7 種類と汎用の 1 種類、あわせて 8 種類 RubyGems に公開しました。
+          sumi 本体の変換の処理は 0.2.0 から変わっておらず、gem と揃えるために版だけ上げています。
+        </p>
+        <p class="hash">bd2fad5 / e7be475</p>
+      </li>
+    </ol>
+
+    <h3>Ruby から 1 行で変換する — <code>Sumi.convert</code></h3>
+
+    <p>
+      0.2.0 の sumi-ruby が返せるのは、同梱した実行ファイルのパス（<code>Sumi::Ruby.executable</code>）だけでした。
+      Rails のアプリで PDF を変換するには、使う側が <code>Open3</code> で sumi を起動し、
+      標準入力に PDF を流して標準出力を受け取り、終了コードを見て失敗を判定する、というコードを毎回書く必要がありました。
+      0.2.1 からは次のように書けます。
+    </p>
+
+<pre><code>require "sumi/ruby"
+
+pdf = File.binread("input.pdf")
+gray = Sumi.convert(pdf, gray_model: "colorimetric", strict: true)
+File.binwrite("output.pdf", gray)</code></pre>
+
+    <p>
+      sumi が失敗したときは、sumi のエラー出力をメッセージにした <code>Sumi::ConversionError</code> を投げます。
+      これは gem のほかのエラーと同じく <code>Sumi::Ruby::Error</code> を継承しているので、まとめて <code>rescue</code> できます。
+      ファイルを直接指定したいときや、<code>--report json</code> の出力を受け取りたいときは、
+      これまでどおり <code>Sumi::Ruby.executable</code> で実行ファイルを起動します。
+    </p>
+
+    <p>最初の形から 3 点を変えました。</p>
+
+    <div class="scroll">
+      <table>
+        <caption>最初の形と公開した形</caption>
+        <thead><tr><th></th><th>最初（7596194）</th><th>公開した形（cf2fd18）</th></tr></thead>
+        <tbody>
+          <tr><td>入口</td><td><code>Sumi::Ruby.convert</code></td><td><code>Sumi.convert</code></td></tr>
+          <tr><td>オプション</td><td>CLI の文字列を並べる（<code>"--gray-model", "colorimetric"</code>）</td><td>キーワード引数（<code>gray_model: "colorimetric"</code>）</td></tr>
+          <tr><td>例外</td><td><code>Sumi::Ruby::ConversionError</code></td><td><code>Sumi::ConversionError</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      <code>Sumi::Ruby</code> の「Ruby」は gem の名前（sumi-ruby）から来ていて、呼び出す側にとっては意味がありません。
+      Ruby のコードの中で「Ruby」と書かせるのは冗長なので、変換は <code>Sumi.convert</code> から呼ぶことにしました。
+    </p>
+
+    <p>
+      キーワード引数は、名前の <code>_</code> を <code>-</code> に替えて <code>--</code> を付けるだけで、sumi のオプションにします。
+      <code>true</code> なら値なしのフラグ（<code>strict: true</code> → <code>--strict</code>）、
+      <code>false</code> と <code>nil</code> なら渡しません。
+      gem の側ではオプションの名前も値も確かめず、知らないオプションは sumi 本体に弾いてもらいます。
+      こうしておけば、sumi にオプションが増えても gem を直さずに使えます。
+    </p>
+
+    <h3>zune-jpeg の PR が取り込まれる</h3>
+
+    <p>
+      <a href="#oct09">10月9日</a>に import を直した #443 は、その後こう進みました。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>#443 のその後（日本時間）</caption>
+        <thead><tr><th>日時</th><th>だれが</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>10月10日 09:09</td><td>開発元</td><td>承認（「LGTM. Thanks!」）</td></tr>
+          <tr><td>10月10日 09:13</td><td>開発元</td><td>Chromium で落ちている広色域 canvas のテストが、これで直るはずとのコメント</td></tr>
+          <tr><td>10月11日 22:56</td><td>開発元</td><td><code>dev</code> にマージ</td></tr>
+          <tr><td>10月19日</td><td>開発元</td><td>#443 を含む zune-jpeg 0.5.16-rc3 を crates.io に公開</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      10月9日の時点では確かめられていなかった開発元の CI は、マージコミットで 47 件のジョブが動き、
+      失敗はありませんでした（2 件は条件に合わずスキップ）。
+      開発元のコメントによると、Chromium で zune-jpeg を試験的に有効にする変更の中で見つかったテストの失敗があり、sumi のために直した YCCK の変換が、
+      その修正にもつながるようです。
+    </p>
+
+    <div class="note">
+      <span class="label">訂正: #444 はすでに直っていた</span>
+      <p>
+        10月9日の記事では「#442 と #444 はどちらも未解決」と書きましたが、
+        #444（APP14 付きの 1 成分 JPEG が復号できない退行）は、開発元の PR
+        <a href="https://github.com/etemesi254/zune-image/pull/445" target="_blank" rel="noopener">#445</a> で
+        9月20日に直っていました。issue が開いたままだったので、状態だけを見て見落としていました。
+        0.5.16-rc3 の中身を見て、この修正が入っていることも確かめています。
+      </p>
+    </div>
+
+    <p>
+      これで、<a href="#upstream">0.5.16 に上げる条件</a>にしていた YCCK から CMYK への変換と #444 の修正は、
+      どちらも zune-jpeg に入りました。
+      ただ、crates.io に出ているのはまだリリース候補の rc3 で、正式版の 0.5.16 は出ていません。
+      sumi は gem として配っているので、<strong>YCCK の対応は 0.5.16 の正式版が出てから入れる</strong>ことにしました。
+      それまでは 0.5.15 のまま、YCCK の JPEG は元のまま残して警告を出します。
+    </p>
+
+    <p>上げるときには、次のことをする予定です。</p>
+
+    <ul>
+      <li>YCCK を未対応として弾くのをやめ、CMYK としてデコードしてからグレーにする。</li>
+      <li>
+        Adobe の CMYK は値が反転して書かれていることが多いので、反転した CMYK を扱う今の処理とうまく合うか、
+        <code>fixtures/ycck_jpeg.pdf</code> と検証用コーパスの YCCK 9 件で、黒くならないことを確かめる。
+      </li>
+      <li>「YCCK は警告が出る」としているテストと README を、「変換される」に書き換える。</li>
+    </ul>
+  </div>
+</section>
 
 <section class="section" id="oct09" aria-labelledby="oct09-title">
   <div class="wrap">
