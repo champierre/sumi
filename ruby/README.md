@@ -22,15 +22,15 @@ bundle install
 bundle exec sumi input.pdf -o output.pdf
 ```
 
-Ruby からは `Sumi::Ruby.convert` で、PDF のバイト列を変換できます。
-2 つ目以降の引数は、そのまま sumi のオプションとして渡します。
-sumi が失敗すると、sumi のエラー出力をメッセージにした `Sumi::Ruby::ConversionError` を投げます。
+Ruby からは `Sumi.convert` で、PDF のバイト列を変換できます。
+キーワード引数は sumi のオプションになります。`gray_model: "colorimetric"` は `--gray-model colorimetric`、`strict: true` は `--strict` として渡し、`false` や `nil` のオプションは渡しません。
+sumi が失敗すると、sumi のエラー出力をメッセージにした `Sumi::ConversionError` を投げます。
 
 ```ruby
 require "sumi/ruby"
 
 pdf = File.binread("input.pdf")
-gray = Sumi::Ruby.convert(pdf, "--gray-model", "colorimetric", "--strict")
+gray = Sumi.convert(pdf, gray_model: "colorimetric", strict: true)
 File.binwrite("output.pdf", gray)
 ```
 

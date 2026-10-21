@@ -65,7 +65,7 @@ class SumiRubyTest < Minitest::Test
     end
   end
 
-  def test_convert_passes_the_pdf_and_arguments_to_sumi
+  def test_convert_passes_the_pdf_and_options_to_sumi
     skip "the fake executable is a shell script" if Gem.win_platform?
     Dir.mktmpdir do |dir|
       fake_executable(dir, <<~SH)
@@ -73,7 +73,8 @@ class SumiRubyTest < Minitest::Test
         cat
       SH
       ENV[Sumi::Ruby::INSTALL_DIR_ENV] = dir
-      assert_equal "- -o - --strict\n%PDF-1.7", Sumi::Ruby.convert("%PDF-1.7", "--strict")
+      assert_equal "- -o - --gray-model colorimetric --strict --timeout 30\n%PDF-1.7",
+                   Sumi.convert("%PDF-1.7", gray_model: "colorimetric", strict: true, overwrite: false, timeout: 30)
     end
   end
 
@@ -85,7 +86,7 @@ class SumiRubyTest < Minitest::Test
         exit 1
       SH
       ENV[Sumi::Ruby::INSTALL_DIR_ENV] = dir
-      error = assert_raises(Sumi::Ruby::ConversionError) { Sumi::Ruby.convert("not a PDF") }
+      error = assert_raises(Sumi::ConversionError) { Sumi.convert("not a PDF") }
       assert_equal "error: not a PDF", error.message
     end
   end
@@ -95,7 +96,7 @@ class SumiRubyTest < Minitest::Test
     Dir.mktmpdir do |dir|
       fake_executable(dir, "exit 3\n")
       ENV[Sumi::Ruby::INSTALL_DIR_ENV] = dir
-      error = assert_raises(Sumi::Ruby::ConversionError) { Sumi::Ruby.convert("%PDF-1.7") }
+      error = assert_raises(Sumi::ConversionError) { Sumi.convert("%PDF-1.7") }
       assert_equal "sumi exited with status 3", error.message
     end
   end
