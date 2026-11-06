@@ -12,4 +12,6 @@ rescue Sumi::Ruby::Error => e
   exit 1
 end
 
-exec(executable, *ARGV)
+# [executable, executable] の形で渡すと、引数がないときもシェルを経由せずに実行される。
+# 文字列 1 個の exec はパスにスペースなどが含まれるとシェル経由になり、起動に失敗する。
+exec([executable, executable], *ARGV)
