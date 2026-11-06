@@ -32,7 +32,7 @@ mod shading;
 
 use std::io::Write;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use lopdf::{Document, LoadOptions, Object, SaveOptions};
 
@@ -318,19 +318,51 @@ fn declared_object_numbers(input: &[u8]) -> Vec<u32> {
 }
 
 fn write_atomically(path: &Path, data: &[u8]) -> std::io::Result<()> {
-    let file_name = path
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    let temp = path.with_file_name(format!(".{file_name}.sumi-{}.tmp", std::process::id()));
-    let result = (|| {
-        let mut file = std::fs::File::create(&temp)?;
-        file.write_all(data)?;
-        file.sync_all()?;
-        std::fs::rename(&temp, path)
-    })();
+    let (temp, mut file) = create_temp_file(path)?;
+    let result = file
+        .write_all(data)
+        .and_then(|()| file.sync_all())
+        .and_then(|()| std::fs::rename(&temp, path));
     if result.is_err() {
         let _ = std::fs::remove_file(&temp);
     }
     result
+}
+
+/// 出力先と同じディレクトリに一時ファイルを新規作成する。
+///
+/// `create_new` で開くので、同名のファイルやシンボリックリンクが先に置かれていても
+/// それを辿ったり上書きしたりせず、作成に失敗する。名前には pid と時刻を混ぜて、
+/// 前回の異常終了で残った一時ファイルや他プロセスの一時ファイルと衝突しにくくする。
+fn create_temp_file(path: &Path) -> std::io::Result<(PathBuf, std::fs::File)> {
+    let file_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let pid = std::process::id();
+    let mut last_error = None;
+    for attempt in 0..16u32 {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(0);
+        let temp = path.with_file_name(format!(
+            ".{file_name}.sumi-{pid}-{nanos:08x}{attempt:x}.tmp"
+        ));
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+        {
+            Ok(file) => return Ok((temp, file)),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last_error = Some(e),
+            Err(e) => return Err(e),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "cannot create temporary file",
+        )
+    }))
 }

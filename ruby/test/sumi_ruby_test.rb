@@ -2,6 +2,8 @@
 
 require "minitest/autorun"
 require "fileutils"
+require "open3"
+require "rbconfig"
 require "tmpdir"
 require "sumi/ruby"
 
@@ -98,6 +100,22 @@ class SumiRubyTest < Minitest::Test
       ENV[Sumi::Ruby::INSTALL_DIR_ENV] = dir
       error = assert_raises(Sumi::ConversionError) { Sumi.convert("%PDF-1.7") }
       assert_equal "sumi exited with status 3", error.message
+    end
+  end
+
+  def test_exe_runs_without_arguments_from_a_directory_with_spaces
+    skip "the fake executable is a shell script" if Gem.win_platform?
+    # 引数がないと exec は文字列 1 個の呼び出しになる。[executable, executable] の形にしないと
+    # パスにスペースが含まれたときシェル経由で解釈され、起動に失敗する。
+    Dir.mktmpdir do |tmp|
+      dir = File.join(tmp, "sumi ruby")
+      fake_executable(dir, "echo \"args=$#\"\n")
+      ENV[Sumi::Ruby::INSTALL_DIR_ENV] = dir
+      exe = File.expand_path("../exe/sumi", __dir__)
+      lib = File.expand_path("../lib", __dir__)
+      out, err, status = Open3.capture3(RbConfig.ruby, "-I", lib, exe)
+      assert status.success?, "sumi exited with #{status.exitstatus}: #{err}"
+      assert_equal "args=0\n", out
     end
   end
 

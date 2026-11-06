@@ -749,3 +749,46 @@ fn unreadable_non_visual_object_is_a_warning() {
         converted.report.warnings
     );
 }
+
+/// 出力先の隣に一時ファイル名を装ったシンボリックリンクを先に置かれても、リンク先は
+/// 書き換えられず、出力は正しく書かれる。
+///
+/// 旧実装は一時ファイル名が pid だけで決まり `File::create` で開いていたので、
+/// 他ユーザーも書き込める共有ディレクトリでは、先置きされたリンクを辿って
+/// リンク先のファイルを変換結果で上書きしてしまった。
+#[cfg(unix)]
+#[test]
+fn a_planted_symlink_next_to_the_output_is_not_followed() {
+    let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("planted_symlink");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.pdf");
+    std::fs::write(&input, pdf(b"1 0 0 rg 0 0 10 10 re f", |_, _| {})).unwrap();
+    let victim = dir.join("victim.txt");
+    std::fs::write(&victim, "do not clobber").unwrap();
+    let output = dir.join("out.pdf");
+    let planted = dir.join(format!(".out.pdf.sumi-{}.tmp", std::process::id()));
+    std::os::unix::fs::symlink(&victim, &planted).unwrap();
+
+    sumi_core::grayscale(&input, &output).unwrap();
+
+    assert_eq!(std::fs::read_to_string(&victim).unwrap(), "do not clobber");
+    assert!(
+        std::fs::symlink_metadata(&planted)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert!(std::fs::read(&output).unwrap().starts_with(b"%PDF"));
+    let leftovers: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name())
+        .filter(|n| {
+            n.to_string_lossy().ends_with(".tmp") && Some(n.as_os_str()) != planted.file_name()
+        })
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "temporary files left behind: {leftovers:?}"
+    );
+}
