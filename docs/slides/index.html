@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sumi のすごいところ</title>
+<meta name="description" content="PDF の色指定だけを書き換えて白黒にする sumi の、すごいところを 3 分で紹介するスライドです。">
+<meta property="og:title" content="sumi のすごいところ">
+<meta property="og:description" content="速い、軽い、MIT、1008 件で確かめた、依存先まで直した。3 分で紹介するスライドです。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://champierre.github.io/sumi/slides/">
+<meta property="og:image" content="https://champierre.github.io/sumi/images/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23000' stroke-width='4'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* Same rule as the landing page: five shades of sumi ink on paper.
+     The only color in the deck belongs to the document before conversion. */
+  :root {
+    --kami: #f2f2f2;
+    --shiro: #ffffff;
+    --sho: #000000;
+    --no: #2b2b2b;
+    --ju: #575757;
+    --tan: #9b9b9b;
+    --sei: #d4d4d4;
+
+    --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --code: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    /* One unit is 1% of a 16:9 stage that fits the window. */
+    --u: min(1vw, 1.7778vh);
+    --u: min(1vw, 1.7778dvh);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--kami);
+    color: var(--no);
+    font-family: var(--gothic);
+    font-size: calc(var(--u) * 2.3);
+    line-height: 1.7;
+  }
+
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--sho); outline-offset: 3px; }
+  img { display: block; max-width: 100%; height: auto; }
+  p { margin: 0; }
+
+  /* Stage */
+  .slide {
+    width: calc(var(--u) * 100);
+    min-height: calc(var(--u) * 56.25);
+    margin-inline: auto;
+    padding: calc(var(--u) * 4) calc(var(--u) * 6) calc(var(--u) * 6.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: calc(var(--u) * 2.2);
+    border-bottom: 1px solid var(--sei);
+  }
+  .js body { overflow: hidden; }
+  .js .slide { display: none; border-bottom: 0; }
+  .js .slide.on {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    height: calc(var(--u) * 56.25);
+  }
+
+  .kicker {
+    font-family: var(--code);
+    font-size: calc(var(--u) * 1.9);
+    letter-spacing: 0.08em;
+    color: var(--ju);
+  }
+  h1, h2 {
+    margin: 0;
+    font-family: var(--mincho);
+    font-weight: 800;
+    color: var(--sho);
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+    font-feature-settings: "palt" 1;
+    text-wrap: balance;
+  }
+  h1 { font-size: calc(var(--u) * 8.4); }
+  h2 { font-size: calc(var(--u) * 4.6); }
+  .lede { font-size: calc(var(--u) * 2.8); max-width: 30em; text-wrap: pretty; }
+  .note { font-size: calc(var(--u) * 1.7); color: var(--ju); }
+  .num { font-family: var(--code); font-variant-numeric: tabular-nums; }
+  strong { color: var(--sho); }
+
+  .seal {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75em;
+    height: 1.75em;
+    border: 0.12em solid var(--sho);
+    font-family: var(--mincho);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--sho);
+  }
+
+  /* 1. Title */
+  .title-row { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+  .title-row .seal { font-size: calc(var(--u) * 6.4); flex: none; }
+
+  /* 2. Before / after */
+  .sheets { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.4); }
+  .sheets figure { margin: 0; }
+  .sheets img { border: 1px solid var(--sei); background: var(--shiro); }
+  .sheets figcaption { margin-top: 0.5em; font-size: calc(var(--u) * 1.9); color: var(--ju); }
+  .slide-compact { gap: calc(var(--u) * 1.8); }
+  .slide-compact h2 { font-size: calc(var(--u) * 4.2); }
+
+  /* 3, 4. Bars */
+  .bars { display: grid; gap: calc(var(--u) * 1.6); }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 7.2em 1fr 6.4em;
+    align-items: center;
+    gap: calc(var(--u) * 2);
+    font-size: calc(var(--u) * 2.6);
+  }
+  .bar-track { display: block; height: calc(var(--u) * 3.6); border-left: 2px solid var(--sho); }
+  .bar { display: block; height: 100%; min-width: 3px; background: var(--tan); }
+  .bar-row.us .bar { background: var(--sho); }
+  .bar-row.us .bar-name, .bar-row.us .bar-value { color: var(--sho); font-weight: 700; }
+  .bar-value { text-align: right; font-family: var(--code); font-variant-numeric: tabular-nums; }
+  .big { font-family: var(--mincho); font-weight: 800; color: var(--sho); font-size: 1.5em; }
+
+  /* 5. License */
+  .license { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.4); }
+  .license div { padding: calc(var(--u) * 2.4); border: 1px solid var(--tan); }
+  .license .us { border: 3px solid var(--sho); background: var(--shiro); }
+  .license dt { font-family: var(--code); font-size: calc(var(--u) * 2.4); color: var(--ju); }
+  .license dd { margin: 0.2em 0 0; font-family: var(--mincho); font-weight: 800; font-size: calc(var(--u) * 4.6); color: var(--ju); line-height: 1.3; }
+  .license .us dt, .license .us dd { color: var(--sho); }
+
+  /* 6. Validation */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.4); margin: 0; }
+  .stats div { border-top: 3px solid var(--sho); padding-top: calc(var(--u) * 1.2); }
+  .stats dt { font-size: calc(var(--u) * 2.1); color: var(--ju); }
+  .stats dd { margin: 0; font-family: var(--mincho); font-weight: 800; font-size: calc(var(--u) * 7.6); line-height: 1.2; color: var(--sho); }
+  .stats dd small { font-size: 0.42em; margin-left: 0.1em; }
+
+  /* 7. Bug */
+  .split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: calc(var(--u) * 5); align-items: center; }
+  .split > div { display: grid; gap: calc(var(--u) * 2); }
+  .split .lede { font-size: calc(var(--u) * 2.5); }
+  .posters { display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2.2); }
+  .poster-fig { margin: 0; text-align: center; }
+  .poster {
+    width: calc(var(--u) * 13);
+    aspect-ratio: 1 / 1.414;
+    border: 1px solid var(--tan);
+    background: var(--shiro);
+    padding: calc(var(--u) * 1.4);
+    display: grid;
+    align-content: start;
+    gap: calc(var(--u) * 0.9);
+  }
+  .poster i { display: block; height: calc(var(--u) * 0.7); background: var(--tan); }
+  .poster i:first-child { height: calc(var(--u) * 2.2); width: 70%; background: var(--ju); }
+  .poster i:last-child { width: 55%; }
+  .poster.inverted { background: #1c1c1c; border-color: #1c1c1c; }
+  .poster.inverted i { background: #575757; }
+  .poster.inverted i:first-child { background: #9b9b9b; }
+  .poster-fig figcaption { margin-top: 0.6em; font-size: calc(var(--u) * 1.7); color: var(--ju); }
+  .arrow { font-size: calc(var(--u) * 4); color: var(--sho); padding-bottom: 1.2em; }
+
+  /* 8. Pull request */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.4); }
+  .steps li { border-top: 3px solid var(--sho); padding-top: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.1); }
+  .steps .when { display: block; font-family: var(--code); color: var(--ju); font-size: calc(var(--u) * 1.8); }
+  .steps b { display: block; font-family: var(--mincho); font-weight: 800; font-size: calc(var(--u) * 3.2); color: var(--sho); line-height: 1.4; }
+  .stamp {
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    border: 0.1em solid var(--sho);
+    font-family: var(--mincho);
+    font-weight: 800;
+    color: var(--sho);
+    transform: rotate(-4deg);
+    margin-left: 0.5em;
+    font-size: 0.62em;
+    vertical-align: middle;
+    letter-spacing: 0.1em;
+  }
+  blockquote {
+    margin: 0;
+    padding-left: calc(var(--u) * 2);
+    border-left: 3px solid var(--tan);
+    font-size: calc(var(--u) * 2.2);
+  }
+  blockquote cite { display: block; font-style: normal; font-size: calc(var(--u) * 1.7); color: var(--ju); }
+
+  /* 9. Summary */
+  .points { list-style: none; margin: 0; padding: 0; display: grid; font-size: calc(var(--u) * 2.6); }
+  .points li { display: grid; grid-template-columns: 5.2em 1fr; gap: 1em; align-items: baseline; padding-block: calc(var(--u) * 0.6); border-top: 1px solid var(--sei); }
+  .points li:last-child { border-bottom: 1px solid var(--sei); }
+  .points b { font-family: var(--mincho); font-weight: 800; color: var(--sho); }
+  .points span { font-size: 0.78em; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.4em 2em; font-family: var(--code); font-size: calc(var(--u) * 2.2); }
+
+  /* Chrome */
+  .pager { display: none; }
+  .js .pager {
+    position: fixed;
+    inset: auto 0 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 16px;
+    font-family: var(--code);
+    font-size: 14px;
+    color: var(--ju);
+    z-index: 2;
+  }
+  .pager a { text-decoration: none; }
+  .pager a:hover { color: var(--sho); text-decoration: underline; }
+  .pager-buttons { display: flex; align-items: center; gap: 12px; }
+  .pager button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--tan);
+    background: transparent;
+    color: var(--sho);
+    font: inherit;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .pager button:hover { background: var(--shiro); border-color: var(--sho); }
+  .pager button:disabled { color: var(--sei); border-color: var(--sei); cursor: default; background: transparent; }
+  .progress { position: fixed; inset: 0 0 auto 0; height: 3px; background: var(--sho); transform-origin: left; transform: scaleX(0); z-index: 2; }
+
+  /* Portrait phones: the stage becomes the whole screen and rows stack. */
+  @media (max-aspect-ratio: 1/1) {
+    :root { --u: 1.9vw; }
+    .slide { width: 100%; min-height: 0; padding: 40px 16px 48px; }
+    .js .slide.on { height: 100%; padding-bottom: 76px; overflow-y: auto; }
+    h1 { font-size: calc(var(--u) * 7.2); }
+    .title-row { flex-direction: column; align-items: flex-start; }
+    .license, .stats, .steps, .split { grid-template-columns: 1fr; }
+    .split { gap: calc(var(--u) * 3); }
+    .stats dd { font-size: calc(var(--u) * 6.4); }
+    .license dd { font-size: calc(var(--u) * 3.8); }
+    .license div { padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4); }
+    .bar-row { grid-template-columns: 1fr auto; gap: 4px 12px; }
+    .bar-track { grid-column: 1 / -1; grid-row: 2; height: calc(var(--u) * 3.2); }
+    .points li { grid-template-columns: 1fr; gap: 0; }
+  }
+
+  @media print {
+    .js body { overflow: visible; }
+    .js .slide, .js .slide.on { display: flex; position: static; height: auto; break-after: page; }
+    .pager, .progress { display: none !important; }
+  }
+</style>
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<main id="deck">
+
+  <section class="slide" aria-labelledby="t1">
+    <p class="kicker">3 分でわかる</p>
+    <div class="title-row">
+      <span class="seal" aria-hidden="true">墨</span>
+      <h1 id="t1">sumi の<br>すごいところ</h1>
+    </div>
+    <p class="lede">カラーの PDF を、文字のまま白黒にする Rust 製のコマンドです。</p>
+    <p class="note">Junya Ishihara / <a href="https://github.com/champierre/sumi">github.com/champierre/sumi</a></p>
+  </section>
+
+  <section class="slide slide-compact" aria-labelledby="t2">
+    <p class="kicker">そもそも何をするのか</p>
+    <h2 id="t2">画像にせず、色の命令だけを書き換える</h2>
+    <div class="sheets">
+      <figure>
+        <img src="../images/invoice-color.png" width="1240" height="1166" alt="青い見出しと赤い印影のある、カラーの請求書">
+        <figcaption>元の PDF</figcaption>
+      </figure>
+      <figure>
+        <img src="../images/invoice-gray.png" width="1240" height="1166" alt="グレースケールに変換した請求書">
+        <figcaption>グレースケール</figcaption>
+      </figure>
+      <figure>
+        <img src="../images/invoice-mono.png" width="1240" height="1166" alt="白黒 2 値に変換した請求書">
+        <figcaption>白黒 2 値</figcaption>
+      </figure>
+    </div>
+    <p>変換したあとも、文字は<strong>検索もコピーもできます</strong>。フォントも線もそのままです。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t3">
+    <p class="kicker">すごいところ 1</p>
+    <h2 id="t3">速い。50 ページの請求書が <span class="num">62</span> ミリ秒</h2>
+    <div class="bars" role="img" aria-label="50 ページの請求書の変換時間。sumi 62 ミリ秒、mutool 2,285 ミリ秒、Ghostscript 2,574 ミリ秒">
+      <div class="bar-row us"><span class="bar-name">sumi</span><span class="bar-track"><span class="bar" style="width:2.4%"></span></span><span class="bar-value">62 ms</span></div>
+      <div class="bar-row"><span class="bar-name">mutool</span><span class="bar-track"><span class="bar" style="width:88.8%"></span></span><span class="bar-value">2,285 ms</span></div>
+      <div class="bar-row"><span class="bar-name">Ghostscript</span><span class="bar-track"><span class="bar" style="width:100%"></span></span><span class="bar-value">2,574 ms</span></div>
+    </div>
+    <p class="lede">Ghostscript の <span class="big">41 倍</span>、mutool の <span class="big">36 倍</span>の速さです。</p>
+    <p class="note">Linux（Ryzen 7 6800H）で 10 回実行した中央値。比べた 6 種類の PDF すべてで sumi がいちばん速く、差は 1.2〜41.2 倍でした。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t4">
+    <p class="kicker">すごいところ 2</p>
+    <h2 id="t4">軽い。メモリは <span class="num">20</span> MB</h2>
+    <div class="bars" role="img" aria-label="50 ページの請求書を変換するときの最大メモリ。sumi 20.2 MB、Ghostscript 78.8 MB、mutool 462.5 MB">
+      <div class="bar-row us"><span class="bar-name">sumi</span><span class="bar-track"><span class="bar" style="width:4.4%"></span></span><span class="bar-value">20.2 MB</span></div>
+      <div class="bar-row"><span class="bar-name">Ghostscript</span><span class="bar-track"><span class="bar" style="width:17%"></span></span><span class="bar-value">78.8 MB</span></div>
+      <div class="bar-row"><span class="bar-name">mutool</span><span class="bar-track"><span class="bar" style="width:100%"></span></span><span class="bar-value">462.5 MB</span></div>
+    </div>
+    <p class="lede">同じ請求書で、mutool の <span class="big">23 分の 1</span> です。</p>
+    <p class="note">同じ 50 ページの請求書での最大常駐メモリ。ただし 6.7 MB の地図では、sumi（72.7 MB）が Ghostscript（32.8 MB）より多く使いました。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t5">
+    <p class="kicker">すごいところ 3</p>
+    <h2 id="t5">MIT ライセンス。製品に組み込めます</h2>
+    <dl class="license">
+      <div><dt>Ghostscript</dt><dd>AGPL</dd></div>
+      <div><dt>MuPDF（mutool）</dt><dd>AGPL</dd></div>
+      <div class="us"><dt>sumi</dt><dd>MIT</dd></div>
+    </dl>
+    <p class="lede">依存しているクレートも、すべて MIT / Apache-2.0 / BSD / Zlib 系で揃えました。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t6">
+    <p class="kicker">すごいところ 4</p>
+    <h2 id="t6">実物の PDF 1008 件で確かめた</h2>
+    <dl class="stats">
+      <div><dt>集めた PDF</dt><dd>1008<small>件</small></dd></div>
+      <div><dt>変換できた</dt><dd>99.3<small>%</small></dd></div>
+      <div><dt>テキストが元と一致</dt><dd>99.8<small>%</small></dd></div>
+    </dl>
+    <p class="lede">Wikimedia Commons から請求書、報告書、地図、論文など 3.66 GB を集めて、自動で測りました。</p>
+    <p class="note">変換できなかった 7 件は、暗号化された PDF が 6 件と、壊れた PDF が 1 件です。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t7">
+    <p class="kicker">1008 件を流して見つけたバグ</p>
+    <div class="split">
+      <div>
+        <h2 id="t7">白いポスターが、<br>真っ黒になる</h2>
+        <p class="lede">Adobe のツールが書き出した CMYK の JPEG（YCCK）で、白と黒が反転していました。</p>
+        <p class="lede">原因は sumi ではなく、JPEG の復号に使っているライブラリ <strong>zune-jpeg</strong> でした。</p>
+      </div>
+      <div>
+        <div class="posters" role="img" aria-label="白いポスターが、変換後に黒いポスターになる模式図">
+          <figure class="poster-fig">
+            <div class="poster"><i></i><i></i><i></i><i></i><i></i></div>
+            <figcaption>元<br><span class="num">168.7</span></figcaption>
+          </figure>
+          <span class="arrow" aria-hidden="true">→</span>
+          <figure class="poster-fig">
+            <div class="poster inverted"><i></i><i></i><i></i><i></i><i></i></div>
+            <figcaption>変換後<br><span class="num">28.0</span></figcaption>
+          </figure>
+        </div>
+        <p class="note">模式図です。数字はポスター 1 枚のグレー値の平均（0 が黒、255 が白）。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide slide-compact" aria-labelledby="t8">
+    <p class="kicker">すごいところ 5</p>
+    <h2 id="t8">依存先に PR を送り、マージされた<span class="stamp">MERGED</span></h2>
+    <ol class="steps">
+      <li><span class="when">9 月 12 日</span><b>報告と PR</b>issue <a href="https://github.com/etemesi254/zune-image/issues/442">#442</a> と PR <a href="https://github.com/etemesi254/zune-image/pull/443">#443</a>。YCCK から CMYK への変換を実装</li>
+      <li><span class="when">レビュー</span><b>指摘を 2 つ直す</b>コンフリクトと no_std のビルド。「LGTM. Thanks!」</li>
+      <li><span class="when">10 月 11 日</span><b>マージ</b><span class="num">+72 −1</span> 行。<a href="https://github.com/etemesi254/zune-image">zune-image</a> の dev ブランチへ</li>
+    </ol>
+    <blockquote>
+      <p><strong>Chromium にも取り込まれ、落ちていたテスト 3 件が通るようになった。</strong></p>
+      <cite>10 月 29 日、Rust 製 JPEG デコーダを試す作業の中で。ただし試験有効化そのものは、別のテストが原因で 2 回差し戻され、まだ定着していません（11 月 18 日時点）。</cite>
+    </blockquote>
+    <p class="note">sumi 側は、黙って黒くせず、警告を出して元の画像を残しています。</p>
+  </section>
+
+  <section class="slide" aria-labelledby="t9">
+    <h2 id="t9">sumi のすごいところ</h2>
+    <ul class="points">
+      <li><b>速い</b><span>Ghostscript の最大 41 倍</span></li>
+      <li><b>軽い</b><span>50 ページの請求書で 20 MB</span></li>
+      <li><b>MIT</b><span>AGPL に依存しない</span></li>
+      <li><b>確かめた</b><span>実物の PDF 1008 件で 99.3%</span></li>
+      <li><b>直した</b><span>依存先に PR を送ってマージ。Chromium のテストも 3 件通った</span></li>
+    </ul>
+    <p class="links">
+      <a href="../">champierre.github.io/sumi</a>
+      <a href="https://github.com/champierre/sumi">github.com/champierre/sumi</a>
+      <a href="../diary/">開発日誌</a>
+    </p>
+  </section>
+
+</main>
+
+<nav class="pager" aria-label="スライドの移動">
+  <a href="../">← sumi トップ</a>
+  <div class="pager-buttons">
+    <button type="button" id="prev" aria-label="前のスライド">←</button>
+    <span id="count" aria-live="polite">1 / 9</span>
+    <button type="button" id="next" aria-label="次のスライド">→</button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var count = document.getElementById("count");
+  var progress = document.getElementById("progress");
+  var current = 0;
+
+  function show(n, push) {
+    current = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, i) { s.classList.toggle("on", i === current); });
+    count.textContent = (current + 1) + " / " + slides.length;
+    prev.disabled = current === 0;
+    next.disabled = current === slides.length - 1;
+    progress.style.transform = "scaleX(" + (current + 1) / slides.length + ")";
+    if (push) history.replaceState(null, "", "#" + (current + 1));
+  }
+
+  function fromHash() {
+    var n = parseInt(location.hash.slice(1), 10);
+    return isNaN(n) ? 0 : n - 1;
+  }
+
+  prev.addEventListener("click", function () { show(current - 1, true); });
+  next.addEventListener("click", function () { show(current + 1, true); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "PageDown" || k === " " || k === "Enter") {
+      if ((k === " " || k === "Enter") && e.target.closest("a, button")) return;
+      e.preventDefault(); show(current + 1, true);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp" || k === "Backspace") {
+      e.preventDefault(); show(current - 1, true);
+    } else if (k === "Home") { show(0, true); }
+    else if (k === "End") { show(slides.length - 1, true); }
+    else if (k === "f") {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    }
+  });
+
+  // Tap the right side to advance, the left third to go back.
+  document.getElementById("deck").addEventListener("click", function (e) {
+    if (e.target.closest("a, button")) return;
+    if (String(window.getSelection())) return;
+    show(current + (e.clientX < window.innerWidth / 3 ? -1 : 1), true);
+  });
+
+  var startX = null, startY = null;
+  document.addEventListener("touchstart", function (e) {
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    startX = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) show(current + (dx < 0 ? 1 : -1), true);
+  }, { passive: true });
+
+  window.addEventListener("hashchange", function () { show(fromHash(), false); });
+  show(fromHash(), false);
+})();
+</script>
+</body>
+</html>
