@@ -182,10 +182,93 @@
     うまくいかなかったことと、その原因も残しています。
   </p>
   <p class="lede">
-    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-10-21 10:22 のものです。<br>
+    最初のコミットは 2026-09-11 15:53、いちばん新しい記事は 2026-11-18 のものです。<br>
     日付の新しいセクションほど上に並べ、セクションの中は起きた順に書いています。
   </p>
 </div>
+
+<section class="section" id="nov18" aria-labelledby="nov18-title">
+  <div class="wrap">
+    <h2 id="nov18-title">11月18日 — Chromium のテストは通ったのか、3 分の紹介スライド</h2>
+
+    <p>
+      この日にしたことは 2 つです。
+      <a href="#chromium">10月21日</a>に「まだ通っていません」と書いた Chromium のテストがその後どうなったかを調べたことと、
+      sumi を 3 分で紹介する<a href="../slides/">スライド</a>を作ったことです。
+    </p>
+
+    <h3 id="chromium-followup">3 件のテストは通るようになった</h3>
+
+    <p>
+      結論から書くと、広色域 canvas の 3 件は<strong>通るようになりました</strong>。
+      ただし、Rust 製の JPEG デコーダを CI で有効にする変更そのものは、別のテストが原因で 2 回差し戻され、まだ main に定着していません。
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>10月21日より後の Chromium 側の動き（日本時間）</caption>
+        <thead><tr><th>日時</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>10月30日 01:45</td><td>#443 を含む zune-jpeg の修正が Chromium の main に入る（<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8652940" target="_blank" rel="noopener">CL 8652940</a>）</td></tr>
+          <tr><td>11月5日 05:29<br>11月7日 23:18</td><td>試験有効化の <a href="https://chromium-review.googlesource.com/c/chromium/src/+/8539408" target="_blank" rel="noopener">CL 8539408</a> が、マージ前の試走を通過</td></tr>
+          <tr><td>11月10日 06:23</td><td>CL 8539408 が main にマージ</td></tr>
+          <tr><td>11月10日 11:21</td><td>差し戻し（<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8772859" target="_blank" rel="noopener">CL 8772859</a>）。Android の CI で <code>ViewTransitionPixelTest</code> が落ちたため</td></tr>
+          <tr><td>11月13日 01:13</td><td>再マージ（<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8802513" target="_blank" rel="noopener">CL 8802513</a>）</td></tr>
+          <tr><td>11月13日 07:38</td><td>再び差し戻し（<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8805415" target="_blank" rel="noopener">CL 8805415</a>）。<code>LensOverlayControllerBrowserTest</code> が落ちたため</td></tr>
+          <tr><td>11月15日 04:25</td><td>3 回目の <a href="https://chromium-review.googlesource.com/c/chromium/src/+/8805577" target="_blank" rel="noopener">CL 8805577</a> が試走を通過。レビュー待ちで、まだマージされていない</td></tr>
+          <tr><td>11月17日 08:08</td><td>M159 のブランチにも差し戻しを反映（<a href="https://chromium-review.googlesource.com/c/chromium/src/+/8809275" target="_blank" rel="noopener">CL 8809275</a>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      3 件が通ったと判断した根拠は、次の 4 つです。
+    </p>
+
+    <ul>
+      <li>
+        CL 8652940 のコミットメッセージに、#443 が「Retained prerequisite fix」として、3 件のテスト名と並べて書かれている。
+        同じメッセージに、これらの修正で残っていた失敗がすべて直ることを確かめた、とある。
+      </li>
+      <li>
+        Chromium の main にある zune-jpeg の <code>worker.rs</code> に、YCCK から CMYK への変換が入っている。
+        <code>README.chromium</code> には「Preserve the existing PR443 fix and its attribution」と書かれている。
+      </li>
+      <li>Blink の <code>TestExpectations</code> に、この 3 件を失敗扱いにする記述がない。</li>
+      <li>機能を有効にした状態で、マージ前の試走が全件通過している。</li>
+    </ul>
+
+    <p>
+      テスト 1 件ごとの実行結果までは見ていません。
+      2 回の差し戻しの原因は、どちらも YCCK とは別のテストです。
+    </p>
+
+    <p>
+      <a href="#chromium">10月21日</a>には「役に立ったと言えるのは、Chromium でこの 3 件が通るようになってからです」と書きました。
+      その条件は満たされました。
+      ただ、試験有効化が定着していないので、「Chromium に入った」と言い切るにはまだ早い状態です。
+    </p>
+
+    <div class="note">
+      <span class="label">zune-jpeg 側の状況</span>
+      <p>
+        正式版は 0.5.15 のままで、0.5.16 は rc3（10月19日）までしか出ていません。
+        #442 と #444 も閉じられていません。sumi が 0.5.15 に留まる判断は変えていません。
+        開発元は Chromium の試験で見つかった不具合を
+        <a href="https://github.com/etemesi254/zune-image/issues/503" target="_blank" rel="noopener">#503</a> にまとめていて、
+        #443 はその表の最初の行（J1、Merged）に載っています。
+      </p>
+    </div>
+
+    <h3 id="slides">3 分の紹介スライド</h3>
+
+    <p>
+      「sumi のすごいところ」という題で、飲み会で話すための<a href="../slides/">スライド</a>を 9 枚作りました。
+      速い、軽い、MIT、実物の PDF 1008 件で確かめた、依存先に PR を送ってマージされた、の 5 点です。
+      数字は README の Linux での計測からそのまま取っています。
+    </p>
+  </div>
+</section>
 
 <section class="section" id="oct21" aria-labelledby="oct21-title">
   <div class="wrap">
@@ -375,6 +458,7 @@ File.binwrite("output.pdf", gray)</code></pre>
       sumi のために直した不具合が、Chromium が JPEG のデコーダを Rust 製に替える作業でも障害になっていた、ということです。
       Chromium に直接手を入れたわけではなく、Chromium が使う部品を先に直していた形です。
       役に立ったと言えるのは、Chromium でこの 3 件が通るようになってからです。
+      （その後どうなったかは<a href="#chromium-followup">11月18日</a>に書きました。）
     </p>
 
     <div class="note">
